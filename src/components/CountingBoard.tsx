@@ -1,7 +1,7 @@
-import { Minus, Plus, RefreshCw, Save, Check, ShoppingCart } from 'lucide-react'
+import { Minus, Plus, Save, Check, ShoppingCart } from 'lucide-react'
 import type { Category, OrderStatus, Product, ProductVariation } from '../types/database'
 import type { CountedItem, ItemKey, SuggestionsMap } from '../types/app'
-import { itemKey } from '../types/app'
+import { itemKey, defaultVariationForProduct } from '../types/app'
 import { formatDateTime } from '../lib/utils'
 import { Spinner, inputClass } from './ui'
 
@@ -17,12 +17,10 @@ interface CountingBoardProps {
   orderStatus: OrderStatus | null
   saving: boolean
   savedAt: Date | null
-  finishing: boolean
   onRequesterNameChange: (value: string) => void
   onNotesChange: (value: string) => void
   onAdjust: (key: ItemKey, delta: number) => void
   onSaveNow: () => void
-  onFinish: () => void
 }
 
 export function CountingBoard({
@@ -37,12 +35,10 @@ export function CountingBoard({
   orderStatus,
   saving,
   savedAt,
-  finishing,
   onRequesterNameChange,
   onNotesChange,
   onAdjust,
   onSaveNow,
-  onFinish,
 }: CountingBoardProps) {
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
 
@@ -120,17 +116,7 @@ export function CountingBoard({
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-gray-500">
               Contagem concluída — use o Modo Digitação
             </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onFinish}
-              disabled={finishing || totalCounted === 0}
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 active:scale-95 disabled:opacity-40"
-            >
-              {finishing ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
-              Concluir pedido
-            </button>
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -150,7 +136,10 @@ export function CountingBoard({
                 const productVariations = variations.filter(
                   (variation) => variation.product_id === product.id,
                 )
-                if (productVariations.length === 0) return null
+                const visibleVariations =
+                  productVariations.length > 0
+                    ? productVariations
+                    : [defaultVariationForProduct(product)]
 
                 return (
                   <div key={product.id} className="px-4 py-3">
@@ -171,7 +160,7 @@ export function CountingBoard({
                     </div>
 
                     <div className="space-y-2">
-                      {productVariations.map((variation) => {
+                      {visibleVariations.map((variation) => {
                         const key = itemKey(product.id, variation.id)
                         const counted = itemsByKey.get(key)?.quantity ?? 0
                         const available = variation.is_available && product.is_active

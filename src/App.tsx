@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  CheckCircle2,
   ClipboardList,
   MonitorCheck,
   Package,
@@ -10,7 +11,7 @@ import {
 import { supabase } from './lib/supabase'
 import type { Catalog, CountedItem, ItemKey, SuggestionsMap, TabId } from './types/app'
 import type { Order, OrderItem, Store as StoreRow } from './types/database'
-import { itemKey } from './types/app'
+import { itemKey, defaultVariationForProduct } from './types/app'
 import { getErrorMessage } from './lib/utils'
 import { CountingBoard } from './components/CountingBoard'
 import { DataEntryBoard } from './components/DataEntryBoard'
@@ -25,10 +26,13 @@ interface FlashState {
 function mapOrderItems(rows: OrderItem[], catalog: Catalog): CountedItem[] {
   const result: CountedItem[] = []
   for (const row of rows) {
-    if (!row.product_id || !row.product_variation_id) continue
+    if (!row.product_id) continue
     const product = catalog.products.find((entry) => entry.id === row.product_id)
-    const variation = catalog.variations.find((entry) => entry.id === row.product_variation_id)
-    if (!product || !variation) continue
+    if (!product) continue
+    const variation = row.product_variation_id
+      ? catalog.variations.find((entry) => entry.id === row.product_variation_id)
+      : defaultVariationForProduct(product)
+    if (!variation) continue
     result.push({
       key: itemKey(product.id, variation.id),
       product,
@@ -225,7 +229,7 @@ export default function App() {
 
         const nextSuggestions: SuggestionsMap = new Map()
         for (const row of suggestionsResult.data) {
-          nextSuggestions.set(itemKey(row.product_id, row.product_variation_id), row.suggested_quantity)
+          nextSuggestions.set(itemKey(row.product_id, row.product_variation_id ?? ''), row.suggested_quantity)
         }
         setSuggestions(nextSuggestions)
 
@@ -332,7 +336,7 @@ export default function App() {
         .map((item) => ({
           order_id: snapshot.order.id,
           product_id: item.product.id,
-          product_variation_id: item.variation.id,
+          product_variation_id: item.variation.id || null,
           product_code: item.product.code,
           product_name: item.product.name,
           variation_name: item.variation.name,
@@ -766,26 +770,44 @@ export default function App() {
       </header>
 
       <nav className="sticky top-0 z-20 border-b border-gray-200 bg-shell/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl gap-1.5 overflow-x-auto px-4 py-2 no-scrollbar">
-          {tabs.map((entry) => {
-            const active = tab === entry.id
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => setTab(entry.id)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 ${
-                  active
-                    ? 'bg-wine-700 text-white shadow-sm'
-                    : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:text-wine-700'
-                }`}
-              >
-                <entry.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{entry.label}</span>
-                <span className="sm:hidden">{entry.short}</span>
-              </button>
-            )
-          })}
+        <div className="mx-auto flex max-w-3xl items-center gap-1.5 px-4 py-2">
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
+            {tabs.map((entry) => {
+              const active = tab === entry.id
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => setTab(entry.id)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 ${
+                    active
+                      ? 'bg-wine-700 text-white shadow-sm'
+                      : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:text-wine-700'
+                  }`}
+                >
+                  <entry.icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{entry.label}</span>
+                  <span className="sm:hidden">{entry.short}</span>
+                </button>
+              )
+            })}
+          </div>
+          {tab === 'count' && !locksOrder ? (
+            <button
+              type="button"
+              onClick={() => void handleFinishOrder()}
+              disabled={finishing || totalCounted === 0}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {finishing ? (
+                <Spinner className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Concluir Pedido</span>
+              <span className="sm:hidden">Concluir</span>
+            </button>
+          ) : null}
         </div>
       </nav>
 
@@ -803,7 +825,6 @@ export default function App() {
             orderStatus={currentOrder?.status ?? null}
             saving={saving}
             savedAt={savedAt}
-            finishing={finishing}
             onRequesterNameChange={setRequesterName}
             onNotesChange={setNotes}
             onAdjust={handleAdjust}
@@ -815,7 +836,6 @@ export default function App() {
               dirtyRef.current = true
               void enqueuePersist().catch((err) => notify(getErrorMessage(err), 'error'))
             }}
-            onFinish={() => void handleFinishOrder()}
           />
         )}
 

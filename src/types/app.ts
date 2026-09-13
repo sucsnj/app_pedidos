@@ -5,6 +5,9 @@ import type {
   Store,
 } from './database'
 
+/** Variação sintética (id vazio) usada para produtos cadastrados sem variações. */
+export const SYNTHETIC_VARIATION_ID = ''
+
 export type TabId = 'count' | 'entry' | 'catalog'
 
 /** Chave única de um item contado: `${productId}::${variationId}` */
@@ -29,6 +32,18 @@ export type SuggestionsMap = Map<ItemKey, number>
 
 export const itemKey = (productId: string, variationId: string): ItemKey =>
   `${productId}::${variationId}`
+
+/** Cria a variação de unidade única para produtos sem variações cadastradas. */
+export const defaultVariationForProduct = (product: Product): ProductVariation => ({
+  id: SYNTHETIC_VARIATION_ID,
+  product_id: product.id,
+  name: 'Unidade',
+  weight_label: product.unit_type ?? null,
+  sku_code: product.code,
+  price: 0,
+  is_available: true,
+  created_at: '',
+})
 
 /** Ordena por código PLU/SKU e, em seguida, por nome (critério da tela de digitação). */
 export const compareByEntryCode = (
