@@ -218,7 +218,7 @@ export function CountingBoard({
                                 </span>
                               ) : null}
                               {aboveUsual ? (
-                                <span className="mt-1 inline-flex items-center rounded-md bg-yellow-100 px-1.5 py-0.5 text-[11px] font-semibold text-yellow-800">
+                                <span className="mt-1 inline-flex items-center rounded-md bg-gold-200 px-1.5 py-0.5 text-[11px] font-bold text-wine-800">
                                   ⚠️ Acima do habitual
                                 </span>
                               ) : null}
@@ -241,7 +241,7 @@ export function CountingBoard({
                                   event.stopPropagation()
                                   updateQuantity(key, -1)
                                 }}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-gray-200 active:scale-90 disabled:opacity-30"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-200 text-gray-700 transition hover:bg-gray-300 active:scale-90 disabled:opacity-30"
                               >
                                 <Minus className="h-6 w-6" strokeWidth={3} />
                               </button>
@@ -273,7 +273,7 @@ export function CountingBoard({
                                   event.stopPropagation()
                                   updateQuantity(key, 1)
                                 }}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-wine-500 text-white transition hover:bg-wine-600 active:scale-90 disabled:opacity-40"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400 text-wine-800 transition hover:bg-gold-500 active:scale-90 disabled:opacity-40"
                               >
                                 <Plus className="h-6 w-6" strokeWidth={3} />
                               </button>

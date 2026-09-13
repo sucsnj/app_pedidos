@@ -113,7 +113,7 @@ export function ComparisonBoard({
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Mais Solicitado
             </p>
-            <Award className="h-5 w-5 text-wine-500" />
+            <Award className="h-5 w-5 text-gold-500" />
           </div>
           <p className="mt-2 line-clamp-2 text-sm font-bold text-gray-800">{topProduct}</p>
         </section>
@@ -168,7 +168,7 @@ export function ComparisonBoard({
                     <p className="truncate text-sm font-semibold text-gray-800">{item.label}</p>
                     <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-wine-500 to-wine-300 transition-all"
+                        className="h-full rounded-full bg-gradient-to-r from-wine-700 to-gold-400 transition-all"
                         style={{ width: `${width}%` }}
                       />
                     </div>
@@ -205,7 +205,7 @@ export function ComparisonBoard({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <tr className="bg-wine-700 text-left text-xs font-bold uppercase tracking-wide text-white">
                   <th className="px-4 py-2.5">Produto / Variação</th>
                   <th className="px-3 py-2.5 text-center">Atual</th>
                   <th className="px-3 py-2.5 text-center">Anterior</th>

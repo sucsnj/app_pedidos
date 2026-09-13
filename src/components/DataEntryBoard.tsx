@@ -74,7 +74,7 @@ export function DataEntryBoard({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-green-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-wine-600 to-gold-400 transition-all"
               style={{
                 width: pending.length === 0 ? '0%' : `${(enteredCount / pending.length) * 100}%`,
               }}
@@ -99,16 +99,16 @@ export function DataEntryBoard({
                   <button
                     type="button"
                     onClick={() => onToggleEntered(item.key)}
-                    className={`flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-green-50 ${
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-gold-100 ${
                       entered
-                        ? 'bg-green-50 hover:bg-green-100'
+                        ? 'bg-gold-100 hover:bg-gold-200'
                         : 'hover:bg-gray-50'
                     }`}
                   >
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition ${
                         entered
-                          ? 'border-green-500 bg-green-500 text-white'
+                          ? 'border-gold-500 bg-gold-400 text-wine-800'
                           : 'border-gray-300 bg-white'
                       }`}
                     >
@@ -121,7 +121,7 @@ export function DataEntryBoard({
                       <span
                         className={`block truncate text-sm font-medium ${
                           entered
-                            ? 'text-gray-400 line-through decoration-green-400'
+                            ? 'text-gray-400 line-through decoration-gold-500'
                             : 'text-gray-800'
                         }`}
                       >
@@ -137,7 +137,7 @@ export function DataEntryBoard({
                     <span
                       className={`shrink-0 rounded-lg px-2.5 py-1 text-sm font-bold tabular-nums ${
                         entered
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-gold-200 text-wine-800'
                           : 'bg-wine-100 text-wine-700'
                       }`}
                     >

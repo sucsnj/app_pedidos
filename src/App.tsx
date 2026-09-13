@@ -888,14 +888,14 @@ export default function App() {
         <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-wine-500">
-                <ClipboardList className="h-5 w-5" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-400">
+                <ClipboardList className="h-5 w-5 text-wine-800" />
               </span>
               <div>
                 <h1 className="text-sm font-extrabold leading-tight">
                   Pedidos & Abastecimento
                 </h1>
-                <p className="text-[11px] text-wine-300">Contagem física · Prancheta digital</p>
+                <p className="text-[11px] text-gold-300">Contagem física · Prancheta digital</p>
               </div>
             </div>
             {saving ? (
@@ -907,11 +907,11 @@ export default function App() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <Store className="hidden h-4 w-4 shrink-0 text-wine-300 sm:block" />
+              <Store className="hidden h-4 w-4 shrink-0 text-gold-300 sm:block" />
               <select
                 value={activeStoreId}
                 onChange={(event) => handleSelectStore(event.target.value)}
-                className="w-full rounded-lg border border-wine-500/60 bg-wine-800/70 px-3 py-2 text-sm font-medium text-white outline-none focus:border-wine-300"
+                className="w-full rounded-lg border border-gold-500 bg-gold-400 px-3 py-2 text-sm font-bold text-wine-800 outline-none focus:border-wine-900"
               >
                 <option value="">Selecione a loja</option>
                 {catalog.stores.map((store) => (
@@ -928,7 +928,7 @@ export default function App() {
                 value={currentOrder?.id ?? ''}
                 onChange={(event) => void handleSelectOrder(event.target.value)}
                 disabled={orders.length === 0}
-                className="min-w-0 flex-1 rounded-lg border border-wine-500/60 bg-wine-800/70 px-3 py-2 text-sm font-medium text-white outline-none focus:border-wine-300 disabled:opacity-50"
+                className="min-w-0 flex-1 rounded-lg border border-gold-500/40 bg-wine-800/70 px-3 py-2 text-sm font-medium text-white outline-none focus:border-gold-400 disabled:opacity-50"
               >
                 <option value="">Sem pedido</option>
                 {orders.map((order) => (
@@ -940,7 +940,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => void handleNewCount()}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-wine-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-wine-600 active:scale-95"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-gold-400 px-3 py-2 text-sm font-bold text-wine-800 transition hover:bg-gold-500 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nova contagem</span>
@@ -963,7 +963,7 @@ export default function App() {
                   onClick={() => setTab(entry.id)}
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 ${
                     active
-                      ? 'bg-wine-700 text-white shadow-sm'
+                      ? 'bg-wine-700 text-gold-300 shadow-sm'
                       : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:text-wine-700'
                   }`}
                 >
@@ -979,7 +979,7 @@ export default function App() {
               type="button"
               onClick={() => void handleFinishOrder()}
               disabled={finishing || totalCounted === 0}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gold-400 px-3 py-2 text-sm font-bold text-wine-800 shadow-sm transition hover:bg-gold-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {finishing ? (
                 <Spinner className="h-4 w-4" />
