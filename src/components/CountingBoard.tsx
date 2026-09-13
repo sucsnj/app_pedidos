@@ -20,6 +20,7 @@ interface CountingBoardProps {
   onRequesterNameChange: (value: string) => void
   onNotesChange: (value: string) => void
   onAdjust: (key: ItemKey, delta: number) => void
+  onSetQuantity: (key: ItemKey, value: number) => void
   onSaveNow: () => void
 }
 
@@ -38,12 +39,18 @@ export function CountingBoard({
   onRequesterNameChange,
   onNotesChange,
   onAdjust,
+  onSetQuantity,
   onSaveNow,
 }: CountingBoardProps) {
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
 
   const itemsByKey = new Map(items.map((item) => [item.key, item]))
   const totalCounted = items.reduce((sum, item) => sum + item.quantity, 0)
+
+  const updateQuantity = (key: ItemKey, value: number, isAbsolute = false) => {
+    if (isAbsolute) onSetQuantity(key, value)
+    else onAdjust(key, value)
+  }
 
   return (
     <div className="space-y-4">
@@ -212,28 +219,41 @@ export function CountingBoard({
                                 disabled={!available || locked || counted === 0}
                                 onClick={(event) => {
                                   event.stopPropagation()
-                                  onAdjust(key, -1)
+                                  updateQuantity(key, -1)
                                 }}
-                                className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-gray-200 active:scale-90 disabled:opacity-30"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-gray-200 active:scale-90 disabled:opacity-30"
                               >
                                 <Minus className="h-6 w-6" strokeWidth={3} />
                               </button>
-                              <span
-                                className={`flex h-11 min-w-10 items-center justify-center rounded-xl px-2 text-xl font-extrabold tabular-nums ${
-                                  counted > 0 ? 'bg-wine-500 text-white' : 'bg-gray-100 text-gray-700'
+                              <input
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                value={counted > 0 ? String(counted) : ''}
+                                placeholder="0"
+                                onChange={(event) => {
+                                  const parsed = parseInt(event.target.value, 10)
+                                  updateQuantity(key, Number.isNaN(parsed) ? 0 : parsed, true)
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                onKeyDown={(event) => event.stopPropagation()}
+                                disabled={!available || locked}
+                                aria-label={`Quantidade de ${variation.name}`}
+                                className={`h-11 w-14 shrink-0 rounded-xl px-1 text-center text-xl font-extrabold tabular-nums outline-none transition focus:ring-2 focus:ring-wine-300 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+                                  counted > 0
+                                    ? 'bg-wine-500 text-white'
+                                    : 'bg-gray-100 text-gray-700'
                                 }`}
-                              >
-                                {counted}
-                              </span>
+                              />
                               <button
                                 type="button"
                                 aria-label={`Aumentar ${variation.name}`}
                                 disabled={!available || locked}
                                 onClick={(event) => {
                                   event.stopPropagation()
-                                  onAdjust(key, 1)
+                                  updateQuantity(key, 1)
                                 }}
-                                className="flex h-11 w-11 items-center justify-center rounded-xl bg-wine-500 text-white transition hover:bg-wine-600 active:scale-90 disabled:opacity-40"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-wine-500 text-white transition hover:bg-wine-600 active:scale-90 disabled:opacity-40"
                               >
                                 <Plus className="h-6 w-6" strokeWidth={3} />
                               </button>

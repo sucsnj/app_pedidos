@@ -11,7 +11,7 @@ import {
 import { supabase } from './lib/supabase'
 import type { Catalog, CountedItem, ItemKey, SuggestionsMap, TabId } from './types/app'
 import type { Order, OrderItem, Store as StoreRow } from './types/database'
-import { itemKey, defaultVariationForProduct } from './types/app'
+import { itemKey, defaultVariationForProduct, SYNTHETIC_VARIATION_ID } from './types/app'
 import { getErrorMessage } from './lib/utils'
 import { CountingBoard } from './components/CountingBoard'
 import { DataEntryBoard } from './components/DataEntryBoard'
@@ -491,35 +491,64 @@ export default function App() {
   const handleAdjust = useCallback(
     (key: ItemKey, delta: number) => {
       setItems((previous) => {
+        const separator = key.indexOf('::')
+        const productId = key.slice(0, separator)
+        const variationId = key.slice(separator + 2)
+        const product = catalog.products.find((entry) => entry.id === productId)
+        if (!product) return previous
+        const variation =
+          variationId === SYNTHETIC_VARIATION_ID
+            ? defaultVariationForProduct(product)
+            : catalog.variations.find((entry) => entry.id === variationId)
+        if (!variation) return previous
+
         const index = previous.findIndex((item) => item.key === key)
         if (index === -1) {
-          const separator = key.indexOf('::')
-          const productId = key.slice(0, separator)
-          const variationId = key.slice(separator + 2)
-          const product = catalog.products.find((entry) => entry.id === productId)
-          const variation = catalog.variations.find((entry) => entry.id === variationId)
-          if (!product || !variation || delta <= 0) return previous
-          const suggestion = suggestions.get(key)
-          const quantity = suggestion && suggestion > 0 ? suggestion : delta
+          if (delta <= 0) return previous
           return [
             ...previous,
-            { key, product, variation, quantity, isEnteredInLegacy: false },
+            { key, product, variation, quantity: delta, isEnteredInLegacy: false },
           ]
         }
-        return previous.map((item, itemIndex) => {
-          if (itemIndex !== index) return item
-          if (delta > 0 && item.quantity === 0) {
-            const suggestion = suggestions.get(key)
-            return {
-              ...item,
-              quantity: suggestion && suggestion > 0 ? suggestion : delta,
-            }
-          }
-          return { ...item, quantity: Math.max(0, item.quantity + delta) }
-        })
+        return previous.map((item, itemIndex) =>
+          itemIndex === index
+            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+            : item,
+        )
       })
     },
-    [catalog.products, catalog.variations, suggestions],
+    [catalog.products, catalog.variations],
+  )
+
+  const handleSetQuantity = useCallback(
+    (key: ItemKey, value: number) => {
+      const next = Math.max(0, Math.trunc(value) || 0)
+      setItems((previous) => {
+        const separator = key.indexOf('::')
+        const productId = key.slice(0, separator)
+        const variationId = key.slice(separator + 2)
+        const product = catalog.products.find((entry) => entry.id === productId)
+        if (!product) return previous
+        const variation =
+          variationId === SYNTHETIC_VARIATION_ID
+            ? defaultVariationForProduct(product)
+            : catalog.variations.find((entry) => entry.id === variationId)
+        if (!variation) return previous
+
+        const index = previous.findIndex((item) => item.key === key)
+        if (index === -1) {
+          if (next === 0) return previous
+          return [
+            ...previous,
+            { key, product, variation, quantity: next, isEnteredInLegacy: false },
+          ]
+        }
+        return previous.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, quantity: next } : item,
+        )
+      })
+    },
+    [catalog.products, catalog.variations],
   )
 
   const handleToggleEntered = useCallback((key: ItemKey) => {
@@ -828,6 +857,7 @@ export default function App() {
             onRequesterNameChange={setRequesterName}
             onNotesChange={setNotes}
             onAdjust={handleAdjust}
+            onSetQuantity={handleSetQuantity}
             onSaveNow={() => {
               if (saveTimer.current) {
                 window.clearTimeout(saveTimer.current)
