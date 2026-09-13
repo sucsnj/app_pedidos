@@ -40,6 +40,40 @@ function mapOrderItems(rows: OrderItem[], catalog: Catalog): CountedItem[] {
   return result
 }
 
+function sameCountedList(a: CountedItem[], b: CountedItem[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    const left = a[i]
+    const right = b[i]
+    if (
+      !right ||
+      left.key !== right.key ||
+      left.quantity !== right.quantity ||
+      left.isEnteredInLegacy !== right.isEnteredInLegacy
+    )
+      return false
+  }
+  return true
+}
+
+function orderDisplayEquals(a: Order, b: Order): boolean {
+  return (
+    a.status === b.status &&
+    a.total_items === b.total_items &&
+    a.requester_name === b.requester_name &&
+    a.notes === b.notes
+  )
+}
+
+function mergeOrderRow(
+  base: Order,
+  totalItems: number,
+  requesterName: string,
+  notes: string | null,
+): Order {
+  return { ...base, total_items: totalItems, requester_name: requesterName, notes }
+}
+
 function orderLabel(order: Order): string {
   const date = new Date(order.updated_at)
   const day = String(date.getDate()).padStart(2, '0')
@@ -243,32 +277,60 @@ export default function App() {
 
   /* ------------------------------ Salvamento -------------------------- */
 
-  const saveCurrentOrder = useCallback(async (): Promise<void> => {
-    const order = currentOrder
+  const orderRef = useRef<Order | null>(null)
+  const itemsRef = useRef<CountedItem[]>([])
+  const requesterRef = useRef('')
+  const notesRef = useRef('')
+  const savingRef = useRef(false)
+  const dirtyRef = useRef(false)
+  const persistChainRef = useRef<Promise<void>>(Promise.resolve())
+
+  useEffect(() => {
+    orderRef.current = currentOrder
+  }, [currentOrder])
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+  useEffect(() => {
+    requesterRef.current = requesterName
+  }, [requesterName])
+  useEffect(() => {
+    notesRef.current = notes
+  }, [notes])
+
+  const persistOrder = useCallback(async (): Promise<void> => {
+    const order = orderRef.current
     if (!order) return
+    const snapshot = {
+      order,
+      items: itemsRef.current,
+      requesterName: requesterRef.current,
+      notes: notesRef.current,
+    }
     setSaving(true)
+    savingRef.current = true
     try {
-      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+      const totalItems = snapshot.items.reduce((sum, item) => sum + item.quantity, 0)
       const { error: orderError } = await supabase
         .from('orders')
         .update({
-          requester_name: requesterName,
-          notes: notes || null,
+          requester_name: snapshot.requesterName,
+          notes: snapshot.notes || null,
           total_items: totalItems,
         })
-        .eq('id', order.id)
+        .eq('id', snapshot.order.id)
       if (orderError) throw orderError
 
       const { error: deleteError } = await supabase
         .from('order_items')
         .delete()
-        .eq('order_id', order.id)
+        .eq('order_id', snapshot.order.id)
       if (deleteError) throw deleteError
 
-      const rows = items
+      const rows = snapshot.items
         .filter((item) => item.quantity > 0)
         .map((item) => ({
-          order_id: order.id,
+          order_id: snapshot.order.id,
           product_id: item.product.id,
           product_variation_id: item.variation.id,
           product_code: item.product.code,
@@ -283,23 +345,50 @@ export default function App() {
       }
 
       lastSavedAt.current = Date.now()
-      const synced: Order = { ...order, total_items: totalItems, requester_name: requesterName, notes: notes || null }
-      setCurrentOrder(synced)
-      setOrders((previous) =>
-        previous.map((entry) => (entry.id === synced.id ? synced : entry)),
+      const synced = mergeOrderRow(
+        snapshot.order,
+        totalItems,
+        snapshot.requesterName,
+        snapshot.notes || null,
       )
+      setCurrentOrder((previous) => {
+        if (!previous || previous.id !== synced.id) return previous
+        return orderDisplayEquals(previous, synced) ? previous : synced
+      })
+      setOrders((previous) => {
+        let changed = false
+        const next = previous.map((entry) => {
+          if (entry.id !== synced.id) return entry
+          if (orderDisplayEquals(entry, synced)) return entry
+          changed = true
+          return { ...entry, ...synced }
+        })
+        return changed ? next : previous
+      })
       setSavedAt(new Date())
+      dirtyRef.current = false
+    } catch (err) {
+      dirtyRef.current = true
+      throw err
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
-  }, [currentOrder, items, requesterName, notes])
+  }, [])
+
+  const enqueuePersist = useCallback((): Promise<void> => {
+    const task = persistChainRef.current.then(() => persistOrder())
+    persistChainRef.current = task.catch(() => undefined)
+    return task
+  }, [persistOrder])
 
   useEffect(() => {
-    if (!currentOrder || loading || saving) return
+    if (!currentOrder || loading) return
+    dirtyRef.current = true
     if (saveTimer.current) window.clearTimeout(saveTimer.current)
     saveTimer.current = window.setTimeout(() => {
       saveTimer.current = null
-      saveCurrentOrder().catch((err) => notify(getErrorMessage(err), 'error'))
+      enqueuePersist().catch((err) => notify(getErrorMessage(err), 'error'))
     }, 700)
     return () => {
       if (saveTimer.current) {
@@ -307,13 +396,19 @@ export default function App() {
         saveTimer.current = null
       }
     }
-  }, [items, requesterName, notes, currentOrder, loading, saving, saveCurrentOrder, notify])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, requesterName, notes, currentOrder?.id, loading, enqueuePersist])
 
   /* ------------------------------ Realtime --------------------------- */
 
   const reloadFromServer = useCallback(
     async (orderId: string) => {
-      if (Date.now() - lastSavedAt.current < 1500) return
+      if (
+        savingRef.current ||
+        dirtyRef.current ||
+        Date.now() - lastSavedAt.current < 1500
+      )
+        return
       try {
         const [orderResult, rows] = await Promise.all([
           supabase.from('orders').select('*').eq('id', orderId).single(),
@@ -322,13 +417,19 @@ export default function App() {
         if (orderResult.error) throw orderResult.error
         if (orderResult.data) {
           const incoming = orderResult.data
-          setCurrentOrder((previous) =>
-            previous
-              ? { ...previous, status: incoming.status, total_items: incoming.total_items, requester_name: incoming.requester_name, notes: incoming.notes }
-              : previous,
-          )
+          setCurrentOrder((previous) => {
+            if (!previous || previous.id !== incoming.id) return previous
+            if (orderDisplayEquals(previous, incoming)) return previous
+            return {
+              ...previous,
+              status: incoming.status,
+              total_items: incoming.total_items,
+              requester_name: incoming.requester_name,
+              notes: incoming.notes,
+            }
+          })
         }
-        setItems(rows)
+        setItems((previous) => (sameCountedList(previous, rows) ? previous : rows))
       } catch {
         // Realtime é apenas sincronização auxiliar; falhas não bloqueiam o app.
       }
@@ -427,34 +528,47 @@ export default function App() {
 
   const handleFinishOrder = useCallback(async () => {
     const order = currentOrder
-    if (!order) return
+    if (!order || order.status !== 'Rascunho') return
     setFinishing(true)
     try {
       if (saveTimer.current) {
         window.clearTimeout(saveTimer.current)
         saveTimer.current = null
       }
-      await saveCurrentOrder()
+      dirtyRef.current = true
+      await enqueuePersist()
 
-      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+      const totalItems = itemsRef.current.reduce((sum, item) => sum + item.quantity, 0)
       const { error } = await supabase
         .from('orders')
         .update({ status: 'Concluido' })
         .eq('id', order.id)
       if (error) throw error
       lastSavedAt.current = Date.now()
+      dirtyRef.current = false
 
-      const completed: Order = {
-        ...order,
-        status: 'Concluido',
-        total_items: totalItems,
-        requester_name: requesterName,
-        notes: notes || null,
-      }
-      setCurrentOrder(completed)
-      setOrders((previous) =>
-        previous.map((entry) => (entry.id === completed.id ? completed : entry)),
+      const completed = mergeOrderRow(
+        order,
+        totalItems,
+        requesterRef.current,
+        notesRef.current || null,
       )
+      setCurrentOrder((previous) =>
+        previous && previous.id === completed.id && orderDisplayEquals(previous, completed)
+          ? previous
+          : completed,
+      )
+      setOrders((previous) => {
+        let changed = false
+        const next = previous.map((entry) => {
+          if (entry.id !== completed.id) return entry
+          if (orderDisplayEquals(entry, completed)) return entry
+          changed = true
+          return { ...entry, ...completed }
+        })
+        return changed ? next : previous
+      })
+      setSavedAt(new Date())
       notify('Pedido concluído! Disponíveis no Modo Digitação.', 'success')
       setTab('entry')
     } catch (err) {
@@ -462,7 +576,7 @@ export default function App() {
     } finally {
       setFinishing(false)
     }
-  }, [currentOrder, items, requesterName, notes, saveCurrentOrder, notify])
+  }, [currentOrder, enqueuePersist, notify])
 
   const handleNewCount = useCallback(async () => {
     if (!activeStoreId) return
@@ -472,7 +586,8 @@ export default function App() {
         saveTimer.current = null
       }
       if (currentOrder && currentOrder.status === 'Rascunho') {
-        await saveCurrentOrder().catch(() => undefined)
+        dirtyRef.current = true
+        await enqueuePersist().catch(() => undefined)
       }
       const created = await supabase
         .from('orders')
@@ -498,7 +613,7 @@ export default function App() {
     } catch (err) {
       notify(getErrorMessage(err), 'error')
     }
-  }, [activeStoreId, currentOrder, saveCurrentOrder, notify])
+  }, [activeStoreId, currentOrder, enqueuePersist, notify])
 
   const handleSelectStore = useCallback(
     (storeId: string) => {
@@ -508,11 +623,12 @@ export default function App() {
         saveTimer.current = null
       }
       if (currentOrder && currentOrder.status === 'Rascunho') {
-        void saveCurrentOrder().catch(() => undefined)
+        dirtyRef.current = true
+        void enqueuePersist().catch(() => undefined)
       }
       setActiveStoreId(storeId)
     },
-    [activeStoreId, currentOrder, saveCurrentOrder],
+    [activeStoreId, currentOrder, enqueuePersist],
   )
 
   const handleSelectOrder = useCallback(
@@ -524,7 +640,8 @@ export default function App() {
         saveTimer.current = null
       }
       if (currentOrder && currentOrder.status === 'Rascunho') {
-        await saveCurrentOrder().catch(() => undefined)
+        dirtyRef.current = true
+        await enqueuePersist().catch(() => undefined)
       }
       try {
         const rows = await fetchOrderItems(order.id)
@@ -537,7 +654,7 @@ export default function App() {
         notify(getErrorMessage(err), 'error')
       }
     },
-    [orders, currentOrder, saveCurrentOrder, fetchOrderItems, notify],
+    [orders, currentOrder, enqueuePersist, fetchOrderItems, notify],
   )
 
   /* ------------------------------- Render ---------------------------- */
@@ -690,7 +807,14 @@ export default function App() {
             onRequesterNameChange={setRequesterName}
             onNotesChange={setNotes}
             onAdjust={handleAdjust}
-            onSaveNow={() => { void saveCurrentOrder().catch((err) => notify(getErrorMessage(err), 'error')) }}
+            onSaveNow={() => {
+              if (saveTimer.current) {
+                window.clearTimeout(saveTimer.current)
+                saveTimer.current = null
+              }
+              dirtyRef.current = true
+              void enqueuePersist().catch((err) => notify(getErrorMessage(err), 'error'))
+            }}
             onFinish={() => void handleFinishOrder()}
           />
         )}
