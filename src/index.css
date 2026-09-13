@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wine-900: #2f0c17;
+  --color-wine-800: #3c1020;
+  --color-wine-700: #4a1525;
+  --color-wine-600: #6b2035;
+  --color-wine-500: #8c2d43;
+  --color-wine-400: #a84b62;
+  --color-wine-300: #cf7e93;
+  --color-wine-100: #f6e3e8;
+  --color-shell: #f3f4f6;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-shell);
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
