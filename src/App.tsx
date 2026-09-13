@@ -10,10 +10,12 @@ import {
   Store,
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import type { Catalog, CountedItem, ItemKey, LastOrderData, SuggestionsMap, TabId } from './types/app'
+import type { CountedItem, ItemKey, LastOrderData, Report, SuggestionsMap, TabId } from './types/app'
 import type { Order, OrderItem, Store as StoreRow } from './types/database'
 import { itemKey, defaultVariationForProduct, SYNTHETIC_VARIATION_ID } from './types/app'
 import { getErrorMessage } from './lib/utils'
+import { useFlash } from './hooks/useFlash'
+import { useCatalog } from './hooks/useCatalog'
 import {
   mapOrderItems,
   sameCountedList,
@@ -23,23 +25,19 @@ import {
 } from './lib/orders'
 import { CountingBoard } from './components/CountingBoard'
 import { DataEntryBoard } from './components/DataEntryBoard'
-import { CatalogBoard, type FlashKind } from './components/CatalogBoard'
+import { CatalogBoard } from './components/CatalogBoard'
 import { ComparisonBoard, type TopProductRow } from './components/ComparisonBoard'
 import { Spinner } from './components/ui'
 
-interface FlashState {
-  kind: FlashKind
-  message: string
-}
-
 export default function App() {
   const [tab, setTab] = useState<TabId>('count')
-  const [catalog, setCatalog] = useState<Catalog>({
-    stores: [],
-    categories: [],
-    products: [],
-    variations: [],
-  })
+  const {
+    catalog,
+    loading: catalogLoading,
+    error: catalogError,
+    reload: reloadCatalog,
+    refresh: refreshCatalog,
+  } = useCatalog()
   const [activeStoreId, setActiveStoreId] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
@@ -48,84 +46,27 @@ export default function App() {
   const [requesterName, setRequesterName] = useState('')
   const [notes, setNotes] = useState('')
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
-  const [flash, setFlash] = useState<FlashState | null>(null)
-  const [reloadKey, setReloadKey] = useState(0)
+
+  const { flash, notify } = useFlash()
 
   const catalogRef = useRef(catalog)
   const saveTimer = useRef<number | null>(null)
   const lastSavedAt = useRef(0)
-  const flashTimer = useRef<number | null>(null)
   const storeEffectToken = useRef(0)
   const reportToken = useRef(0)
 
   const [lastOrder, setLastOrder] = useState<LastOrderData | null>(null)
-  const [report, setReport] = useState<{
-    monthOrders: number
-    topProduct: string
-    weekVariationPct: number | null
-    topProducts: TopProductRow[]
-  } | null>(null)
+  const [report, setReport] = useState<Report | null>(null)
   const [reportReloadKey, setReportReloadKey] = useState(0)
 
   useEffect(() => {
     catalogRef.current = catalog
   }, [catalog])
-
-  const notify = useCallback((message: string, kind: FlashKind = 'info') => {
-    setFlash({ message, kind })
-    if (flashTimer.current) window.clearTimeout(flashTimer.current)
-    flashTimer.current = window.setTimeout(() => setFlash(null), 3500)
-  }, [])
-
-  /* -------------------------- Carga inicial -------------------------- */
-
-  const loadCatalog = useCallback(async () => {
-    const [storesResult, categoriesResult, productsResult, variationsResult] = await Promise.all([
-      supabase.from('stores').select('*').order('name'),
-      supabase.from('categories').select('*').order('display_order'),
-      supabase.from('products').select('*').order('name'),
-      supabase.from('product_variations').select('*').order('name'),
-    ])
-    if (storesResult.error) throw storesResult.error
-    if (categoriesResult.error) throw categoriesResult.error
-    if (productsResult.error) throw productsResult.error
-    if (variationsResult.error) throw variationsResult.error
-    setCatalog({
-      stores: storesResult.data,
-      categories: categoriesResult.data,
-      products: productsResult.data,
-      variations: variationsResult.data,
-    })
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    loadCatalog()
-      .catch((err) => {
-        if (!cancelled) setError(getErrorMessage(err))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadKey])
-
-  useEffect(() => {
-    if (activeStoreId || catalog.stores.length === 0) return
-    const defaultStore =
-      catalog.stores.find((store) => store.is_active) ?? catalog.stores[0]
-    if (defaultStore) setActiveStoreId(defaultStore.id)
-  }, [catalog.stores, activeStoreId])
 
   /* --------------------- Carga do contexto da loja ------------------- */
 
@@ -793,7 +734,10 @@ export default function App() {
     { id: 'comparativo', label: 'Comparativo', short: 'Comparativo', icon: BarChart3 },
   ]
 
-  if (loading) {
+  const isLoading = catalogLoading || loading
+  const errorMessage = error ?? catalogError
+
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-wine-700">
         <Spinner className="h-8 w-8" />
@@ -802,14 +746,17 @@ export default function App() {
     )
   }
 
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-wine-700">Não foi possível carregar o app.</p>
-        <p className="max-w-md text-xs text-gray-500">{error}</p>
+        <p className="max-w-md text-xs text-gray-500">{errorMessage}</p>
         <button
           type="button"
-          onClick={() => setReloadKey((value) => value + 1)}
+          onClick={() => {
+            setError(null)
+            reloadCatalog()
+          }}
           className="inline-flex items-center gap-2 rounded-xl bg-wine-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-wine-600"
         >
           <RefreshCw className="h-4 w-4" /> Tentar novamente
@@ -972,7 +919,7 @@ export default function App() {
         {tab === 'catalog' && (
           <CatalogBoard
             catalog={catalog}
-            onRefresh={loadCatalog}
+            onRefresh={refreshCatalog}
             onFlash={notify}
           />
         )}

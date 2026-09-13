@@ -35,6 +35,26 @@ export interface LastOrderData {
   totalItems: number
 }
 
+export type FlashKind = 'success' | 'error' | 'info'
+
+export interface FlashState {
+  kind: FlashKind
+  message: string
+}
+
+export interface TopProductRow {
+  key: ItemKey
+  label: string
+  quantity: number
+}
+
+export interface Report {
+  monthOrders: number
+  topProduct: string
+  weekVariationPct: number | null
+  topProducts: TopProductRow[]
+}
+
 export const itemKey = (productId: string, variationId: string): ItemKey =>
   `${productId}::${variationId}`
 

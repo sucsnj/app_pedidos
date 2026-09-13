@@ -7,11 +7,11 @@ import type {
   ProductVariation,
   Store as StoreRow,
 } from '../types/database'
-import type { Catalog } from '../types/app'
+import type { Catalog, FlashKind } from '../types/app'
 import { emptyText, getErrorMessage, parseNumber } from '../lib/utils'
 import { Field, IconButton, inputClass, selectClass } from './ui'
 
-export type FlashKind = 'success' | 'error' | 'info'
+export type { FlashKind }
 
 interface CatalogBoardProps {
   catalog: Catalog

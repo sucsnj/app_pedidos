@@ -7,14 +7,10 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import type { CountedItem, ItemKey, LastOrderData } from '../types/app'
+import type { CountedItem, LastOrderData, TopProductRow } from '../types/app'
 import { EmptyState } from './ui'
 
-export interface TopProductRow {
-  key: ItemKey
-  label: string
-  quantity: number
-}
+export type { TopProductRow }
 
 interface ComparisonBoardProps {
   storeName: string
