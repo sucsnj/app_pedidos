@@ -1,6 +1,6 @@
 import { Minus, Plus, Save, Check, ShoppingCart } from 'lucide-react'
 import type { Category, OrderStatus, Product, ProductVariation } from '../types/database'
-import type { CountedItem, ItemKey, SuggestionsMap } from '../types/app'
+import type { CountedItem, ItemKey, LastOrderData, SuggestionsMap } from '../types/app'
 import { itemKey, defaultVariationForProduct } from '../types/app'
 import { formatDateTime } from '../lib/utils'
 import { Spinner, inputClass } from './ui'
@@ -17,6 +17,7 @@ interface CountingBoardProps {
   orderStatus: OrderStatus | null
   saving: boolean
   savedAt: Date | null
+  lastOrder: LastOrderData | null
   onRequesterNameChange: (value: string) => void
   onNotesChange: (value: string) => void
   onAdjust: (key: ItemKey, delta: number) => void
@@ -36,6 +37,7 @@ export function CountingBoard({
   orderStatus,
   saving,
   savedAt,
+  lastOrder,
   onRequesterNameChange,
   onNotesChange,
   onAdjust,
@@ -45,6 +47,9 @@ export function CountingBoard({
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
 
   const itemsByKey = new Map(items.map((item) => [item.key, item]))
+  const lastByKey = new Map(
+    (lastOrder?.items ?? []).map((item) => [item.key, item.quantity] as const),
+  )
   const totalCounted = items.reduce((sum, item) => sum + item.quantity, 0)
 
   const updateQuantity = (key: ItemKey, value: number, isAbsolute = false) => {
@@ -65,6 +70,9 @@ export function CountingBoard({
               <p className="text-xs text-gray-500">
                 {totalCounted} unidade(s) contada(s) ·{' '}
                 {orderStatus ? orderStatus : 'Sem pedido ativo'}
+                {lastOrder && lastOrder.totalItems > 0
+                  ? ` · Último concluído: ${lastOrder.totalItems} un`
+                  : ''}
               </p>
             </div>
           </div>
@@ -172,6 +180,8 @@ export function CountingBoard({
                         const counted = itemsByKey.get(key)?.quantity ?? 0
                         const available = variation.is_available && product.is_active
                         const suggestion = suggestions.get(key)
+                        const lastQty = lastByKey.get(key) ?? 0
+                        const aboveUsual = !locked && lastQty > 0 && counted > lastQty * 2
 
                         return (
                           <div
@@ -202,6 +212,16 @@ export function CountingBoard({
                                   .filter(Boolean)
                                   .join(' · ')}
                               </p>
+                              {lastQty > 0 ? (
+                                <span className="mt-1 inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-semibold text-gray-500">
+                                  Último: {lastQty} un
+                                </span>
+                              ) : null}
+                              {aboveUsual ? (
+                                <span className="mt-1 inline-flex items-center rounded-md bg-yellow-100 px-1.5 py-0.5 text-[11px] font-semibold text-yellow-800">
+                                  ⚠️ Acima do habitual
+                                </span>
+                              ) : null}
                               {counted === 0 && !locked && suggestion && suggestion > 0 ? (
                                 <p className="text-xs font-medium text-wine-500">
                                   Sugestão: {suggestion}

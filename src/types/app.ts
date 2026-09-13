@@ -8,7 +8,7 @@ import type {
 /** Variação sintética (id vazio) usada para produtos cadastrados sem variações. */
 export const SYNTHETIC_VARIATION_ID = ''
 
-export type TabId = 'count' | 'entry' | 'catalog'
+export type TabId = 'count' | 'entry' | 'catalog' | 'comparativo'
 
 /** Chave única de um item contado: `${productId}::${variationId}` */
 export type ItemKey = string
@@ -29,6 +29,11 @@ export interface CountedItem {
 }
 
 export type SuggestionsMap = Map<ItemKey, number>
+
+export interface LastOrderData {
+  items: CountedItem[]
+  totalItems: number
+}
 
 export const itemKey = (productId: string, variationId: string): ItemKey =>
   `${productId}::${variationId}`
