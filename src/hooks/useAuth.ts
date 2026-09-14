@@ -1,23 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import type { Profile, UserRole } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const loadProfile = useCallback(async (userId: string): Promise<void> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-    if (error) return
-    setProfile(data)
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -32,15 +20,13 @@ export function useAuth() {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
-      if (session?.user) void loadProfile(session.user.id)
-      else setProfile(null)
     })
 
     return () => {
       cancelled = true
       subscription.subscription.unsubscribe()
     }
-  }, [loadProfile])
+  }, [])
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<string | null> => {
@@ -58,8 +44,5 @@ export function useAuth() {
     await supabase.auth.signOut()
   }, [])
 
-  const role: UserRole = profile?.role ?? 'gerente'
-  const isAdmin = role === 'admin'
-
-  return { user, profile, loading, role, isAdmin, signIn, signOut }
+  return { user, loading, signIn, signOut }
 }

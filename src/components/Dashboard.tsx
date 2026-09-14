@@ -14,20 +14,31 @@ import { CountingBoard } from './CountingBoard'
 import { DataEntryBoard } from './DataEntryBoard'
 import { CatalogBoard } from './CatalogBoard'
 import { ComparisonBoard } from './ComparisonBoard'
+import { CollaboratorsBoard } from './CollaboratorsBoard'
 
 interface DashboardProps {
   profile: Profile | null
   userName: string
   isAdmin: boolean
+  currentUserId: string
   onSignOut: () => void
 }
 
-export function Dashboard({ profile, userName, isAdmin, onSignOut }: DashboardProps) {
+export function Dashboard({
+  profile,
+  userName,
+  isAdmin,
+  currentUserId,
+  onSignOut,
+}: DashboardProps) {
   const [tab, setTab] = useState<TabId>('count')
   const canManageCatalog = isAdmin
+  const canSeeComparativo = isAdmin
 
   useEffect(() => {
-    if (!canManageCatalog && tab === 'catalog') setTab('count')
+    if (!canManageCatalog && (tab === 'catalog' || tab === 'comparativo')) {
+      setTab('count')
+    }
   }, [canManageCatalog, tab])
 
   const {
@@ -114,6 +125,8 @@ export function Dashboard({ profile, userName, isAdmin, onSignOut }: DashboardPr
         currentOrderId={currentOrder?.id ?? null}
         saving={saving}
         userName={userName}
+        isAdmin={isAdmin}
+        showStoreSelector={isAdmin}
         onSelectStore={selectStore}
         onSelectOrder={(orderId) => void selectOrder(orderId)}
         onNewCount={() => void newCount()}
@@ -126,6 +139,7 @@ export function Dashboard({ profile, userName, isAdmin, onSignOut }: DashboardPr
         finishing={finishing}
         totalCounted={totalCounted}
         showCatalog={canManageCatalog}
+        showComparativo={canSeeComparativo}
         onTabChange={setTab}
         onFinish={() => void handleFinishOrder()}
       />
@@ -164,14 +178,21 @@ export function Dashboard({ profile, userName, isAdmin, onSignOut }: DashboardPr
         )}
 
         {tab === 'catalog' && canManageCatalog && (
-          <CatalogBoard
-            catalog={catalog}
-            onRefresh={refreshCatalog}
-            onFlash={notify}
-          />
+          <div className="space-y-4">
+            <CollaboratorsBoard
+              stores={catalog.stores}
+              currentUserId={currentUserId}
+              onFlash={notify}
+            />
+            <CatalogBoard
+              catalog={catalog}
+              onRefresh={refreshCatalog}
+              onFlash={notify}
+            />
+          </div>
         )}
 
-        {tab === 'comparativo' && (
+        {tab === 'comparativo' && canSeeComparativo && (
           <ComparisonBoard
             storeName={activeStore?.name ?? 'Nenhuma loja selecionada'}
             currentItems={items}

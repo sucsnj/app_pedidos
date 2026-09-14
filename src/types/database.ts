@@ -126,16 +126,22 @@ export type UserRole = 'admin' | 'gerente'
 
 export interface Profile {
   id: string
+  email: string | null
+  username: string | null
   store_id: string | null
   role: UserRole
   full_name: string | null
+  is_active: boolean
   created_at: string
 }
 export interface ProfileInsert {
   id: string
+  email?: string | null
+  username?: string | null
   store_id?: string | null
   role?: UserRole
   full_name?: string | null
+  is_active?: boolean
 }
 export type ProfileUpdate = Partial<ProfileInsert>
 

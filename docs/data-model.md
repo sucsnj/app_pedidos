@@ -86,14 +86,19 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | coluna | tipo |
 | --- | --- |
 | id | uuid PK (referência a `auth.users`) |
+| email | text null (desnormalizado p/ listar usuários — `auth.users` não é consultável no client) |
+| username | text null, único (login alternativo; cadastro obrigatório, minúsculo, sem espaços) |
 | store_id | uuid null FK → stores |
 | role | text: `admin` / `gerente` |
 | full_name | text null |
+| is_active | boolean (revogação de acesso) |
 | created_at | timestamptz |
 
-- Perfil carregado por `useAuth` após o login (`maybeSingle` por `id`). Sem perfil, a app assume `gerente`.
-- `role`: `admin` acessa todas as lojas + a aba Cadastro; `gerente` navega todas as lojas, mas **não** vê a aba Cadastro.
+- Perfil consultado por `App.tsx` após o login (`select('*').eq('id', user.id).maybeSingle()`); define `profile`/`userRole` e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)`. Sem perfil (ou falha de leitura), assume `gerente`; com `is_active = false`, `App.tsx` faz `signOut`.
+- `role` (RBAC): `admin` acessa todas as abas (Contagem, Digitação, Cadastro & Produtos, Comparativo) e o seletor de qualquer loja. `gerente` acessa só Contagem e Digitação e fica vinculado à `store_id`.
 - `store_id` vira a loja selecionada automaticamente (`preferredStoreId` na carga da sessão).
+- Login: `LoginScreen` aceita e-mail completo ou username. Se o texto não tem `@`, resolve o e-mail via `select('email').eq('username', <lowercase>).maybeSingle()` e chama `signInWithPassword` com o e-mail achado.
+- Cadastro/edição: `CollaboratorsBoard` cria o usuário via `supabase.auth.signUp` com `options.data` (`username`/`full_name`/`store_id`/`role`); o trigger `handle_new_user` do banco cria o perfil automaticamente a partir dos metadados. Se algum dado precisar de ajuste, um `profiles.update().eq('id', data.user.id)` enviado logo após o signUp faz a reconciliação — sem bloquear o formulário e sem `upsert`. E-mail é opcional — se vazio, gera `${username}@sistema.local`. Se o signUp trocar a sessão, restaura a sessão do admin via `setSession`. Revogação = `is_active = false`.
 
 ### vw_product_suggestions (view)
 | coluna | tipo |

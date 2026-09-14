@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { ClipboardList, Lock, LogIn, Mail } from 'lucide-react'
+import { ClipboardList, Lock, LogIn, User } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { getErrorMessage } from '../lib/utils'
 import { Spinner } from './ui'
 
 interface LoginScreenProps {
@@ -8,7 +10,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onSignIn }: LoginScreenProps) {
-  const [email, setEmail] = useState('')
+  const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -16,18 +18,38 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
-    if (!email.trim() || !password) {
-      setError('Preencha email e senha.')
+    const rawLogin = login.trim().toLowerCase()
+    if (!rawLogin || !password) {
+      setError('Preencha usuário e senha.')
       return
     }
     setSubmitting(true)
-    const message = await onSignIn(email.trim(), password)
-    setSubmitting(false)
-    if (message) setError(message)
+    try {
+      let userEmail = rawLogin
+      if (!userEmail.includes('@')) {
+        const { data: profile, error: lookupError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', userEmail)
+          .maybeSingle()
+        if (lookupError) throw lookupError
+        if (!profile?.email) {
+          setError('Nome de usuário não encontrado.')
+          return
+        }
+        userEmail = profile.email
+      }
+      const message = await onSignIn(userEmail, password)
+      if (message) setError(message)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-wine-100/70 via-shell to-shell px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-shell px-4 py-10">
       <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl">
         <div className="border-b-2 border-gold-400 bg-wine-700 px-6 py-6 text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold-400 shadow-md">
@@ -56,16 +78,16 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Email
+              Usuário ou E-mail
             </span>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="seu@email.com"
-                autoComplete="email"
+                type="text"
+                value={login}
+                onChange={(event) => setLogin(event.target.value)}
+                placeholder="usuario ou email"
+                autoComplete="username"
                 required
                 className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 placeholder-gray-400 outline-none transition focus:border-wine-600 focus:ring-2 focus:ring-wine-600/20"
               />

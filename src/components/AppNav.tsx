@@ -8,6 +8,7 @@ interface AppNavProps {
   finishing: boolean
   totalCounted: number
   showCatalog: boolean
+  showComparativo: boolean
   onTabChange: (tab: TabId) => void
   onFinish: () => void
 }
@@ -25,10 +26,15 @@ export function AppNav({
   finishing,
   totalCounted,
   showCatalog,
+  showComparativo,
   onTabChange,
   onFinish,
 }: AppNavProps) {
-  const visibleTabs = showCatalog ? tabs : tabs.filter((entry) => entry.id !== 'catalog')
+  const visibleTabs = tabs.filter((entry) => {
+    if (entry.id === 'catalog') return showCatalog
+    if (entry.id === 'comparativo') return showComparativo
+    return true
+  })
   return (
     <nav className="sticky top-0 z-20 border-b border-gray-200 bg-shell/95 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-1.5 px-4 py-2">
