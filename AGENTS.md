@@ -35,9 +35,11 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
 | `src/hooks/useRealtimeOrder.ts` | Subscription Supabase por pedido + reload no guard |
 | `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts` | Suporte: catálogo, notificações, relatório |
-| `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos |
+| `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos, `orderLabel` |
+| `src/lib/orderText.ts` | Resumo do pedido em texto p/ colar (legado/WhatsApp) — `buildOrderSummary` + `copyTextToClipboard` |
+| `src/lib/utils.ts` | `getErrorMessage`, datas pt-BR (`formatDate`/`formatDateTime`), `parseNumber`, `emptyText` |
 | `src/lib/supabase.ts` | Cliente Supabase tipado |
-| `src/types/app.ts` | `Catalog`, `CountedItem`, `ItemKey`, `SuggestionsMap`, `TabId`, flash/report |
+| `src/types/app.ts` | `Catalog`, `CountedItem`, `ItemKey`, `SuggestionsMap`, `TabId`, flash/report, `compareByEntryCode`, `SYNTHETIC_VARIATION_ID`/`defaultVariationForProduct` |
 | `src/types/database.ts` | Tipos de tabelas + interface `Database` |
 | `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards |
 
@@ -48,9 +50,9 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | Tab/screen | Componente | O que faz |
 | --- | --- | --- |
 | Contagem (`count`) | `CountingBoard` | Digita quantidades (+/− via `adjust`; digitação direta via `setQuantity`), nome/notas (`requesterName`/`notes`), salvar manual (`saveNow`), sugestões por item, indicadores `saving`/`savedAt`, última contagem |
-| Digitação (`entry`) | `DataEntryBoard` | Lista os itens do pedido e alterna `isEnteredInLegacy` (`toggleEntered`) |
-| Catálogo (`catalog`) | `CatalogBoard` | Consulta o catálogo; refresh (`refreshCatalog`) |
-| Comparativo (`comparativo`) | `ComparisonBoard` | Compara a contagem corrente com a última (`lastOrder`) e mostra o `report` (pedidos do mês, top produto, variação semanal, top produtos) |
+| Digitação (`entry`) | `DataEntryBoard` | Lista itens com quantidade (ordenados por PLU/SKU via `compareByEntryCode`), progresso X/Y, alterna `isEnteredInLegacy` (`toggleEntered`) e "Copiar Resumo em Texto" (`buildOrderSummary`) |
+| Catálogo (`catalog`) | `CatalogBoard` | Admin do catálogo: CRUD de lojas/categorias/produtos/variações gravando **direto no Supabase** (fora do `useStoreSession`); refresh via `refreshCatalog` |
+| Comparativo (`comparativo`) | `ComparisonBoard` | Compara a contagem corrente com a última (`lastOrder`) e mostra o `report` (pedidos do mês, top produto, variação semanal, top produtos) — definições no `architecture.md` |
 | Header | `AppHeader` | Troca loja (`selectStore`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving` |
 | Navegação | `AppNav` | Tabs + botão concluir (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
@@ -65,13 +67,17 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **`itemKey`** identifica um item contado: `` `${productId}::${variationId}` ``.
 - **Variação sintética**: produtos sem variações cadastradas usam `id: ''` (`SYNTHETIC_VARIATION_ID`); `defaultVariationForProduct` gera essa variação na hora.
 - **Persistência**: a cada save, atualiza o `orders` e reescreve os `order_items` (delete + insert) com `is_entered_in_legacy`.
-- **Sugestões**: vêm da view `vw_product_suggestions` por loja.
+- **Sugestões**: vêm da view `vw_product_suggestions` por loja; exibidas quando o item ainda não tem quantidade.
+- **Ordenação da digitação**: `compareByEntryCode` — por código PLU/SKU (numérico) e depois nome da variação.
+- **Resumo em texto**: `buildOrderSummary` (`lib/orderText.ts`) gera o pedido para colagem (WhatsApp/legado), com ordem PLU/SKU; `copyTextToClipboard` tem fallback via `document.execCommand`.
 - **Lista de pedidos**: máx. 25 por loja, ordenada por `updated_at desc`.
 
 ## Fontes de verdade (onde procurar)
 
 - **Schema/colunas**: `src/types/database.ts` — canônico (alimenta o generic do supabase-js). `docs/data-model.md` resume a semântica — se conflitar, vale o tipo.
 - **Regras de contagem/pedidos**: `src/lib/orders.ts` (funções puras, sem React).
+- **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
+- **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `emptyText`).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
 - **Catálogo/notificações/relatório**: `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts`.
 - **Domínio da UI**: `src/types/app.ts` (`Catalog`, `CountedItem`, `SuggestionsMap`, `TabId`, flash/report).
@@ -90,9 +96,9 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Estado do repo
 
-- Branch: `refactor` — 7 commits consolidando a modularização (`App.tsx` era 1082 linhas; hoje ~176).
-- `HEAD`: `678234d` ("refatoração de hooks"). Árvore de trabalho limpa.
-- Histórico relevante: "primeira etapa … quarta fase … fase final da refatoração de App" → "refatoração de hooks".
+- Branch: `agente` — modularização concluída (`App.tsx` era 1082 linhas; hoje ~176; `useStoreSession` ~394).
+- `HEAD`: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Árvore de trabalho limpa.
+- Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado".
 
 ## Vigilância: evite regressões de comportamento
 

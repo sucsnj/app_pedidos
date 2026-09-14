@@ -100,3 +100,5 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 - **`CountedItem`** (sessão): `{ key, product, variation, quantity, isEnteredInLegacy }` — quantidade e flag são o estado de digitação; o restante é referência do catálogo (reconciliado quando o catálogo muda).
 - **Comparação de conteúdo**: `sameCountedList` compara `key`/`quantity`/`isEnteredInLegacy` (lista local vs. servidor no realtime). `orderDisplayEquals` compara `status`/`total_items`/`requester_name`/`notes` para mesclar pedidos preservando identidade e evitando re-render.
 - **Mescla de pedidos**: `mergeOrdersList` funde versão sincronizada na lista de pedidos da sessão, devolvendo o array original quando nada muda.
+- **Rótulo no seletor de pedidos** (`orderLabel` em `lib/orders.ts`): rascunho sem itens → "Novo rascunho · dd/mm"; senão "Status · N itens · dd/mm" (status traduzido para exibição).
+- **Ordenação da digitação** (`compareByEntryCode` em `types/app.ts`): código PLU/SKU (numérico pt-BR) e depois nome da variação — critério da listagem do Modo Digitação e do resumo em texto.

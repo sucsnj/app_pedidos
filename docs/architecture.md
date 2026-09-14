@@ -7,7 +7,7 @@ Aprofundamento do `AGENTS.md`. Foco na composição de hooks, na persistência c
 ```
 App.tsx (176 linhas)
  ├─ useCatalog ......... catálogo (stores, categories, products, variations) + reload/refresh
- ├─ useFlash ........... toast (notify estável)
+ ├─ useFlash ........... toast (notify estável; auto-dismiss 3500ms)
  ├─ useStoreSession .... SESSÃO: dono dos estados + ações            ~394 linhas
  │   ├─ useDraftPersistence ... persistência/autosave               ~199 linhas
  │   └─ useRealtimeOrder ...... subscription Supabase                ~85 linhas
@@ -26,6 +26,7 @@ Dono **de todos os estados** da sessão:
 
 ### Carga da loja (efeito)
 
+- Um efeito curto escolhe a loja padrão quando `activeStoreId` está vazio: primeira loja `is_active` (ou `stores[0]`).
 - Token `storeEffectToken` + flag `cancelled` evitam corrida entre trocas rápidas de loja.
 - Reseta todos os estados e `savedAt` (`resetSavedAt`), carrega:
   - `orders` (máx. 25, `updated_at desc`) por `store_id`;
@@ -65,6 +66,22 @@ Dono **de todos os estados** da sessão:
 - `newCount`: flush do rascunho se houver, insere novo `Rascunho`, limpa `items`/requester/notes/`savedAt`, navega para `count`.
 - `selectStore` / `selectOrder`: flush + trocam contexto; `selectOrder` recarrega os `order_items`.
 - `saveNow`: flush manual imediato (mesmo debounce/chain).
+
+## `useStoreReports` — última contagem e relatório
+
+- **`lastOrder`**: último pedido com `status = 'Concluido'` (1 registro, `updated_at desc`); itens mapeados via `mapOrderItems` em `LastOrderData`.
+- **`report`** (tudo por loja; token `reportToken` + `cancelled` descartam corridas):
+  - `monthOrders` — nº de pedidos com `created_at` a partir do 1º dia do mês (qualquer status);
+  - `weekVariationPct` — soma de `quantity` dos últimos 7 dias × os 7 dias anteriores (janelas de `created_at`); `null` quando a anterior é 0;
+  - `topProducts` — agrega `quantity` dos últimos 30 dias por `itemKey` (top 10), `label` = nome do produto + variação; `topProduct` = primeira entrada.
+- Falhas são silenciosas (relatório auxiliar não bloqueia o app). `bumpReport()` força recarga; `App.tsx` o chama após `finishOrder` bem-sucedido.
+
+## Telas — comportamentos notáveis
+
+- **`CatalogBoard` (tab Cadastro)**: CRUD de lojas/categorias/produtos/variações com escrita **direta no Supabase** (fora do `useStoreSession`; sem chain/persist). Cada operação chama `refreshCatalog` (= `loadCatalog`, recarrega o catálogo) e mostra toast. Nova categoria usa `display_order = max + 1` (ou 1 se vazio); preço/ordem via `parseNumber`.
+- **`CountingBoard`**: trava edição quando `orderStatus !== 'Rascunho'`. Por variação exibe "Último: N un" (do `lastOrder`), "Sugestão: N" (só com `counted === 0`) e aviso "⚠️ Acima do habitual" quando `counted > lastQty * 2` (rascunho).
+- **`DataEntryBoard` (Digitação)**: lista apenas itens com `quantity > 0`, ordenados por `compareByEntryCode` (PLU/SKU numérico → nome da variação); progresso "digitados/total"; botão "Copiar Resumo em Texto" usa `buildOrderSummary` + `copyTextToClipboard`.
+- **`ComparisonBoard`**: unifica por `itemKey` (item só de um lado entra com 0 no outro), ordena por nome da label; mostra KPIs e top produtos do `report`.
 
 ## Regras de vigilância
 

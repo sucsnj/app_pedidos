@@ -26,7 +26,7 @@ Obrigatório: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` �
 - `src/App.tsx` — composição de hooks e roteamento de telas.
 - `src/hooks/` — `useStoreSession` (sessão/orquestrador), `useDraftPersistence` (persistência/autosave), `useRealtimeOrder` (subscription), `useCatalog`, `useFlash`, `useStoreReports`.
 - `src/components/` — header, nav, telas de loading/erro, toast, status bar e boards (`CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`).
-- `src/lib/` — lógica pura de pedidos (`orders.ts`), utilitários e cliente Supabase.
+- `src/lib/` — lógica pura de pedidos (`orders.ts`), resumo em texto (`orderText.ts`), utilitários e cliente Supabase.
 - `src/types/` — domínio da UI (`app.ts`) e tipos do banco (`database.ts`).
 
 ## Fluxo de uso
