@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ClipboardList, LogOut, Plus, Store } from 'lucide-react'
 import type { Order, Store as StoreRow } from '../types/database'
 import { orderLabel } from '../lib/orders'
@@ -32,7 +33,15 @@ export function AppHeader({
   onNewCount,
   onSignOut,
 }: AppHeaderProps) {
+  const [showUserName, setShowUserName] = useState(false)
   const activeStoreName = stores.find((store) => store.id === activeStoreId)?.name ?? 'Nenhuma loja'
+
+  useEffect(() => {
+    if (!showUserName) return
+    const timer = window.setTimeout(() => setShowUserName(false), 2500)
+    return () => window.clearTimeout(timer)
+  }, [showUserName])
+
   return (
     <header className="bg-wine-700 text-white shadow-md">
       <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3">
@@ -54,9 +63,20 @@ export function AppHeader({
                 <Spinner className="h-3.5 w-3.5" /> Salvando
               </span>
             ) : null}
-            <span className="max-w-[110px] truncate text-xs font-semibold text-gold-300 sm:max-w-[160px]">
-              {userName}
-            </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowUserName((previous) => !previous)}
+                className="max-w-[210px] truncate text-xs font-semibold text-gold-300 sm:max-w-[260px]"
+              >
+                {userName}
+              </button>
+              {showUserName ? (
+                <div className="absolute right-0 top-full z-30 mt-2 whitespace-normal rounded-lg bg-wine-900 px-3 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/20">
+                  {userName}
+                </div>
+              ) : null}
+            </div>
             <span
               className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
                 isAdmin ? 'bg-gold-400 text-wine-800' : 'bg-white/10 text-gold-300'

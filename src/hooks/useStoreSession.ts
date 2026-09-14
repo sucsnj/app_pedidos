@@ -101,6 +101,25 @@ export function useStoreSession({
     [],
   )
 
+  const fetchSuggestions = useCallback(
+    async (storeId: string): Promise<SuggestionsMap> => {
+      const { data, error } = await supabase
+        .from('vw_product_suggestions')
+        .select('store_id, product_id, product_variation_id, suggested_quantity')
+        .eq('store_id', storeId)
+      if (error) throw error
+      const nextSuggestions: SuggestionsMap = new Map()
+      for (const row of data) {
+        nextSuggestions.set(
+          itemKey(row.product_id, row.product_variation_id ?? ''),
+          row.suggested_quantity,
+        )
+      }
+      return nextSuggestions
+    },
+    [],
+  )
+
   useEffect(() => {
     if (!activeStoreId) return
     const token = ++storeEffectToken.current
@@ -116,30 +135,21 @@ export function useStoreSession({
 
     void (async () => {
       try {
-        const [ordersResult, suggestionsResult] = await Promise.all([
+        const [ordersResult, suggestedMap] = await Promise.all([
           supabase
             .from('orders')
             .select('*')
             .eq('store_id', activeStoreId)
             .order('updated_at', { ascending: false })
             .limit(25),
-          supabase
-            .from('vw_product_suggestions')
-            .select('store_id, product_id, product_variation_id, suggested_quantity')
-            .eq('store_id', activeStoreId),
+          fetchSuggestions(activeStoreId),
         ])
         if (cancelled || token !== storeEffectToken.current) return
         if (ordersResult.error) throw ordersResult.error
-        if (suggestionsResult.error) throw suggestionsResult.error
 
         const loadedOrders = ordersResult.data
         setOrders(loadedOrders)
-
-        const nextSuggestions: SuggestionsMap = new Map()
-        for (const row of suggestionsResult.data) {
-          nextSuggestions.set(itemKey(row.product_id, row.product_variation_id ?? ''), row.suggested_quantity)
-        }
-        setSuggestions(nextSuggestions)
+        setSuggestions(suggestedMap)
 
         let order =
           loadedOrders.find((entry) => entry.status === 'Rascunho') ??
@@ -184,7 +194,7 @@ export function useStoreSession({
     return () => {
       cancelled = true
     }
-  }, [activeStoreId, fetchOrderItems, resetSavedAt])
+  }, [activeStoreId, fetchOrderItems, fetchSuggestions, resetSavedAt])
 
   /* ------------------------------ Realtime --------------------------- */
 
@@ -307,6 +317,9 @@ export function useStoreSession({
         .single()
       if (created.error) throw created.error
 
+      const nextSuggestions = await fetchSuggestions(activeStoreId)
+      setSuggestions(nextSuggestions)
+
       setCurrentOrder(created.data)
       setOrders((previous) => [created.data, ...previous].slice(0, 25))
       setItems([])
@@ -325,6 +338,7 @@ export function useStoreSession({
     clearDebounce,
     markDirty,
     resetSavedAt,
+    fetchSuggestions,
     notify,
     onNavigate,
   ])
