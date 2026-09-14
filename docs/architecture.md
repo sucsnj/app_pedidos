@@ -5,7 +5,11 @@ Aprofundamento do `AGENTS.md`. Foco na composição de hooks, na persistência c
 ## Composição geral
 
 ```
-App.tsx (176 linhas)
+App.tsx (gate de autenticação)
+ ├─ useAuth ........... sessão Supabase (getSession/onAuthStateChange) + perfil public.profiles
+ │   └─ Rende LoginScreen (anônimo) ou Dashboard (logado)
+
+Dashboard.tsx (conteúdo autenticado)
  ├─ useCatalog ......... catálogo (stores, categories, products, variations) + reload/refresh
  ├─ useFlash ........... toast (notify estável; auto-dismiss 3500ms)
  ├─ useStoreSession .... SESSÃO: dono dos estados + ações            ~394 linhas
@@ -14,8 +18,15 @@ App.tsx (176 linhas)
  └─ useStoreReports .... relatório + última contagem (bumpReport)
 ```
 
-- **Contrato**: `useStoreSession({ catalog, notify, onNavigate })` retorna ~24 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, clearError`). `App.tsx` destrutura tudo — não mude sem ajustar ambos.
-- Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
+- **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId })` retorna ~24 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
+
+## Autenticação (`useAuth`)
+
+- `App.tsx` é o gate: `useAuth` expõe `{ user, profile, loading, role, isAdmin, signIn, signOut }`. Anônimo → `LoginScreen`; logado → `Dashboard`.
+- Sessão via `getSession` na montagem + `onAuthStateChange` (login/logout refletem na hora). Logado → busca `public.profiles` (`maybeSingle` por `user.id`).
+- `signIn` usa `signInWithPassword` e mapeia credenciais inválidas para "Email ou senha inválidos." · `signOut` chama `supabase.auth.signOut` e o header volta ao Login.
+- **Cargos**: sem perfil (ou `role` ausente) assume `gerente`. `admin` vê a aba Cadastro (`showCatalog`); `gerente` não (e `Dashboard` volta a aba para `count` se estiver nela).
+- **Loja padrão**: `profile.store_id` vira `preferredStoreId` do `useStoreSession` — a loja selecionada automaticamente no carregamento.
 
 ## `useStoreSession` (orquestrador)
 
@@ -26,7 +37,7 @@ Dono **de todos os estados** da sessão:
 
 ### Carga da loja (efeito)
 
-- Um efeito curto escolhe a loja padrão quando `activeStoreId` está vazio: primeira loja `is_active` (ou `stores[0]`).
+- Um efeito curto escolhe a loja padrão quando `activeStoreId` está vazio: `preferredStoreId` do perfil (se existir e constar no catálogo), senão a primeira loja `is_active` (ou `stores[0]`).
 - Token `storeEffectToken` + flag `cancelled` evitam corrida entre trocas rápidas de loja.
 - Reseta todos os estados e `savedAt` (`resetSavedAt`), carrega:
   - `orders` (máx. 25, `updated_at desc`) por `store_id`;
@@ -78,7 +89,7 @@ Dono **de todos os estados** da sessão:
 
 ## Telas — comportamentos notáveis
 
-- **`CatalogBoard` (tab Cadastro)**: CRUD de lojas/categorias/produtos/variações com escrita **direta no Supabase** (fora do `useStoreSession`; sem chain/persist). Cada operação chama `refreshCatalog` (= `loadCatalog`, recarrega o catálogo) e mostra toast. Nova categoria usa `display_order = max + 1` (ou 1 se vazio); preço/ordem via `parseNumber`.
+- **`CatalogBoard` (tab Cadastro, só `admin`)**: CRUD de lojas/categorias/produtos/variações com escrita **direta no Supabase** (fora do `useStoreSession`; sem chain/persist). Cada operação chama `refreshCatalog` (= `loadCatalog`, recarrega o catálogo) e mostra toast. Nova categoria usa `display_order = max + 1` (ou 1 se vazio); preço/ordem via `parseNumber`.
 - **`CountingBoard`**: trava edição quando `orderStatus !== 'Rascunho'`. Por variação exibe "Último: N un" (do `lastOrder`), "Sugestão: N" (só com `counted === 0`) e aviso "⚠️ Acima do habitual" quando `counted > lastQty * 2` (rascunho).
 - **`DataEntryBoard` (Digitação)**: lista apenas itens com `quantity > 0`, ordenados por `compareByEntryCode` (PLU/SKU numérico → nome da variação); progresso "digitados/total"; botão "Copiar Resumo em Texto" usa `buildOrderSummary` + `copyTextToClipboard`.
 - **`ComparisonBoard`**: unifica por `itemKey` (item só de um lado entra com 0 no outro), ordena por nome da label; mostra KPIs e top produtos do `report`.

@@ -121,6 +121,24 @@ export interface OrderItemInsert {
 }
 export type OrderItemUpdate = Partial<OrderItemInsert>
 
+/* --- profiles --- */
+export type UserRole = 'admin' | 'gerente'
+
+export interface Profile {
+  id: string
+  store_id: string | null
+  role: UserRole
+  full_name: string | null
+  created_at: string
+}
+export interface ProfileInsert {
+  id: string
+  store_id?: string | null
+  role?: UserRole
+  full_name?: string | null
+}
+export type ProfileUpdate = Partial<ProfileInsert>
+
 /* --- vw_product_suggestions (view) --- */
 export interface ProductSuggestion {
   store_id: string
@@ -176,6 +194,12 @@ export interface Database {
         Row: Recordish<OrderItem>
         Insert: Recordish<OrderItemInsert>
         Update: Recordish<OrderItemUpdate>
+        Relationships: []
+      }
+      profiles: {
+        Row: Recordish<Profile>
+        Insert: Recordish<ProfileInsert>
+        Update: Recordish<ProfileUpdate>
         Relationships: []
       }
     }

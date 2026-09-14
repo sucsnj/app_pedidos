@@ -82,6 +82,19 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 - `product_code`/`product_name`/`variation_name` são desnormalizados para o pedido não perder contexto se o catálogo mudar.
 - São inseridos apenas itens com `quantity > 0` — itens zerados somem da base.
 
+### profiles
+| coluna | tipo |
+| --- | --- |
+| id | uuid PK (referência a `auth.users`) |
+| store_id | uuid null FK → stores |
+| role | text: `admin` / `gerente` |
+| full_name | text null |
+| created_at | timestamptz |
+
+- Perfil carregado por `useAuth` após o login (`maybeSingle` por `id`). Sem perfil, a app assume `gerente`.
+- `role`: `admin` acessa todas as lojas + a aba Cadastro; `gerente` navega todas as lojas, mas **não** vê a aba Cadastro.
+- `store_id` vira a loja selecionada automaticamente (`preferredStoreId` na carga da sessão).
+
 ### vw_product_suggestions (view)
 | coluna | tipo |
 | --- | --- |

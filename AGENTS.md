@@ -20,7 +20,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 `src/App.tsx` (176 linhas) é o orquestrador que **compõe hooks** e renderiza telas:
 
-- Hooks: `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente).
+- Hooks: `useAuth` (sessão Supabase + perfil), `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente).
+- `App.tsx` é o **gate de autenticação**: `useAuth` decide entre `LoginScreen` (anônimo) e `Dashboard` (logado). `Dashboard` é o orquestrador que **compõe hooks** e renderiza telas.
 - `useStoreSession` (~394 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Contrato de retorno (~24 campos) deve permanecer intacto — `App.tsx` destrutura tudo.
 - Boards (`components/`): `CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard` — sem estado próprio de sessão, recebem props.
 - Camada pura: `lib/orders.ts` concentra regras de contagem/pedidos (sem dependência de React). Utils genéricos em `lib/utils.ts` (`getErrorMessage`).
@@ -30,7 +31,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `src/App.tsx` | Composição de hooks + roteamento de tabs + telas de loading/erro |
+| `src/App.tsx` | Gate de autenticação: `useAuth` decide entre `LoginScreen` (anônimo) e `Dashboard` (logado) |
+| `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), perfil em `public.profiles`, `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
 | `src/hooks/useRealtimeOrder.ts` | Subscription Supabase por pedido + reload no guard |
@@ -42,6 +44,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/types/app.ts` | `Catalog`, `CountedItem`, `ItemKey`, `SuggestionsMap`, `TabId`, flash/report, `compareByEntryCode`, `SYNTHETIC_VARIATION_ID`/`defaultVariationForProduct` |
 | `src/types/database.ts` | Tipos de tabelas + interface `Database` |
 | `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards |
+| `src/components/Dashboard.tsx` | Conteúdo autenticado: compõe hooks de sessão/catálogo e renderiza telas |
+| `src/components/LoginScreen.tsx` | Tela de login (email/senha via `signInWithPassword`), erros visuais e indicador de carregamento |
 
 ### Telas e fluxo de uso
 
@@ -49,11 +53,12 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 | Tab/screen | Componente | O que faz |
 | --- | --- | --- |
+| Login (`login`) | `LoginScreen` | Cartão de login (email/senha via `signInWithPassword`), fundo claro, topo `#7C0F19` com detalhes `#FECB1A`, erros visuais e indicador de carregamento |
 | Contagem (`count`) | `CountingBoard` | Digita quantidades (+/− via `adjust`; digitação direta via `setQuantity`), nome/notas (`requesterName`/`notes`), salvar manual (`saveNow`), sugestões por item, indicadores `saving`/`savedAt`, última contagem |
 | Digitação (`entry`) | `DataEntryBoard` | Lista itens com quantidade (ordenados por PLU/SKU via `compareByEntryCode`), progresso X/Y, alterna `isEnteredInLegacy` (`toggleEntered`) e "Copiar Resumo em Texto" (`buildOrderSummary`) |
 | Catálogo (`catalog`) | `CatalogBoard` | Admin do catálogo: CRUD de lojas/categorias/produtos/variações gravando **direto no Supabase** (fora do `useStoreSession`); refresh via `refreshCatalog` |
 | Comparativo (`comparativo`) | `ComparisonBoard` | Compara a contagem corrente com a última (`lastOrder`) e mostra o `report` (pedidos do mês, top produto, variação semanal, top produtos) — definições no `architecture.md` |
-| Header | `AppHeader` | Troca loja (`selectStore`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving` |
+| Header | `AppHeader` | Troca loja (`selectStore`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving`, nome do usuário + botão Sair (`signOut`) |
 | Navegação | `AppNav` | Tabs + botão concluir (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
 | Toast | `FlashToast` | Notificações via `useFlash` (`notify`) |
@@ -64,6 +69,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 ## Regras de domínio (resumo)
 
 - **status** do pedido: `Rascunho` → `Concluido` → `Lancado` (valores exatos do banco, sem acento em "Concluido").
+- **Autenticação/perfil**: `useAuth` gerencia a sessão (`getSession` + `onAuthStateChange`) e carrega `public.profiles` (`role` `admin`/`gerente`, `store_id`, `full_name`). Sem perfil, assume-se `gerente`.
+- **Cargos**: `admin` acessa todas as lojas + a aba Cadastro; `gerente` não vê a aba Cadastro (navega todas as lojas). `profile.store_id` vira `preferredStoreId` — a loja padrão na carga.
 - **`itemKey`** identifica um item contado: `` `${productId}::${variationId}` ``.
 - **Variação sintética**: produtos sem variações cadastradas usam `id: ''` (`SYNTHETIC_VARIATION_ID`); `defaultVariationForProduct` gera essa variação na hora.
 - **Persistência**: a cada save, atualiza o `orders` e reescreve os `order_items` (delete + insert) com `is_entered_in_legacy`.
@@ -79,6 +86,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
 - **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `emptyText`).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
+- **Autenticação/perfil**: `src/hooks/useAuth.ts` + `src/types/database.ts`.
 - **Catálogo/notificações/relatório**: `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts`.
 - **Domínio da UI**: `src/types/app.ts` (`Catalog`, `CountedItem`, `SuggestionsMap`, `TabId`, flash/report).
 - **Banco efetivo**: não há migrations no repositório; o schema real vive no Supabase — `types/database.ts` é o contrato da aplicação.
@@ -96,8 +104,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Estado do repo
 
-- Branch: `agente` — modularização concluída (`App.tsx` era 1082 linhas; hoje ~176; `useStoreSession` ~394).
-- `HEAD`: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Árvore de trabalho limpa.
+- Branch: `agente` — modularização concluída (`App.tsx` é o gate de auth; `Dashboard.tsx` ~conteúdo autenticado; `useStoreSession` ~394).
+- `HEAD`: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Autenticação completa implementada (`useAuth`, `LoginScreen`, `profiles`, botão Sair, cargo/loja) — alterações ainda não commitadas.
 - Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado".
 
 ## Vigilância: evite regressões de comportamento

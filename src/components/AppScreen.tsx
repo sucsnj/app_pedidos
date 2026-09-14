@@ -1,11 +1,11 @@
 import { RefreshCw } from 'lucide-react'
 import { Spinner } from './ui'
 
-export function LoadingScreen() {
+export function LoadingScreen({ message = 'Carregando catálogo...' }: { message?: string }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-wine-700">
       <Spinner className="h-8 w-8" />
-      <p className="text-sm font-semibold">Carregando catálogo...</p>
+      <p className="text-sm font-semibold">{message}</p>
     </div>
   )
 }

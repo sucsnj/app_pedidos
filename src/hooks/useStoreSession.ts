@@ -25,9 +25,15 @@ export interface StoreSessionParams {
   catalog: Catalog
   notify: (message: string, kind?: FlashKind) => void
   onNavigate: (tab: TabId) => void
+  preferredStoreId?: string | null
 }
 
-export function useStoreSession({ catalog, notify, onNavigate }: StoreSessionParams) {
+export function useStoreSession({
+  catalog,
+  notify,
+  onNavigate,
+  preferredStoreId = null,
+}: StoreSessionParams) {
   const [activeStoreId, setActiveStoreId] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
@@ -73,9 +79,13 @@ export function useStoreSession({ catalog, notify, onNavigate }: StoreSessionPar
   useEffect(() => {
     if (activeStoreId || catalog.stores.length === 0) return
     const defaultStore =
-      catalog.stores.find((store) => store.is_active) ?? catalog.stores[0]
+      (preferredStoreId
+        ? catalog.stores.find((store) => store.id === preferredStoreId)
+        : undefined) ??
+      catalog.stores.find((store) => store.is_active) ??
+      catalog.stores[0]
     if (defaultStore) setActiveStoreId(defaultStore.id)
-  }, [catalog.stores, activeStoreId])
+  }, [catalog.stores, activeStoreId, preferredStoreId])
 
   /* --------------------- Carga do contexto da loja ------------------- */
 

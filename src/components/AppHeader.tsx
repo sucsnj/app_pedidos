@@ -1,4 +1,4 @@
-import { ClipboardList, Plus, Store } from 'lucide-react'
+import { ClipboardList, LogOut, Plus, Store } from 'lucide-react'
 import type { Order, Store as StoreRow } from '../types/database'
 import { orderLabel } from '../lib/orders'
 import { Spinner } from './ui'
@@ -9,9 +9,11 @@ interface AppHeaderProps {
   activeStoreId: string
   currentOrderId: string | null
   saving: boolean
+  userName: string
   onSelectStore: (storeId: string) => void
   onSelectOrder: (orderId: string) => void
   onNewCount: () => void
+  onSignOut: () => void
 }
 
 export function AppHeader({
@@ -20,14 +22,16 @@ export function AppHeader({
   activeStoreId,
   currentOrderId,
   saving,
+  userName,
   onSelectStore,
   onSelectOrder,
   onNewCount,
+  onSignOut,
 }: AppHeaderProps) {
   return (
     <header className="bg-wine-700 text-white shadow-md">
       <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-400">
               <ClipboardList className="h-5 w-5 text-wine-800" />
@@ -39,11 +43,24 @@ export function AppHeader({
               <p className="text-[11px] text-gold-300">Contagem física · Prancheta digital</p>
             </div>
           </div>
-          {saving ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
-              <Spinner className="h-3.5 w-3.5" /> Salvando
+          <div className="flex items-center gap-2">
+            {saving ? (
+              <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold sm:inline-flex">
+                <Spinner className="h-3.5 w-3.5" /> Salvando
+              </span>
+            ) : null}
+            <span className="max-w-[110px] truncate text-xs font-semibold text-gold-300 sm:max-w-[160px]">
+              {userName}
             </span>
-          ) : null}
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20 active:scale-95"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

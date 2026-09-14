@@ -7,6 +7,7 @@ interface AppNavProps {
   canFinish: boolean
   finishing: boolean
   totalCounted: number
+  showCatalog: boolean
   onTabChange: (tab: TabId) => void
   onFinish: () => void
 }
@@ -23,14 +24,16 @@ export function AppNav({
   canFinish,
   finishing,
   totalCounted,
+  showCatalog,
   onTabChange,
   onFinish,
 }: AppNavProps) {
+  const visibleTabs = showCatalog ? tabs : tabs.filter((entry) => entry.id !== 'catalog')
   return (
     <nav className="sticky top-0 z-20 border-b border-gray-200 bg-shell/95 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-1.5 px-4 py-2">
         <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
-          {tabs.map((entry) => {
+          {visibleTabs.map((entry) => {
             const active = tab === entry.id
             return (
               <button
