@@ -159,7 +159,7 @@ export function CountingBoard({
                 return (
                   <div key={product.id} className="px-4 py-3">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
+                      <p className="min-w-0 flex-1 truncate text-base font-semibold text-gray-800">
                         {product.name}
                       </p>
                       {product.code ? (
@@ -286,6 +286,12 @@ export function CountingBoard({
                 )
               })}
             </div>
+            <footer className="flex items-center gap-2 border-t border-wine-200 bg-wine-50/60 px-4 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-wine-600">
+                {category.name}
+              </span>
+            </footer>
           </section>
         )
       })}
