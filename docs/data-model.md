@@ -35,7 +35,10 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | name | text |
 | unit_type | text |
 | is_active | boolean |
+| display_order | int (ordem dentro da categoria) |
 | created_at | timestamptz |
+
+- Ordens de exibição: categorias por `display_order`; produtos ordenados por `display_order` e depois `name` dentro de cada categoria (query da carga em `useCatalog`).
 
 ### product_variations
 | coluna | tipo |

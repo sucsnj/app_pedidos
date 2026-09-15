@@ -18,7 +18,7 @@ export function useCatalog() {
     const [storesResult, categoriesResult, productsResult, variationsResult] = await Promise.all([
       supabase.from('stores').select('*').order('name'),
       supabase.from('categories').select('*').order('display_order'),
-      supabase.from('products').select('*').order('name'),
+      supabase.from('products').select('*').order('display_order').order('name'),
       supabase.from('product_variations').select('*').order('name'),
     ])
     if (storesResult.error) throw storesResult.error

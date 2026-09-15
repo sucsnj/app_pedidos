@@ -44,6 +44,7 @@ export interface Product {
   name: string
   unit_type: string
   is_active: boolean
+  display_order: number
   created_at: string
 }
 export interface ProductInsert {
@@ -52,6 +53,7 @@ export interface ProductInsert {
   name: string
   unit_type?: string
   is_active?: boolean
+  display_order?: number
 }
 export type ProductUpdate = Partial<ProductInsert>
 

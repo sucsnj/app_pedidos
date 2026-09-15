@@ -524,6 +524,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [unitType, setUnitType] = useState('')
+  const [order, setOrder] = useState('')
   const [busy, setBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFields, setEditFields] = useState<{
@@ -531,7 +532,8 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
     code: string
     name: string
     unit_type: string
-  }>({ category_id: '', code: '', name: '', unit_type: '' })
+    display_order: string
+  }>({ category_id: '', code: '', name: '', unit_type: '', display_order: '' })
   const [variationOptions, setVariationOptions] = useState<string[]>([])
   const [selectedVariations, setSelectedVariations] = useState<string[]>([])
   const [newVariation, setNewVariation] = useState('')
@@ -636,6 +638,10 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
     if (!emptyText(name) || !categoryId) return
     setBusy(true)
     try {
+      const nextOrder =
+        catalog.products
+          .filter((product) => product.category_id === categoryId)
+          .reduce((max, product) => Math.max(max, product.display_order), 0) + 1
       const created = await supabase
         .from('products')
         .insert({
@@ -644,6 +650,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
           name: name.trim(),
           unit_type: emptyText(unitType) || 'Unidade',
           is_active: true,
+          display_order: parseNumber(order) || nextOrder,
         })
         .select()
         .single()
@@ -652,6 +659,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
       setName('')
       setCode('')
       setUnitType('')
+      setOrder('')
       setSelectedVariations([])
       setNewVariation('')
       setOpen(false)
@@ -684,6 +692,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
       code: product.code ?? '',
       name: product.name,
       unit_type: product.unit_type,
+      display_order: String(product.display_order),
     })
     setSelectedVariations(
       catalog.variations
@@ -703,6 +712,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
           code: emptyText(editFields.code) || null,
           name: editFields.name.trim(),
           unit_type: emptyText(editFields.unit_type) || 'Unidade',
+          display_order: parseNumber(editFields.display_order),
         })
         .eq('id', editingId)
       await persistVariations(editingId)
@@ -744,7 +754,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
               />
             </Field>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <Field label="Categoria">
               <select
                 className={selectClass}
@@ -766,6 +776,16 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
                 onChange={(event) => setUnitType(event.target.value)}
                 placeholder="Ex.: Unidade, Kg, Cento"
                 list="unit-types"
+              />
+            </Field>
+            <Field label="Ordem">
+              <input
+                className={inputClass}
+                type="number"
+                inputMode="numeric"
+                value={order}
+                onChange={(event) => setOrder(event.target.value)}
+                placeholder="Auto"
               />
             </Field>
           </div>
@@ -856,7 +876,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
                         />
                       </Field>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-3">
                       <Field label="Categoria">
                         <select
                           className={selectClass}
@@ -883,6 +903,20 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
                             setEditFields((previous) => ({
                               ...previous,
                               unit_type: event.target.value,
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field label="Ordem">
+                        <input
+                          className={inputClass}
+                          type="number"
+                          inputMode="numeric"
+                          value={editFields.display_order}
+                          onChange={(event) =>
+                            setEditFields((previous) => ({
+                              ...previous,
+                              display_order: event.target.value,
                             }))
                           }
                         />
@@ -914,6 +948,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
                       <p className="truncate text-xs text-gray-400">
                         {categoryName(product.category_id)} · {product.unit_type}
                         {product.code ? ' · ' + product.code : ''}
+                        {' · Ordem ' + product.display_order}
                       </p>
                     </div>
                     <Toggle
