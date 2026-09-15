@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { RefreshCw, ShieldBan, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import { RefreshCw, ShieldBan, ShieldCheck, UserPlus, Users, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Profile, ProfileUpdate, Store as StoreRow, UserRole } from '../types/database'
 import type { FlashKind } from '../types/app'
@@ -26,6 +26,8 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
   const [storeId, setStoreId] = useState(() => stores[0]?.id ?? '')
   const [role, setRole] = useState<UserRole>('gerente')
   const [submitting, setSubmitting] = useState(false)
+  const [formCollapsed, setFormCollapsed] = useState(false)
+  const [listCollapsed, setListCollapsed] = useState(false)
 
   const [users, setUsers] = useState<Profile[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
@@ -133,18 +135,28 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
   return (
     <section className="space-y-4">
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="mb-4 flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => setFormCollapsed((previous) => !previous)}
+          className="mb-4 flex w-full items-center gap-2.5 text-left"
+        >
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-wine-100">
             <UserPlus className="h-5 w-5 text-wine-700" />
           </span>
-          <div>
+          <span className="min-w-0 flex-1">
             <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">
               👥 Cadastrar Novo Colaborador / Gerente
             </h2>
             <p className="text-xs text-gray-500">Cria o acesso corporativo e vincula loja/cargo</p>
-          </div>
-        </div>
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
+              formCollapsed ? '-rotate-90' : ''
+            }`}
+          />
+        </button>
 
+        {formCollapsed ? null : (
         <form onSubmit={handleCreate} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nome Completo">
@@ -241,30 +253,42 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
             Cadastrar Usuário
           </button>
         </form>
+        )}
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-wine-100">
-            <Users className="h-5 w-5 text-wine-700" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">
-              Colaboradores Cadastrados
-            </h2>
-            <p className="text-xs text-gray-500">Lojas atribuídas e acessos</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setListCollapsed((previous) => !previous)}
+            className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wine-100">
+              <Users className="h-5 w-5 text-wine-700" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">
+                Colaboradores Cadastrados
+              </h2>
+              <p className="text-xs text-gray-500">Lojas atribuídas e acessos</p>
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
+                listCollapsed ? '-rotate-90' : ''
+              }`}
+            />
+          </button>
           <button
             type="button"
             onClick={() => void loadUsers()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-95"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-95"
             title="Recarregar lista"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
 
-        {usersLoading ? (
+        {listCollapsed ? null : usersLoading ? (
           <div className="flex items-center justify-center gap-2 py-6 text-wine-700">
             <Spinner className="h-5 w-5" />
             <span className="text-sm font-semibold">Carregando usuários...</span>

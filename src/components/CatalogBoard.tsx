@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Store, Package, FolderTree, Shapes, Plus, Pencil, X, CheckCircle2, Circle, Trash2 } from 'lucide-react'
+import { Store, Package, FolderTree, Shapes, Plus, Pencil, X, CheckCircle2, Circle, Trash2, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type {
   Category,
@@ -34,19 +34,29 @@ function Section({
   count: number
   children: React.ReactNode
 }) {
+  const [collapsed, setCollapsed] = useState(false)
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2.5">
+      <button
+        type="button"
+        onClick={() => setCollapsed((previous) => !previous)}
+        className="mb-3 flex w-full items-center gap-2.5 text-left"
+      >
         {icon}
-        <div className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1">
           <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">{title}</h2>
           {subtitle ? <p className="text-xs text-gray-500">{subtitle}</p> : null}
-        </div>
+        </span>
         <span className="rounded-full bg-wine-100 px-2.5 py-1 text-xs font-bold text-wine-700">
           {count}
         </span>
-      </div>
-      {children}
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
+            collapsed ? '-rotate-90' : ''
+          }`}
+        />
+      </button>
+      {collapsed ? null : children}
     </section>
   )
 }
