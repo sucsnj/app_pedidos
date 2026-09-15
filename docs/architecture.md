@@ -99,6 +99,7 @@ Dono **de todos os estados** da sessão:
 
 ## Regras de vigilância
 
+- Siga o **padrão de atuação do agente** do `AGENTS.md`: atualize contextos afetados a cada alteração, não mude comportamentos do app sem autorização prévia e pergunte ante instrução ambígua.
 - Não trocar o debounce (700ms), o guard (`saving || dirty || <1500ms`) nem o delete+insert dos itens sem motivo — são decisões base de concorrência.
 - Manter os callbacks estáveis que só leem refs (`shouldSkipSync`) e desestruturar handles estáveis do sub-hook nos deps das ações.
 - Sub-hooks novos devem receber estados/setters por parâmetro; o orquestrador segue dono dos estados.

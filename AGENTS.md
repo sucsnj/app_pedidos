@@ -115,6 +115,15 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - `HEAD`: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Autenticação B2B implementada (`useAuth`, `LoginScreen`, RBAC por cargo, `CollaboratorsBoard` com `auth.signUp` + restauração de sessão do admin + revogação) — alterações ainda não commitadas.
 - Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado".
 
+## Padrão de atuação do agente
+
+Sempre que fizer qualquer alteração:
+
+- Atualize os documentos e o contexto para agentes afetados pelo que mudou (`AGENTS.md`, `docs/architecture.md`, `docs/data-model.md`, skills).
+- Não faça ações destrutivas que mudem comportamentos do app sem autorização prévia.
+- Siga as regras do projeto e do contexto do agente.
+- Ante confusão ou falta de clareza nas instruções do prompt, pergunte para esclarecer antes de agir.
+
 ## Vigilância: evite regressões de comportamento
 
 - Não altere o contrato de retorno de `useStoreSession` sem ajustar `App.tsx`.

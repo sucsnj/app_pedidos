@@ -21,4 +21,11 @@ Tarefa envolvendo persistência, realtime ou schema do banco. Leia na íntegra, 
 - **Tipos `Insert`/`Update`** com `& Record<string, unknown>` (padrão `Recordish`) para satisfazer o generic do supabase-js.
 - Convenções: sem comentários, newline final, mensagens de UI em pt-BR.
 
+## Padrão de atuação
+
+- Ao alterar, atualize os contextos de agente afetados (`AGENTS.md`, `docs/`, esta skill).
+- Sem ações destrutivas que mudem comportamentos do app sem autorização prévia.
+- Siga as regras do projeto e do contexto do agente.
+- Ante instrução ambígua ou confusa no prompt, pergunte antes de agir.
+
 Ao alterar persistência/realtime/schema, valide com `npm run typecheck` e `npm run build`.
