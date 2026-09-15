@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Minus, Plus, Save, Check, ChevronDown, ShoppingCart } from 'lucide-react'
+import { Minus, Plus, Save, Check, ChevronDown, Search, ShoppingCart } from 'lucide-react'
 import type { Category, OrderStatus, Product, ProductVariation } from '../types/database'
 import type { CountedItem, ItemKey, LastOrderData, SuggestionsMap } from '../types/app'
 import { itemKey, defaultVariationForProduct } from '../types/app'
@@ -47,6 +47,16 @@ export function CountingBoard({
 }: CountingBoardProps) {
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => new Set())
+  const [search, setSearch] = useState('')
+
+  const normalizedSearch = search.trim().toLowerCase()
+  const matchesSearch = (product: Product) => {
+    if (!normalizedSearch) return true
+    return (
+      product.name.toLowerCase().includes(normalizedSearch) ||
+      (product.code?.toLowerCase().includes(normalizedSearch) ?? false)
+    )
+  }
 
   const toggleCategory = (categoryId: string) => {
     setCollapsedCategories((previous) => {
@@ -133,6 +143,17 @@ export function CountingBoard({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              disabled={locked}
+              placeholder="Buscar por nome ou código"
+              className={`${inputClass} pl-9`}
+            />
+          </div>
           <button
             type="button"
             onClick={onSaveNow}
@@ -150,9 +171,9 @@ export function CountingBoard({
       </section>
 
       {categories.map((category) => {
-        const categoryProducts = products.filter(
-          (product) => product.category_id === category.id,
-        )
+        const categoryProducts = products
+          .filter((product) => product.category_id === category.id)
+          .filter(matchesSearch)
         if (categoryProducts.length === 0) return null
 
         return (
@@ -170,8 +191,7 @@ export function CountingBoard({
               />
             </button>
             {collapsedCategories.has(category.id) ? null : (
-              <>
-                <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100">
                   {categoryProducts.map((product) => {
                 const productVariations = variations.filter(
                   (variation) => variation.product_id === product.id,
@@ -311,14 +331,23 @@ export function CountingBoard({
                 )
               })}
             </div>
-              <footer className="flex items-center gap-2 border-t border-wine-200 bg-wine-50/60 px-4 py-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-wine-600">
-                  {category.name}
-                </span>
-              </footer>
-              </>
             )}
+            <button
+              type="button"
+              onClick={() => toggleCategory(category.id)}
+              aria-expanded={!collapsedCategories.has(category.id)}
+              className="flex w-full items-center gap-2 cursor-pointer border-t border-wine-200 bg-wine-50/60 px-4 py-1.5 text-left transition hover:bg-wine-100 active:bg-wine-200"
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold-400" />
+              <span className="min-w-0 flex-1 truncate text-[10px] font-bold uppercase tracking-wider text-wine-600">
+                {category.name}
+              </span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 shrink-0 text-wine-400 transition-transform ${
+                  collapsedCategories.has(category.id) ? '' : 'rotate-180'
+                }`}
+              />
+            </button>
           </section>
         )
       })}
