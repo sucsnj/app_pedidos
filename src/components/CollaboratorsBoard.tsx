@@ -138,14 +138,12 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
         <button
           type="button"
           onClick={() => setFormCollapsed((previous) => !previous)}
-          className="mb-4 flex w-full items-center gap-2.5 text-left"
+          className="mb-3 flex w-full items-center gap-2.5 text-left"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-wine-100">
-            <UserPlus className="h-5 w-5 text-wine-700" />
-          </span>
+          <UserPlus className="h-5 w-5 shrink-0 text-wine-600" />
           <span className="min-w-0 flex-1">
             <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">
-              👥 Cadastrar Novo Colaborador / Gerente
+              Cadastrar Novo Colaborador / Gerente
             </h2>
             <p className="text-xs text-gray-500">Cria o acesso corporativo e vincula loja/cargo</p>
           </span>
@@ -263,14 +261,15 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
             onClick={() => setListCollapsed((previous) => !previous)}
             className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wine-100">
-              <Users className="h-5 w-5 text-wine-700" />
-            </span>
+            <Users className="h-5 w-5 shrink-0 text-wine-600" />
             <span className="min-w-0 flex-1">
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">
                 Colaboradores Cadastrados
               </h2>
               <p className="text-xs text-gray-500">Lojas atribuídas e acessos</p>
+            </span>
+            <span className="rounded-full bg-wine-100 px-2.5 py-1 text-xs font-bold text-wine-700">
+              {users.length}
             </span>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${

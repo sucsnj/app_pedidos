@@ -46,7 +46,11 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards |
 | `src/components/Dashboard.tsx` | Conteúdo autenticado: compõe hooks de sessão/catálogo e renderiza telas; aplica RBAC por cargo |
 | `src/components/LoginScreen.tsx` | Tela de login (email/senha via `signInWithPassword`), erros visuais e indicador de carregamento |
-| `src/components/CollaboratorsBoard.tsx` | Gestão de usuários (visível só p/ `admin`): cadastra gerente (`auth.signUp` + `profiles`, restaurando a sessão do admin) e lista/edita loja, cargo e acesso |
+| `src/components/CollaboratorsBoard.tsx` | Gestão de usuários (visível só p/ `admin`): cadastra gerente (`auth.signUp` + `profiles`, restaurando a sessão do admin) e lista/edita loja, cargo e acesso. Cards colapsáveis com cabeçalho no mesmo estilo do `Section` do `CatalogBoard` |
+| `src/components/AppHeader.tsx` | Cabeçalho: seletor loja/pedido, "Nova contagem", indicador `saving`, nome do usuário (toque abre popover breve ~2,5s com o nome completo) + badge de cargo + Sair (`signOut`) |
+| `src/components/AppNav.tsx` | Tabs + botão "Concluir Pedido" logo à direita da aba "Contagem" (habilita via `canFinish`; `finishing`/`totalCounted` para estado) |
+| `src/components/CountingBoard.tsx` | Categorias colapsáveis (clique no cabeçalho alterna; estado local), rodapé delimitador por categoria, nome do item em `text-base` |
+| `src/components/CatalogBoard.tsx` | Seções colapsáveis (`Section` reutilizada por Lojas/Categorias/Produtos/Variações); formulário de produto com chips de variações + exclusão manual de variações |
 
 ### Telas e fluxo de uso
 
@@ -57,10 +61,10 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | Login (`login`) | `LoginScreen` | Cartão de login (usuário ou e-mail via `signInWithPassword`; username resolvido em `public.profiles`), fundo claro, topo `#7C0F19` com detalhes `#FECB1A`, erros visuais e indicador de carregamento |
 | Contagem (`count`) | `CountingBoard` | Digita quantidades (+/− via `adjust`; digitação direta via `setQuantity`), nome/notas (`requesterName`/`notes`), salvar manual (`saveNow`), sugestões por item, indicadores `saving`/`savedAt`, última contagem |
 | Digitação (`entry`) | `DataEntryBoard` | Lista itens com quantidade (ordenados por PLU/SKU via `compareByEntryCode`), progresso X/Y, alterna `isEnteredInLegacy` (`toggleEntered`) e "Copiar Resumo em Texto" (`buildOrderSummary`) |
-| Cadastro & Produtos (`catalog`, só `admin`) | `CatalogBoard` + `CollaboratorsBoard` | CRUD do catálogo (lojas/categorias/produtos/variações) gravando **direto no Supabase** e gestão de usuários (cadastro de gerente, edição de loja/cargo, revogar acesso) |
+| Cadastro & Produtos (`catalog`, só `admin`) | `CatalogBoard` + `CollaboratorsBoard` | CRUD do catálogo (lojas/categorias/produtos/variações) gravando **direto no Supabase** e gestão de usuários (cadastro de gerente, edição de loja/cargo, revogar acesso). Formulário de produto com **chips de variações** (selecionar/desmarcar sincroniza vínculos; desmarcar não exclui) |
 | Comparativo (`comparativo`) | `ComparisonBoard` | Compara a contagem corrente com a última (`lastOrder`) e mostra o `report` (pedidos do mês, top produto, variação semanal, top produtos) — definições no `architecture.md` |
-| Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving`, nome do usuário + badge de cargo (ADMIN/GERENTE) + botão Sair (`signOut`) |
-| Navegação | `AppNav` | Tabs + botão concluir (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
+| Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving`, nome do usuário (toque mostra o nome completo em popover ~2,5s) + badge de cargo (ADMIN/GERENTE) + botão Sair (`signOut`) |
+| Navegação | `AppNav` | Tabs + botão "Concluir Pedido" à direita da aba "Contagem" (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
 | Toast | `FlashToast` | Notificações via `useFlash` (`notify`) |
 
@@ -75,8 +79,9 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Cadastro de usuário**: `CollaboratorsBoard` (aba 3) usa `supabase.auth.signUp` (sem service_role) com `options.data` (`username`/`full_name`/`store_id`/`role`); o trigger `handle_new_user` cria o perfil e um `profiles.update().eq('id', data.user.id)` best-effort faz a reconciliação (sem `upsert`, não trava o formulário). Username é obrigatório (minúsculo, sem espaços); e-mail é opcional — se vazio, gera `${username}@sistema.local`. Se o Supabase trocar a sessão para o novo usuário, restaura a sessão do admin via `setSession`. Revogação = `profiles.is_active = false`.
 - **`itemKey`** identifica um item contado: `` `${productId}::${variationId}` ``.
 - **Variação sintética**: produtos sem variações cadastradas usam `id: ''` (`SYNTHETIC_VARIATION_ID`); `defaultVariationForProduct` gera essa variação na hora.
+- **Variações do produto (Cadastro)**: o formulário de produto usa **chips** com nomes globais únicos de `product_variations` (busca no load + merge com `catalog.variations`). Salvar sincroniza vínculos do produto: cria variação faltante (`price: 0`, `is_available: true`), reativa (`is_available = true`) e **desmarcar só desativa** (`is_available = false`) — nunca deleta. Exclusão manual apenas na seção "Variações / Pesos" (lixeira, com `confirm`).
 - **Persistência**: a cada save, atualiza o `orders` e reescreve os `order_items` (delete + insert) com `is_entered_in_legacy`.
-- **Sugestões**: vêm da view `vw_product_suggestions` por loja; exibidas quando o item ainda não tem quantidade.
+- **Sugestões**: vêm da view `vw_product_suggestions` por loja; `fetchSuggestions` recarrega ao trocar de loja e ao "nova contagem" (`newCount`) — sem precisar de F5; exibidas quando o item ainda não tem quantidade.
 - **Ordenação da digitação**: `compareByEntryCode` — por código PLU/SKU (numérico) e depois nome da variação.
 - **Resumo em texto**: `buildOrderSummary` (`lib/orderText.ts`) gera o pedido para colagem (WhatsApp/legado), com ordem PLU/SKU; `copyTextToClipboard` tem fallback via `document.execCommand`.
 - **Lista de pedidos**: máx. 25 por loja, ordenada por `updated_at desc`.
