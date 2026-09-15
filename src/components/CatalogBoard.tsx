@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Store, Package, FolderTree, Shapes, Plus, Pencil, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Store, Package, FolderTree, Shapes, Plus, Pencil, X, CheckCircle2, Circle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type {
   Category,
@@ -105,6 +105,69 @@ function AddButton({
     >
       <Plus className="h-3.5 w-3.5" /> {label}
     </button>
+  )
+}
+
+function VariationPicker({
+  options,
+  selected,
+  onToggle,
+  newVariation,
+  onNewVariationChange,
+  onAdd,
+}: {
+  options: string[]
+  selected: string[]
+  onToggle: (name: string) => void
+  newVariation: string
+  onNewVariationChange: (value: string) => void
+  onAdd: () => void
+}) {
+  return (
+    <div className="space-y-2">
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Variações do Produto
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {options.length === 0 ? (
+          <p className="text-xs text-gray-400">Nenhuma variação cadastrada ainda.</p>
+        ) : (
+          options.map((option) => {
+            const active = selected.includes(option)
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onToggle(option)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                  active
+                    ? 'bg-wine-700 text-gold-300 shadow-sm'
+                    : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:text-wine-700'
+                }`}
+              >
+                {active ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5" />
+                )}
+                {option}
+              </button>
+            )
+          })
+        )}
+      </div>
+      <div className="flex items-end gap-1.5">
+        <div className="min-w-0 flex-1">
+          <input
+            className={inputClass}
+            value={newVariation}
+            onChange={(event) => onNewVariationChange(event.target.value)}
+            placeholder="Nova variação (ex.: Caixa c/ 12)"
+          />
+        </div>
+        <AddButton onClick={onAdd} disabled={!emptyText(newVariation)} label="Incluir" />
+      </div>
+    </div>
   )
 }
 
@@ -459,6 +522,27 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
     name: string
     unit_type: string
   }>({ category_id: '', code: '', name: '', unit_type: '' })
+  const [variationOptions, setVariationOptions] = useState<string[]>([])
+  const [selectedVariations, setSelectedVariations] = useState<string[]>([])
+  const [newVariation, setNewVariation] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    supabase
+      .from('product_variations')
+      .select('name')
+      .then((result) => {
+        if (cancelled || result.error) return
+        setVariationOptions(
+          Array.from(new Set(result.data.map((variation) => variation.name))).sort((a, b) =>
+            a.localeCompare(b, 'pt-BR'),
+          ),
+        )
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const usableCategories = catalog.categories
   const visibleProducts = catalog.products.filter(
@@ -467,20 +551,79 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
   const categoryName = (id: string) =>
     catalog.categories.find((category) => category.id === id)?.name ?? 'Sem categoria'
 
+  const toggleVariation = (variation: string) => {
+    setSelectedVariations((previous) =>
+      previous.includes(variation)
+        ? previous.filter((item) => item !== variation)
+        : [...previous, variation],
+    )
+  }
+
+  const addNewVariation = () => {
+    const variation = emptyText(newVariation)
+    if (!variation) return
+    setVariationOptions((previous) =>
+      previous.includes(variation)
+        ? previous
+        : [...previous, variation].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    )
+    setSelectedVariations((previous) =>
+      previous.includes(variation) ? previous : [...previous, variation],
+    )
+    setNewVariation('')
+  }
+
+  const persistVariations = async (productId: string) => {
+    const linked = catalog.variations.filter((variation) => variation.product_id === productId)
+    const linkedNames = new Set(linked.map((variation) => variation.name))
+    const selected = new Set(selectedVariations)
+    const toInsert = Array.from(selected).filter((variation) => !linkedNames.has(variation))
+    const toRemove = linked.filter((variation) => !selected.has(variation.name))
+    if (toRemove.length > 0) {
+      await supabase
+        .from('product_variations')
+        .delete()
+        .in('id', toRemove.map((variation) => variation.id))
+    }
+    if (toInsert.length > 0) {
+      await supabase.from('product_variations').insert(
+        toInsert.map((variation) => ({
+          product_id: productId,
+          name: variation,
+          price: 0,
+          is_available: true,
+        })),
+      )
+      setVariationOptions((previous) =>
+        Array.from(new Set([...previous, ...toInsert])).sort((a, b) =>
+          a.localeCompare(b, 'pt-BR'),
+        ),
+      )
+    }
+  }
+
   const create = async () => {
     if (!emptyText(name) || !categoryId) return
     setBusy(true)
     try {
-      await supabase.from('products').insert({
-        category_id: categoryId,
-        code: emptyText(code) || null,
-        name: name.trim(),
-        unit_type: emptyText(unitType) || 'Unidade',
-        is_active: true,
-      })
+      const created = await supabase
+        .from('products')
+        .insert({
+          category_id: categoryId,
+          code: emptyText(code) || null,
+          name: name.trim(),
+          unit_type: emptyText(unitType) || 'Unidade',
+          is_active: true,
+        })
+        .select()
+        .single()
+      if (created.error) throw created.error
+      await persistVariations(created.data.id)
       setName('')
       setCode('')
       setUnitType('')
+      setSelectedVariations([])
+      setNewVariation('')
       setOpen(false)
       await onRefresh()
       onFlash('Produto cadastrado.', 'success')
@@ -512,6 +655,11 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
       name: product.name,
       unit_type: product.unit_type,
     })
+    setSelectedVariations(
+      catalog.variations
+        .filter((variation) => variation.product_id === product.id)
+        .map((variation) => variation.name),
+    )
   }
 
   const saveEdit = async () => {
@@ -527,6 +675,7 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
           unit_type: emptyText(editFields.unit_type) || 'Unidade',
         })
         .eq('id', editingId)
+      await persistVariations(editingId)
       setEditingId(null)
       await onRefresh()
       onFlash('Produto atualizado.', 'success')
@@ -596,6 +745,14 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
             <option value="Cento" />
             <option value="Caixa" />
           </datalist>
+          <VariationPicker
+            options={variationOptions}
+            selected={selectedVariations}
+            onToggle={toggleVariation}
+            newVariation={newVariation}
+            onNewVariationChange={setNewVariation}
+            onAdd={addNewVariation}
+          />
           <div className="flex items-center gap-1">
             <AddButton
               onClick={create}
@@ -611,7 +768,14 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
           </div>
         </div>
       ) : (
-        <AddButton onClick={() => setOpen(true)} label="Novo produto" disabled={usableCategories.length === 0} />
+        <AddButton
+          onClick={() => {
+            setSelectedVariations([])
+            setOpen(true)
+          }}
+          label="Novo produto"
+          disabled={usableCategories.length === 0}
+        />
       )}
 
       {catalog.products.length > 0 ? (
@@ -694,6 +858,14 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
                         />
                       </Field>
                     </div>
+                    <VariationPicker
+                      options={variationOptions}
+                      selected={selectedVariations}
+                      onToggle={toggleVariation}
+                      newVariation={newVariation}
+                      onNewVariationChange={setNewVariation}
+                      onAdd={addNewVariation}
+                    />
                     <div className="flex items-center gap-1">
                       <AddButton
                         onClick={saveEdit}
