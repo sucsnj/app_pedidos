@@ -1,4 +1,5 @@
-import { Minus, Plus, Save, Check, ShoppingCart } from 'lucide-react'
+import { useState } from 'react'
+import { Minus, Plus, Save, Check, ChevronDown, ShoppingCart } from 'lucide-react'
 import type { Category, OrderStatus, Product, ProductVariation } from '../types/database'
 import type { CountedItem, ItemKey, LastOrderData, SuggestionsMap } from '../types/app'
 import { itemKey, defaultVariationForProduct } from '../types/app'
@@ -45,6 +46,19 @@ export function CountingBoard({
   onSaveNow,
 }: CountingBoardProps) {
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => new Set())
+
+  const toggleCategory = (categoryId: string) => {
+    setCollapsedCategories((previous) => {
+      const next = new Set(previous)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
 
   const itemsByKey = new Map(items.map((item) => [item.key, item]))
   const lastByKey = new Map(
@@ -143,11 +157,22 @@ export function CountingBoard({
 
         return (
           <section key={category.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <h2 className="bg-wine-700 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-white">
-              {category.name}
-            </h2>
-            <div className="divide-y divide-gray-100">
-              {categoryProducts.map((product) => {
+            <button
+              type="button"
+              onClick={() => toggleCategory(category.id)}
+              className="flex w-full items-center gap-2 bg-wine-700 px-4 py-2.5 text-left text-sm font-bold uppercase tracking-wide text-white transition hover:bg-wine-800 active:scale-[0.99]"
+            >
+              <span className="min-w-0 flex-1 truncate">{category.name}</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-gold-300 transition-transform ${
+                  collapsedCategories.has(category.id) ? '-rotate-90' : ''
+                }`}
+              />
+            </button>
+            {collapsedCategories.has(category.id) ? null : (
+              <>
+                <div className="divide-y divide-gray-100">
+                  {categoryProducts.map((product) => {
                 const productVariations = variations.filter(
                   (variation) => variation.product_id === product.id,
                 )
@@ -286,12 +311,14 @@ export function CountingBoard({
                 )
               })}
             </div>
-            <footer className="flex items-center gap-2 border-t border-wine-200 bg-wine-50/60 px-4 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-wine-600">
-                {category.name}
-              </span>
-            </footer>
+              <footer className="flex items-center gap-2 border-t border-wine-200 bg-wine-50/60 px-4 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-wine-600">
+                  {category.name}
+                </span>
+              </footer>
+              </>
+            )}
           </section>
         )
       })}
