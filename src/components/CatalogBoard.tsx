@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Store, Package, FolderTree, Shapes, Plus, Pencil, X, CheckCircle2, Circle } from 'lucide-react'
+import { Store, Package, FolderTree, Shapes, Plus, Pencil, X, CheckCircle2, Circle, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type {
   Category,
@@ -544,6 +544,15 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
     }
   }, [])
 
+  useEffect(() => {
+    const catalogNames = catalog.variations.map((variation) => variation.name)
+    setVariationOptions((previous) =>
+      Array.from(new Set([...previous, ...catalogNames])).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR'),
+      ),
+    )
+  }, [catalog.variations])
+
   const usableCategories = catalog.categories
   const visibleProducts = catalog.products.filter(
     (product) => categoryFilter === 'all' || product.category_id === categoryFilter,
@@ -575,15 +584,26 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
 
   const persistVariations = async (productId: string) => {
     const linked = catalog.variations.filter((variation) => variation.product_id === productId)
-    const linkedNames = new Set(linked.map((variation) => variation.name))
+    const byName = new Map(linked.map((variation) => [variation.name, variation]))
     const selected = new Set(selectedVariations)
-    const toInsert = Array.from(selected).filter((variation) => !linkedNames.has(variation))
-    const toRemove = linked.filter((variation) => !selected.has(variation.name))
-    if (toRemove.length > 0) {
+    const toInsert = Array.from(selected).filter((name) => !byName.has(name))
+    const toRestore = linked.filter(
+      (variation) => selected.has(variation.name) && !variation.is_available,
+    )
+    const toDisable = linked.filter(
+      (variation) => !selected.has(variation.name) && variation.is_available,
+    )
+    if (toRestore.length > 0) {
       await supabase
         .from('product_variations')
-        .delete()
-        .in('id', toRemove.map((variation) => variation.id))
+        .update({ is_available: true })
+        .in('id', toRestore.map((variation) => variation.id))
+    }
+    if (toDisable.length > 0) {
+      await supabase
+        .from('product_variations')
+        .update({ is_available: false })
+        .in('id', toDisable.map((variation) => variation.id))
     }
     if (toInsert.length > 0) {
       await supabase.from('product_variations').insert(
@@ -977,6 +997,19 @@ function VariationsManager({ catalog, onRefresh, onFlash }: Loadable) {
     }
   }
 
+  const removeVariation = async (variation: ProductVariation) => {
+    const description =
+      variation.name + (variation.weight_label ? ' (' + variation.weight_label + ')' : '')
+    if (!window.confirm('Excluir a variação "' + description + '" deste produto?')) return
+    try {
+      await supabase.from('product_variations').delete().eq('id', variation.id)
+      await onRefresh()
+      onFlash('Variação excluída.', 'info')
+    } catch (error) {
+      onFlash(actionError(error), 'error')
+    }
+  }
+
   const startEdit = (variation: ProductVariation) => {
     setEditingId(variation.id)
     setEditFields({
@@ -1213,6 +1246,15 @@ function VariationsManager({ catalog, onRefresh, onFlash }: Loadable) {
                     <IconButton label="Editar variação" onClick={() => startEdit(variation)} className="h-9 w-9">
                       <Pencil className="h-4 w-4" />
                     </IconButton>
+                    <button
+                      type="button"
+                      aria-label="Excluir variação"
+                      title="Excluir variação"
+                      onClick={() => removeVariation(variation)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 active:scale-95"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </li>
