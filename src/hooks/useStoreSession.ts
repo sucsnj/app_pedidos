@@ -26,6 +26,15 @@ export interface StoreSessionParams {
   notify: (message: string, kind?: FlashKind) => void
   onNavigate: (tab: TabId) => void
   preferredStoreId?: string | null
+  userId?: string | null
+}
+
+const STORE_PREFERENCE_KEY = 'pedidos:selectedStore:'
+
+function persistStorePreference(userId: string, storeId: string): void {
+  try {
+    localStorage.setItem(STORE_PREFERENCE_KEY + userId, storeId)
+  } catch {}
 }
 
 export function useStoreSession({
@@ -33,6 +42,7 @@ export function useStoreSession({
   notify,
   onNavigate,
   preferredStoreId = null,
+  userId = null,
 }: StoreSessionParams) {
   const [activeStoreId, setActiveStoreId] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -78,14 +88,20 @@ export function useStoreSession({
 
   useEffect(() => {
     if (activeStoreId || catalog.stores.length === 0) return
+    const persistedStoreId = userId
+      ? localStorage.getItem(STORE_PREFERENCE_KEY + userId)
+      : null
     const defaultStore =
+      (persistedStoreId
+        ? catalog.stores.find((store) => store.id === persistedStoreId)
+        : undefined) ??
       (preferredStoreId
         ? catalog.stores.find((store) => store.id === preferredStoreId)
         : undefined) ??
       catalog.stores.find((store) => store.is_active) ??
       catalog.stores[0]
     if (defaultStore) setActiveStoreId(defaultStore.id)
-  }, [catalog.stores, activeStoreId, preferredStoreId])
+  }, [catalog.stores, activeStoreId, preferredStoreId, userId])
 
   /* --------------------- Carga do contexto da loja ------------------- */
 
@@ -351,9 +367,10 @@ export function useStoreSession({
         markDirty()
         void enqueuePersist().catch(() => undefined)
       }
+      if (userId) persistStorePreference(userId, storeId)
       setActiveStoreId(storeId)
     },
-    [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty],
+    [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty, userId],
   )
 
   const selectOrder = useCallback(

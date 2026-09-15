@@ -268,9 +268,17 @@ export function CountingBoard({
                                 </span>
                               ) : null}
                               {counted === 0 && !locked && suggestion && suggestion > 0 ? (
-                                <p className="text-xs font-medium text-wine-500">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    onSetQuantity(key, suggestion)
+                                  }}
+                                  onKeyDown={(event) => event.stopPropagation()}
+                                  className="mt-1 inline-flex items-center rounded-md bg-wine-50 px-1.5 py-0.5 text-xs font-semibold text-wine-600 transition hover:bg-wine-100 active:scale-95"
+                                >
                                   Sugestão: {suggestion}
-                                </p>
+                                </button>
                               ) : null}
                               {!available ? (
                                 <p className="text-xs italic text-gray-400">Indisponível</p>

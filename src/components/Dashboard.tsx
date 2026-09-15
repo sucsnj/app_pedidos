@@ -55,6 +55,7 @@ export function Dashboard({
     notify,
     onNavigate: setTab,
     preferredStoreId: profile?.store_id ?? null,
+    userId: currentUserId,
   })
   const {
     activeStoreId,

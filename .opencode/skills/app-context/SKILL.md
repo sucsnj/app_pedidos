@@ -16,10 +16,11 @@ Tarefa envolvendo persistência, realtime ou schema do banco. Leia na íntegra, 
 - **Autosave com debounce de 700ms** (efeito em `[items, requesterName, notes, currentOrder?.id, loading, enqueuePersist]`).
 - **Guard do realtime**: `savingRef || dirtyRef || now - lastSavedAt < 1500` — `shouldSkipSync` deve continuar estável (`useCallback([])`, só lê refs) para não re-subscribe o channel.
 - **Persistência delete+insert** dos `order_items` via `toOrderItemRows` (filtra `quantity > 0`), encadeada no `persistChainRef`.
+- **Preferência de loja**: `selectStore` (seletor do `admin`) grava `pedidos:selectedStore:<userId>` no `localStorage`; a carga respeita a preferência validada contra o catálogo antes do `preferredStoreId` do perfil.
 - **CRUD do catálogo** (`CatalogBoard`) grava **direto no Supabase**, fora do `useStoreSession`/`persistChain` — não usa debounce nem chain.
 - **Sub-hooks recebem estados/setters por parâmetro**; o orquestrador segue dono dos estados; nunca chame hooks condicionalmente.
 - **Tipos `Insert`/`Update`** com `& Record<string, unknown>` (padrão `Recordish`) para satisfazer o generic do supabase-js.
-- Convenções: sem comentários, newline final, mensagens de UI em pt-BR.
+- Convenções: sem comentários por padrão (sobrepujado por regras do framework ou boas práticas de programação), newline final, mensagens de UI em pt-BR.
 
 ## Padrão de atuação
 

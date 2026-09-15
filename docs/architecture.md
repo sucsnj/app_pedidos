@@ -39,7 +39,7 @@ Dono **de todos os estados** da sessão:
 
 ### Carga da loja (efeito)
 
-- Um efeito curto escolhe a loja padrão quando `activeStoreId` está vazio: `preferredStoreId` do perfil (se existir e constar no catálogo), senão a primeira loja `is_active` (ou `stores[0]`).
+- Um efeito curto escolhe a loja padrão quando `activeStoreId` está vazio: preferência em `localStorage` (`pedidos:selectedStore:<userId>`, gravada só pelo `selectStore` — seletor do `admin`; validada contra o catálogo), depois `preferredStoreId` do perfil (se existir e constar no catálogo), senão a primeira loja `is_active` (ou `stores[0]`).
 - Token `storeEffectToken` + flag `cancelled` evitam corrida entre trocas rápidas de loja.
 - Reseta todos os estados e `savedAt` (`resetSavedAt`), carrega:
   - `orders` (máx. 25, `updated_at desc`) por `store_id`;
@@ -93,7 +93,7 @@ Dono **de todos os estados** da sessão:
 
 - **`CatalogBoard` (tab Cadastro, só `admin`)**: CRUD de lojas/categorias/produtos/variações com escrita **direta no Supabase** (fora do `useStoreSession`; sem chain/persist). Cada operação chama `refreshCatalog` (= `loadCatalog`, recarrega o catálogo) e mostra toast. Nova categoria usa `display_order = max + 1` (ou 1 se vazio); preço/ordem via `parseNumber`.
 - **`CollaboratorsBoard` (tab Cadastro, só `admin`)**: gerencia usuários. Card "Cadastrar Novo Colaborador" usa `supabase.auth.signUp` com `options.data` (`username`/`full_name`/`store_id`/`role`) — o trigger `handle_new_user` do banco cria o perfil automaticamente; um `profiles.update().eq('id', data.user.id)` best-effort faz a reconciliação sem travar. Username é obrigatório (minúsculo, sem espaços); e-mail é opcional — se vazio, gera `${username}@sistema.local`. Antes do signUp captura a sessão do admin e, se o Supabase trocar a sessão para o novo usuário, restaura a sessão do admin via `supabase.auth.setSession` (não usa service role nem `auth.admin.*`). Lista os perfis (exceto o próprio `currentUserId`) e permite alterar `store_id`/`role` e revogar/restaurar acesso via `profiles.is_active`.
-- **`CountingBoard`**: trava edição quando `orderStatus !== 'Rascunho'`. Por variação exibe "Último: N un" (do `lastOrder`), "Sugestão: N" (só com `counted === 0`) e aviso "⚠️ Acima do habitual" quando `counted > lastQty * 2` (rascunho).
+- **`CountingBoard`**: trava edição quando `orderStatus !== 'Rascunho'`. Categorias colapsáveis (cabeçalho **e** rodapé alternam o estado); busca por nome/código de produto filtrada em cada categoria. Por variação exibe "Último: N un" (do `lastOrder`), "Sugestão: N" (só com `counted === 0`; clicar aplica a quantidade sugerida via `onSetQuantity` com `stopPropagation`) e aviso "⚠️ Acima do habitual" quando `counted > lastQty * 2` (rascunho).
 - **`DataEntryBoard` (Digitação)**: lista apenas itens com `quantity > 0`, ordenados por `compareByEntryCode` (PLU/SKU numérico → nome da variação); progresso "digitados/total"; botão "Copiar Resumo em Texto" usa `buildOrderSummary` + `copyTextToClipboard`.
 - **`ComparisonBoard`**: unifica por `itemKey` (item só de um lado entra com 0 no outro), ordena por nome da label; mostra KPIs e top produtos do `report`.
 
