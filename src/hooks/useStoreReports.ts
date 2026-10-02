@@ -4,6 +4,14 @@ import type { Catalog, LastOrderData, Report, TopProductRow } from '../types/app
 import { itemKey } from '../types/app'
 import type { OrderItem } from '../types/database'
 import { mapOrderItems } from '../lib/orders'
+import { isOffline, isOfflineError } from '../lib/offlineQueue'
+import {
+  cacheLastOrder,
+  cacheReport,
+  materializeCounted,
+  readLastOrder,
+  readReport,
+} from '../lib/localCache'
 
 export function useStoreReports(activeStoreId: string, catalog: Catalog) {
   const [lastOrder, setLastOrder] = useState<LastOrderData | null>(null)
@@ -61,6 +69,7 @@ export function useStoreReports(activeStoreId: string, catalog: Catalog) {
         }
         if (cancelled || token !== reportToken.current) return
         setLastOrder(nextLastOrder)
+        void cacheLastOrder(activeStoreId, nextLastOrder)
 
         const [ordersCurWeek, ordersPrevWeek, orders30, ordersMonth] = await Promise.all([
           supabase
@@ -135,17 +144,35 @@ export function useStoreReports(activeStoreId: string, catalog: Catalog) {
           .sort((a, b) => b.quantity - a.quantity)
           .slice(0, 10)
 
-        setReport({
+        const nextReport: Report = {
           monthOrders: (ordersMonth.data ?? []).length,
           topProduct: topProducts[0]?.label ?? '—',
           weekVariationPct,
           topProducts,
-        })
-      } catch {
-        // Relatórios são auxiliares: falhas não bloqueiam a contagem.
+        }
+        setReport(nextReport)
+        void cacheReport(activeStoreId, nextReport)
+      } catch (err) {
         if (cancelled) return
-        setLastOrder(null)
-        setReport(null)
+        if (!(isOffline() || isOfflineError(err))) {
+          setLastOrder(null)
+          setReport(null)
+          return
+        }
+        const [cachedLast, cachedReport] = await Promise.all([
+          readLastOrder(activeStoreId),
+          readReport(activeStoreId),
+        ])
+        if (cancelled) return
+        setLastOrder(
+          cachedLast
+            ? {
+                totalItems: cachedLast.totalItems,
+                items: materializeCounted(cachedLast.items, catalogRef.current),
+              }
+            : null,
+        )
+        setReport(cachedReport)
       }
     })()
 

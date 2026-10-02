@@ -5,6 +5,7 @@ import type { CountedItem, FlashKind } from '../types/app'
 import type { Order } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
 import { enqueuePersistDraft, isOffline, isOfflineError } from '../lib/offlineQueue'
+import { cacheCountedItems, updateOrderInStore } from '../lib/localCache'
 import {
   mergeOrderRow,
   mergeOrdersList,
@@ -82,6 +83,12 @@ export function useDraftPersistence({
     setSaving(true)
     savingRef.current = true
     const totalItems = snapshot.items.reduce((sum, item) => sum + item.quantity, 0)
+    const synced = mergeOrderRow(
+      snapshot.order,
+      totalItems,
+      snapshot.requesterName,
+      snapshot.notes || null,
+    )
     try {
       const { error: orderError } = await supabase
         .from('orders')
@@ -105,13 +112,9 @@ export function useDraftPersistence({
         if (insertError) throw insertError
       }
 
-      const synced = mergeOrderRow(
-        snapshot.order,
-        totalItems,
-        snapshot.requesterName,
-        snapshot.notes || null,
-      )
       commitSyncedOrder(synced)
+      void updateOrderInStore(synced)
+      void cacheCountedItems(snapshot.order.id, snapshot.items)
     } catch (err) {
       dirtyRef.current = true
       if (isOffline() || isOfflineError(err)) {
@@ -132,6 +135,8 @@ export function useDraftPersistence({
               is_entered_in_legacy: item.isEnteredInLegacy,
             })),
         })
+        void updateOrderInStore(synced)
+        void cacheCountedItems(snapshot.order.id, snapshot.items)
         return
       }
       throw err

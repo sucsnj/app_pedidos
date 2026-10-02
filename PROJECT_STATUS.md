@@ -77,11 +77,20 @@ Decisões de design (validadas):
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK; único aviso: chunk ~560 kB quebra o limite de 500 kB — não bloqueante).
 - [ ] Checklist manual (usuário): instalar A2HS, offline no DevTools, sync da fila, banner "Nova versão disponível".
 
+### Etapa 6 — Leitura offline (espelho local) (Concluída)
+- [x] `src/lib/localCache.ts`: IndexedDB `pedidos-pwa` **v2** com store `mirror` (keyPath `key`) + `openDB`/`withDB` compartilhados com a fila (`queue` continua com keyPath `id`).
+- [x] Espelho de **pedidos por loja**, **itens por pedido** (serializados como `{ key, quantity, isEnteredInLegacy }` e rematerializados contra o catálogo), **sugestões por loja**, **última contagem** e **relatório** por loja, e **perfil** por usuário.
+- [x] Estratégia **servidor 1º, espelho fallback**: `useStoreSession` (carga da loja, `fetchOrderItems`, `fetchSuggestions`), `useStoreReports` e `App.tsx` (perfil) só leem o espelho quando a leitura falha por offline (`isOffline`/`isOfflineError`); toda leitura/escrita bem-sucedida atualiza o espelho.
+- [x] Salvamento espelha sempre: `persistOrder` (online e offline), `finishOrder`, `newCount` (online e otimista) e `refreshCurrentOrder` gravam `updateOrderInStore`/`cacheCountedItems` — abrir offline mostra o estado da última sincronização, inclusive ações ainda na fila.
+- [x] Sessão/login offline preservada: `App.tsx` cai para o perfil espelhado (role/loja) quando `profiles` falha.
+- [x] Validação automática: `npm run typecheck` + `npm run build` (OK; aviso de chunk ~560 kB não bloqueante).
+- [ ] Limitação documentada: catálogo continua dependente do cache NetworkFirst do SW (TTL 7d) — sem rede por mais de 7 dias, o catálogo exige reconexão; primeira abertura 100% offline sem espelho prévio mostra a tela de offline.
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
-- [ ] Redes offline (DevTools) e recarregar: shell abre, catálogo vem do cache quando disponível.
-- [ ] Fazer contagem offline → voltar online → verificar sync da fila (draft, concluir, nova contagem).
+- [ ] Redes offline (DevTools) e recarregar: shell abre, catálogo vem do cache e dados (pedido/itens/sugestões/relatório/perfil) vêm do espelho local.
+- [ ] Fazer contagem offline (editar/novo pedido/concluir) → voltar online → verificar sync da fila + espelho atualizado.
 - [ ] Publicar nova versão → ver banner de atualização → confirmar reload com dados preservados.
 
 ## Histórico
@@ -91,3 +100,4 @@ Decisões de design (validadas):
 | 2026-10-01 | 0 | Preparação PWA: deps, ícones, `PROJECT_STATUS.md`. |
 | 2026-10-01 | 1–4 | Shell PWA (manifest/SW), caches (NetworkFirst/CacheFirst), ciclo de vida `prompt` e fila de ações offline (IndexedDB). |
 | 2026-10-01 | 5 | Docs/contexto de agentes + validação final. |
+| 2026-10-01 | 6 | Leitura offline: espelho local (IndexedDB v2 `mirror`) + fallback "servidor 1º, espelho" em sessão/relatórios/perfil. |

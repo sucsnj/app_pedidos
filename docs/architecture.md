@@ -32,6 +32,7 @@ Dashboard.tsx (conteúdo autenticado)
 - **Login por usuário ou e-mail**: o campo "Usuário ou E-mail" aceita username (ex.: `maria_souza`) ou e-mail completo. Se não contém `@`, o `LoginScreen` resolve o e-mail real via `public.profiles` (`select('email').eq('username', <lowercase>).maybeSingle()`); sem match, mostra "Nome de usuário não encontrado.".
 - **Cargos (RBAC)**: `Dashboard` recebe `isAdmin = userRole === 'admin'`. `admin` vê todas as abas (incl. Cadastro + Comparativo) e o seletor de loja no header. `gerente` vê só Contagem e Digitação, fica com a `store_id` do perfil (o header exibe a loja sem seletor) e `Dashboard` força a aba de volta para `count` se ela cair em Cadastro/Comparativo.
 - **Loja padrão**: `profile.store_id` vira `preferredStoreId` do `useStoreSession` — a loja selecionada automaticamente no carregamento.
+- **Perfil offline**: `App.tsx` espelha `public.profiles` (`cacheProfile`) e, em falha de leitura offline, restaura role/loja do espelho (`readProfile`) — preserva admin/gerente e a loja sem rede.
 
 ## `useStoreSession` (orquestrador)
 
@@ -49,6 +50,7 @@ Dono **de todos os estados** da sessão:
   - `vw_product_suggestions` (monta `SuggestionsMap` com `itemKey`);
   - se não houver pedido, **insere** um `Rascunho` vazio e o usa.
 - Depois busca os `order_items` via `fetchOrderItems` (estável, `useCallback([])`) e mapeia com `mapOrderItems`.
+- **Fallback offline**: as leituras (`orders`, `sugestões`, `order_items`) tentam o Supabase primeiro; se falharem por offline (`isOffline`/`isOfflineError`), caem para o espelho (`lib/localCache.ts`) e só re-lançam erro se não houver dados locais. Todas as leituras OK re-espelham o resultado.
 
 ### Reconciliar catálogo
 
@@ -99,16 +101,17 @@ Dono **de todos os estados** da sessão:
   - Dedupe: `persist-draft` substitui o anterior do mesmo pedido; é ignorado se já existe `finish-order` do mesmo pedido; `finish-order` substitui o anterior.
   - `flushQueue` replay com o cliente supabase **vivo** (sessão fresca → evita 401 de JWT expirado), em ordem de `createdAt`, parando em falha de rede (resto permanece na fila). `isOffline`/`isOfflineError` detectam o cenário.
 - **Integração**: `persistOrder` enfileira `persist-draft` quando offline (sem toast repetido); `finishOrder`/`newCount` como nas Ações; `Dashboard` usa `useOnline` e no `offline→online` chama `flushQueue()` + `notify('Alterações sincronizadas.')` + `refreshCurrentOrder()`.
+- **Leitura offline (espelho)** (`lib/localCache.ts`, IndexedDB `pedidos-pwa` v2, store `mirror`): pedidos por loja, itens por pedido (`{key, quantity, isEnteredInLegacy}`), sugestões, última contagem, relatório e perfil por usuário. Estratégia **servidor 1º, espelho fallback**: as leituras só caem para o espelho em falha offline (`isOffline`/`isOfflineError`) e re-espelham a cada sucesso. `updateOrderInStore`/`cacheCountedItems` gravam também nas escritas (online, offline/otimista e pós-flush) — abrir offline mostra o estado da última sincronização, inclusive ações ainda na fila.
 - **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`/`CollaboratorsBoard`) e `toggleEntered` de pedido com `finish-order` pendente.
 
 ## `useStoreReports` — última contagem e relatório
 
-- **`lastOrder`**: último pedido com `status = 'Concluido'` (1 registro, `updated_at desc`); itens mapeados via `mapOrderItems` em `LastOrderData`.
+- **`lastOrder`**: último pedido com `status = 'Concluido'` (1 registro, `updated_at desc`); itens mapeados via `mapOrderItems` em `LastOrderData`. Leitura OK grava `cacheLastOrder`; falha offline lê `readLastOrder` e rematerializa os itens contra o catálogo.
 - **`report`** (tudo por loja; token `reportToken` + `cancelled` descartam corridas):
   - `monthOrders` — nº de pedidos com `created_at` a partir do 1º dia do mês (qualquer status);
   - `weekVariationPct` — soma de `quantity` dos últimos 7 dias × os 7 dias anteriores (janelas de `created_at`); `null` quando a anterior é 0;
   - `topProducts` — agrega `quantity` dos últimos 30 dias por `itemKey` (top 10), `label` = nome do produto + variação; `topProduct` = primeira entrada.
-- Falhas são silenciosas (relatório auxiliar não bloqueia o app). `bumpReport()` força recarga; `App.tsx` o chama após `finishOrder` bem-sucedido.
+- Falhas são silenciosas (relatório auxiliar não bloqueia o app); em falha **offline** lê `readLastOrder`/`readReport` do espelho. `bumpReport()` força recarga; `App.tsx` o chama após `finishOrder` bem-sucedido.
 
 ## Telas — comportamentos notáveis
 
@@ -123,6 +126,7 @@ Dono **de todos os estados** da sessão:
 - Siga o **padrão de atuação do agente** do `AGENTS.md`: atualize contextos afetados a cada alteração, não mude comportamentos do app sem autorização prévia e pergunte ante instrução ambígua.
 - Não trocar o debounce (700ms), o guard (`saving || dirty || <1500ms`) nem o delete+insert dos itens sem motivo — são decisões base de concorrência.
 - Ao mexer na fila offline, preserve: ordem `createdAt` no flush, replay com o cliente supabase vivo (evita 401 de JWT) e a reconciliação `refreshCurrentOrder`/`commitSyncedOrder` (limpa `dirty`/guard, senão a fila "prende" o realtime).
+- Ao mexer no espelho (`localCache`), preserve a estratégia **servidor 1º, espelho fallback**: re-espelhar só após sucesso e cair para o espelho apenas em falha offline — não mascarar erros reais com dados velhos.
 - Fora da fila (exigem rede) continua: escrita de catálogo e `toggleEntered` de pedido com `finish-order` pendente — não "consertar" sem autorização.
 - Manter os callbacks estáveis que só leem refs (`shouldSkipSync`) e desestruturar handles estáveis do sub-hook nos deps das ações.
 - Sub-hooks novos devem receber estados/setters por parâmetro; o orquestrador segue dono dos estados.

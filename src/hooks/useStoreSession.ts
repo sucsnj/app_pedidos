@@ -19,6 +19,16 @@ import {
   newId,
 } from '../lib/offlineQueue'
 import {
+  cacheCountedItems,
+  cacheOrders,
+  cacheSuggestions,
+  materializeCounted,
+  readCountedItems,
+  readOrders,
+  readSuggestions,
+  updateOrderInStore,
+} from '../lib/localCache'
+import {
   mapOrderItems,
   mergeOrderRow,
   sameCountedList,
@@ -119,8 +129,16 @@ export function useStoreSession({
         .from('order_items')
         .select('*')
         .eq('order_id', orderId)
-      if (error) throw error
-      return mapOrderItems(data, catalogRef.current)
+      if (error) {
+        if (isOffline() || isOfflineError(error)) {
+          const cached = await readCountedItems(orderId)
+          if (cached) return materializeCounted(cached, catalogRef.current)
+        }
+        throw error
+      }
+      const mapped = mapOrderItems(data, catalogRef.current)
+      void cacheCountedItems(orderId, mapped)
+      return mapped
     },
     [],
   )
@@ -131,7 +149,13 @@ export function useStoreSession({
         .from('vw_product_suggestions')
         .select('store_id, product_id, product_variation_id, suggested_quantity')
         .eq('store_id', storeId)
-      if (error) throw error
+      if (error) {
+        if (isOffline() || isOfflineError(error)) {
+          const cached = await readSuggestions(storeId)
+          if (cached) return cached
+        }
+        throw error
+      }
       const nextSuggestions: SuggestionsMap = new Map()
       for (const row of data) {
         nextSuggestions.set(
@@ -139,6 +163,7 @@ export function useStoreSession({
           row.suggested_quantity,
         )
       }
+      void cacheSuggestions(storeId, nextSuggestions)
       return nextSuggestions
     },
     [],
@@ -159,21 +184,38 @@ export function useStoreSession({
 
     void (async () => {
       try {
-        const [ordersResult, suggestedMap] = await Promise.all([
-          supabase
-            .from('orders')
-            .select('*')
-            .eq('store_id', activeStoreId)
-            .order('updated_at', { ascending: false })
-            .limit(25),
-          fetchSuggestions(activeStoreId),
-        ])
+        let loadedOrders: Order[] | null = null
+        let suggestedMap: SuggestionsMap | null = null
+        try {
+          const [ordersResult, suggestedPromise] = await Promise.all([
+            supabase
+              .from('orders')
+              .select('*')
+              .eq('store_id', activeStoreId)
+              .order('updated_at', { ascending: false })
+              .limit(25),
+            fetchSuggestions(activeStoreId),
+          ])
+          if (ordersResult.error) throw ordersResult.error
+          loadedOrders = ordersResult.data
+          suggestedMap = suggestedPromise
+        } catch (err) {
+          if (!(isOffline() || isOfflineError(err))) throw err
+          const [cachedOrders, cachedSuggestions] = await Promise.all([
+            readOrders(activeStoreId),
+            readSuggestions(activeStoreId),
+          ])
+          if (!cachedOrders) throw err
+          loadedOrders = cachedOrders
+          suggestedMap = cachedSuggestions ?? new Map()
+        }
         if (cancelled || token !== storeEffectToken.current) return
-        if (ordersResult.error) throw ordersResult.error
+        if (!loadedOrders || !suggestedMap) return
 
-        const loadedOrders = ordersResult.data
         setOrders(loadedOrders)
         setSuggestions(suggestedMap)
+        void cacheOrders(activeStoreId, loadedOrders)
+        void cacheSuggestions(activeStoreId, suggestedMap)
 
         let order =
           loadedOrders.find((entry) => entry.status === 'Rascunho') ??
@@ -192,16 +234,27 @@ export function useStoreSession({
             })
             .select()
             .single()
-          if (cancelled || token !== storeEffectToken.current) return
-          if (created.error) throw created.error
-          order = created.data
-          setOrders([created.data])
+          if (created.error) {
+            if (!(isOffline() || isOfflineError(created.error))) throw created.error
+          } else {
+            if (cancelled || token !== storeEffectToken.current) return
+            order = created.data
+            setOrders([created.data])
+            void cacheOrders(activeStoreId, [created.data])
+          }
         }
 
         setCurrentOrder(order)
-        setRequesterName(order.requester_name)
-        setNotes(order.notes ?? '')
-        const rows = await fetchOrderItems(order.id)
+        setRequesterName(order?.requester_name ?? '')
+        setNotes(order?.notes ?? '')
+        let rows: CountedItem[] = []
+        if (order) {
+          try {
+            rows = await fetchOrderItems(order.id)
+          } catch (err) {
+            if (!(isOffline() || isOfflineError(err))) throw err
+          }
+        }
         if (cancelled || token !== storeEffectToken.current) return
         setItems(rows)
       } catch (err) {
@@ -300,6 +353,8 @@ export function useStoreSession({
         snapshot.notes || null,
       )
       commitSyncedOrder(completed)
+      void updateOrderInStore(completed)
+      void cacheCountedItems(order.id, snapshot.items)
       notify('Pedido concluído! Disponíveis no Modo Digitação.', 'success')
       onNavigate('entry')
       return true
@@ -309,6 +364,8 @@ export function useStoreSession({
           'Sem conexão — a conclusão do pedido será sincronizada automaticamente.',
         )
         await enqueueFinishOrder(order.id).catch(() => undefined)
+        void updateOrderInStore({ ...order, status: 'Concluido' })
+        void cacheCountedItems(order.id, items)
         onNavigate('entry')
         return true
       }
@@ -319,6 +376,7 @@ export function useStoreSession({
     }
   }, [
     currentOrder,
+    items,
     enqueuePersist,
     clearDebounce,
     markDirty,
@@ -358,6 +416,8 @@ export function useStoreSession({
       setRequesterName('')
       setNotes('')
       resetSavedAt()
+      void updateOrderInStore(created.data)
+      void cacheCountedItems(created.data.id, [])
       onNavigate('count')
       notify('Nova contagem iniciada.', 'success')
     } catch (err) {
@@ -379,6 +439,8 @@ export function useStoreSession({
         setRequesterName('')
         setNotes('')
         resetSavedAt()
+        void updateOrderInStore(optimistic)
+        void cacheCountedItems(optimistic.id, [])
         onNavigate('count')
         notify('Nova contagem iniciada — será sincronizada quando houver rede.')
         return
@@ -454,6 +516,7 @@ export function useStoreSession({
       if (orderResult.error) throw orderResult.error
       if (orderResult.data) {
         commitSyncedOrder(orderResult.data)
+        void updateOrderInStore(orderResult.data)
         setItems((previous) => (sameCountedList(previous, rows) ? previous : rows))
       }
     } catch {

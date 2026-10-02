@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { withDB } from './localCache'
 import type { Order } from '../types/database'
 
 export interface DraftItemRow {
@@ -29,9 +30,7 @@ interface QueuedAction {
   action: OfflineAction
 }
 
-const DB_NAME = 'pedidos-pwa'
 const STORE_NAME = 'queue'
-const DB_VERSION = 1
 
 export function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -50,29 +49,6 @@ export function isOfflineError(err: unknown): boolean {
     err instanceof TypeError &&
     /fetch|network|load failed/i.test(err.message)
   )
-}
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION)
-    request.onupgradeneeded = () => {
-      const db = request.result
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' })
-      }
-    }
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error ?? new Error('Falha ao abrir o banco local'))
-  })
-}
-
-async function withDB<T>(fn: (db: IDBDatabase) => Promise<T>): Promise<T> {
-  const db = await openDB()
-  try {
-    return await fn(db)
-  } finally {
-    db.close()
-  }
 }
 
 function readAll(db: IDBDatabase): Promise<QueuedAction[]> {

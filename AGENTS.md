@@ -39,6 +39,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts` | Suporte: catálogo, notificações, relatório |
 | `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos, `orderLabel` |
 | `src/lib/offlineQueue.ts` | Fila de ações offline (IndexedDB `pedidos-pwa/queue`): `enqueuePersistDraft`, `enqueueFinishOrder`, `enqueueCreateOrder`, `flushQueue`, `isOffline`/`isOfflineError` |
+| `src/lib/localCache.ts` | Espelho local p/ leitura offline (IndexedDB `pedidos-pwa/mirror`, DB v2): pedidos por loja, itens por pedido (`{key, quantity, isEnteredInLegacy}`), sugestões, última contagem, relatório, perfil; `openDB`/`withDB` compartilhados com a fila |
 | `src/lib/supabase.ts` | Cliente Supabase tipado |
 | `src/pwa.ts` | Registro do SW (`setupPWA`), estado de atualização/offline-ready e `applyUpdate` (bridges via `subscribePWA`) |
 | `src/hooks/useOnline.ts` | Hook de conectividade (`navigator.onLine` + eventos online/offline) |
@@ -99,6 +100,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Ciclo de vida**: `src/pwa.ts` registra via `virtual:pwa-register` (`onNeedRefresh`/`onOfflineReady`); `PwaUpdatePrompt` mostra "Nova versão disponível" (Atualizar/Depois) e "Pronto para uso offline".
 - **Fila de ações offline** (`lib/offlineQueue.ts`, IndexedDB `pedidos-pwa/queue`): `persist-draft` (update orders + delete+insert items, mesmo formato do persist online), `finish-order` (status `Concluido`), `create-order` (id otimista uuid do cliente). `flushQueue` replay com o cliente supabase vivo (sessão fresca → evita 401 de JWT expirado) em ordem de `createdAt`, parando em falha de rede. `isOffline`/`isOfflineError` detectam o cenário.
 - **Integração**: `persistOrder` enfileira `persist-draft` (sem toast repetido); `finishOrder` enfileira `finish-order` e navega para Digitação; `newCount` cria pedido otimista e enfileira `create-order`. Após o flush (transição offline→online no `Dashboard`), `refreshCurrentOrder` reconcilia pedido corrente via `commitSyncedOrder` (limpa `dirty`/guard do realtime).
+- **Leitura offline (espelho)**: `lib/localCache.ts` (IndexedDB `pedidos-pwa`, DB v2, store `mirror`) guarda pedidos por loja, itens por pedido (serializados `{key, quantity, isEnteredInLegacy}` e rematerializados contra o catálogo), sugestões, última contagem, relatório e perfil. Estratégia **servidor 1º, espelho fallback**: sessão (`useStoreSession`), relatórios (`useStoreReports`) e perfil (`App.tsx`) só leem o espelho quando a leitura falha por offline (`isOffline`/`isOfflineError`); toda leitura/escrita OK atualiza o espelho (`cacheOrders`, `cacheCountedItems`, `cacheSuggestions`, `cacheLastOrder`, `cacheReport`, `cacheProfile`, `updateOrderInStore`). Catálogo continua via cache NetworkFirst do SW (TTL 7d).
 - **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`) e `toggleEntered` de pedido já agendado para concluir — limites conscientes.
 
 ## Fontes de verdade (onde procurar)
@@ -107,7 +109,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Regras de contagem/pedidos**: `src/lib/orders.ts` (funções puras, sem React).
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
 - **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `emptyText`).
-- **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
+- **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/lib/localCache.ts` (espelho de leitura) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
 - **Autenticação/perfil**: `src/hooks/useAuth.ts` (sessão) + `src/App.tsx` (consulta `public.profiles`, `userRole`) + `src/types/database.ts`.
 - **Catálogo/notificações/relatório**: `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts`.
@@ -145,6 +147,7 @@ Sempre que fizer qualquer alteração:
 - Não altere o contrato de retorno de `useStoreSession` sem ajustar `App.tsx`.
 - Não mude o debounce (700ms), o guard do realtime (`saving || dirty || <1500ms`) nem a estratégia delete+insert dos itens sem motivo — são decisões base de concorrência.
 - Ao mexer na fila offline, preserve a ordem `createdAt`, o replay com o cliente vivo e a reconciliação via `refreshCurrentOrder`/`commitSyncedOrder` (evita 401 de JWT e fila "presa" com guard do realtime).
+- Ao mexer no espelho (`localCache`), preserve a estratégia **servidor 1º, espelho fallback**: leituras espelham só após sucesso e caem para o espelho apenas em falha offline (`isOffline`/`isOfflineError`) — não mascarar erros reais com dados velhos.
 - Ao mexer em hooks, valide com `npm run typecheck` e `npm run build`.
 
 ## Receita para mudanças seguras

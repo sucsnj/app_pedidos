@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import type { Profile, UserRole } from './types/database'
 import { useAuth } from './hooks/useAuth'
+import { cacheProfile, readProfile } from './lib/localCache'
 import { LoadingScreen } from './components/AppScreen'
 import { LoginScreen } from './components/LoginScreen'
 import { Dashboard } from './components/Dashboard'
@@ -26,9 +27,24 @@ export default function App() {
         .eq('id', user.id)
         .maybeSingle()
       if (cancelled) return
+      if (error) {
+        const cached = await readProfile(user.id)
+        if (cancelled) return
+        if (cached) {
+          setProfile(cached)
+          setUserRole(cached.role)
+          if (!cached.is_active) void signOut()
+          return
+        }
+        console.log('Dados do Perfil no Supabase:', profile, 'Erro:', error)
+        setProfile(null)
+        setUserRole('gerente')
+        return
+      }
       console.log('Dados do Perfil no Supabase:', profile, 'Erro:', error)
       const role: UserRole = profile?.role || 'gerente'
       const isActive = profile?.is_active ?? true
+      void cacheProfile(user.id, profile)
       setProfile(profile ?? null)
       setUserRole(role)
       if (!isActive) void signOut()
