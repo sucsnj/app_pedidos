@@ -8,6 +8,13 @@ dist/
 dist-ssr/
 *.local
 
+# Service Worker em dev (vite-plugin-pwa)
+dev-dist/
+
+# Ícones gerados (fonte: pwa-assets/icon.svg; canônicos em public/)
+pwa-assets/*.png
+pwa-assets/*.ico
+
 # Arquivos de ambiente (contêm credenciais do Supabase)
 .env
 .env.local

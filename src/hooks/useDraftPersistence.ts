@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { CountedItem, FlashKind } from '../types/app'
 import type { Order } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
+import { enqueuePersistDraft, isOffline, isOfflineError } from '../lib/offlineQueue'
 import {
   mergeOrderRow,
   mergeOrdersList,
@@ -80,8 +81,8 @@ export function useDraftPersistence({
     }
     setSaving(true)
     savingRef.current = true
+    const totalItems = snapshot.items.reduce((sum, item) => sum + item.quantity, 0)
     try {
-      const totalItems = snapshot.items.reduce((sum, item) => sum + item.quantity, 0)
       const { error: orderError } = await supabase
         .from('orders')
         .update({
@@ -113,6 +114,26 @@ export function useDraftPersistence({
       commitSyncedOrder(synced)
     } catch (err) {
       dirtyRef.current = true
+      if (isOffline() || isOfflineError(err)) {
+        await enqueuePersistDraft({
+          orderId: snapshot.order.id,
+          requesterName: snapshot.requesterName,
+          notes: snapshot.notes,
+          totalItems,
+          items: snapshot.items
+            .filter((item) => item.quantity > 0)
+            .map((item) => ({
+              product_id: item.product.id,
+              product_variation_id: item.variation.id || null,
+              product_code: item.product.code,
+              product_name: item.product.name,
+              variation_name: item.variation.name,
+              quantity: item.quantity,
+              is_entered_in_legacy: item.isEnteredInLegacy,
+            })),
+        })
+        return
+      }
       throw err
     } finally {
       savingRef.current = false

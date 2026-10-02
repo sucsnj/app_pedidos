@@ -8,17 +8,20 @@ Aprofundamento do `AGENTS.md`. Foco na composição de hooks, na persistência c
 App.tsx (gate de autenticação)
  ├─ useAuth ........... sessão Supabase (getSession/onAuthStateChange) + perfil public.profiles
  │   └─ Rende LoginScreen (anônimo) ou Dashboard (logado)
+ ├─ PwaUpdatePrompt ... banners "Nova versão disponível" / "Pronto para uso offline" (src/pwa.ts)
 
 Dashboard.tsx (conteúdo autenticado)
+ ├─ useOnline .......... conectividade (navigator.onLine) — banner offline + flush da fila
  ├─ useCatalog ......... catálogo (stores, categories, products, variations) + reload/refresh
  ├─ useFlash ........... toast (notify estável; auto-dismiss 3500ms)
- ├─ useStoreSession .... SESSÃO: dono dos estados + ações            ~394 linhas
- │   ├─ useDraftPersistence ... persistência/autosave               ~199 linhas
+ ├─ useStoreSession .... SESSÃO: dono dos estados + ações            ~460 linhas
+ │   ├─ useDraftPersistence ... persistência/autosave               ~220 linhas
  │   └─ useRealtimeOrder ...... subscription Supabase                ~85 linhas
- └─ useStoreReports .... relatório + última contagem (bumpReport)
+ ├─ useStoreReports .... relatório + última contagem (bumpReport)
+ └─ lib/offlineQueue ... fila de ações offline (IndexedDB) — flush na transição online
 ```
 
-- **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId })` retorna ~24 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
+- **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId })` retorna ~25 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, refreshCurrentOrder, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
 
 ## Autenticação (`useAuth` + `App.tsx`)
 
@@ -74,11 +77,29 @@ Dono **de todos os estados** da sessão:
 ## Ações
 
 - `adjust` / `setQuantity`: resolvem via `resolveItemForCount` (produto + variação sintética) e aplicam reducers puros `adjustCountedItems`/`setCountedQuantity`. `setQuantity` trunca e não cria item com `0`.
-- `toggleEntered`: alterna `isEnteredInLegacy` (mesmo `CountedItem`).
-- `finishOrder` → Promise\<boolean>: guarda `status === 'Rascunho'`; `clearDebounce` → `markDirty` → `enqueuePersist` (flush) → update `orders` para `Concluido` → `commitSyncedOrder(completed)` → notify + navega para `entry`; `App.tsx` faz `bumpReport()` se `true`. `finishing` é estado da sessão.
-- `newCount`: flush do rascunho se houver, insere novo `Rascunho`, limpa `items`/requester/notes/`savedAt`, navega para `count`.
+- `toggleEntered`: alterna `isEnteredInLegacy` (mesmo `CountedItem`). **Limite consciente**: se o pedido tem `finish-order` na fila offline, o toggle não é enfileirado — a entrada no legado é conferida após o sync.
+- `finishOrder` → Promise\<boolean>: guarda `status === 'Rascunho'`; `clearDebounce` → `markDirty` → `enqueuePersist` (flush) → update `orders` para `Concluido` → `commitSyncedOrder(completed)` → notify + navega para `entry`; `App.tsx` faz `bumpReport()` se `true`. `finishing` é estado da sessão. **Offline**: enfileira `finish-order` na `offlineQueue`, dá notify, navega para `entry` e retorna `true` (o `bumpReport` ocorre; o status no servidor é aplicado no flush).
+- `newCount`: flush do rascunho se houver, insere novo `Rascunho`, limpa `items`/requester/notes/`savedAt`, navega para `count`. **Offline**: cria o pedido otimista com `newId()` (uuid do cliente) e enfileira `create-order` — só funciona quando a sessão já estava ativa; ir offline antes do primeiro login exige rede.
 - `selectStore` / `selectOrder`: flush + trocam contexto; `selectOrder` recarrega os `order_items`.
 - `saveNow`: flush manual imediato (mesmo debounce/chain).
+- `refreshCurrentOrder`: reconcilia o pedido corrente após o flush da fila (chama `commitSyncedOrder` com o pedido vindo do servidor para limpar `dirty`/guard do realtime e atualizar `items`).
+
+## PWA e offline
+
+- **Service Worker** (Workbox `generateSW`, `vite-plugin-pwa`): `registerType: 'prompt'`, precache JS/CSS/icons, `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` (SPA de rota única) com `navigateFallbackDenylist` para não servir HTML a requisitos de API.
+- **`runtimeCaching`**:
+  - navegação → **NetworkFirst** (`navigation-cache`);
+  - GETs cross-origin do Supabase **só de catálogo** (`stores|categories|products|product_variations`) → **NetworkFirst** + TTL 7d (`catalog-cache`);
+  - dados sensíveis (`orders`, `order_items`, `profiles`, `vw_product_suggestions`, relatório) **nunca** em cache.
+- **Ciclo de vida**: `src/pwa.ts` registra via `virtual:pwa-register` (`onNeedRefresh`/`onOfflineReady`) e expõe `setupPWA`/`subscribePWA`/`applyUpdate` (+ dismiss). `PwaUpdatePrompt` mostra banner "Nova versão disponível" (Atualizar → `applyUpdate` = skipWaiting + reload; Depois → dismiss) e "Pronto para uso offline".
+- **Fila de ações** (`lib/offlineQueue.ts`, IndexedDB `pedidos-pwa`/store `queue`):
+  - `persist-draft` → update `orders` + delete+insert `order_items` (mesmo formato do persist online, snapshot descartando `quantity <= 0`);
+  - `finish-order` → status `Concluido`;
+  - `create-order` → insert de pedido com `id` gerado pelo cliente (`newId()`).
+  - Dedupe: `persist-draft` substitui o anterior do mesmo pedido; é ignorado se já existe `finish-order` do mesmo pedido; `finish-order` substitui o anterior.
+  - `flushQueue` replay com o cliente supabase **vivo** (sessão fresca → evita 401 de JWT expirado), em ordem de `createdAt`, parando em falha de rede (resto permanece na fila). `isOffline`/`isOfflineError` detectam o cenário.
+- **Integração**: `persistOrder` enfileira `persist-draft` quando offline (sem toast repetido); `finishOrder`/`newCount` como nas Ações; `Dashboard` usa `useOnline` e no `offline→online` chama `flushQueue()` + `notify('Alterações sincronizadas.')` + `refreshCurrentOrder()`.
+- **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`/`CollaboratorsBoard`) e `toggleEntered` de pedido com `finish-order` pendente.
 
 ## `useStoreReports` — última contagem e relatório
 
@@ -101,5 +122,7 @@ Dono **de todos os estados** da sessão:
 
 - Siga o **padrão de atuação do agente** do `AGENTS.md`: atualize contextos afetados a cada alteração, não mude comportamentos do app sem autorização prévia e pergunte ante instrução ambígua.
 - Não trocar o debounce (700ms), o guard (`saving || dirty || <1500ms`) nem o delete+insert dos itens sem motivo — são decisões base de concorrência.
+- Ao mexer na fila offline, preserve: ordem `createdAt` no flush, replay com o cliente supabase vivo (evita 401 de JWT) e a reconciliação `refreshCurrentOrder`/`commitSyncedOrder` (limpa `dirty`/guard, senão a fila "prende" o realtime).
+- Fora da fila (exigem rede) continua: escrita de catálogo e `toggleEntered` de pedido com `finish-order` pendente — não "consertar" sem autorização.
 - Manter os callbacks estáveis que só leem refs (`shouldSkipSync`) e desestruturar handles estáveis do sub-hook nos deps das ações.
 - Sub-hooks novos devem receber estados/setters por parâmetro; o orquestrador segue dono dos estados.

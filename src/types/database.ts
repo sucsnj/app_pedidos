@@ -90,6 +90,7 @@ export interface Order {
   updated_at: string
 }
 export interface OrderInsert {
+  id?: string
   store_id?: string | null
   requester_name?: string
   status?: OrderStatus

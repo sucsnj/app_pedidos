@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TabId } from '../types/app'
 import type { Profile, Store as StoreRow } from '../types/database'
 import { useCatalog } from '../hooks/useCatalog'
 import { useFlash } from '../hooks/useFlash'
+import { useOnline } from '../hooks/useOnline'
 import { useStoreReports } from '../hooks/useStoreReports'
 import { useStoreSession } from '../hooks/useStoreSession'
+import { flushQueue } from '../lib/offlineQueue'
 import { AppHeader } from './AppHeader'
 import { AppNav } from './AppNav'
 import { FlashToast } from './FlashToast'
 import { MobileStatusBar } from './MobileStatusBar'
+import { OfflineBanner } from './OfflineBanner'
 import { LoadingScreen, ErrorScreen } from './AppScreen'
 import { CountingBoard } from './CountingBoard'
 import { DataEntryBoard } from './DataEntryBoard'
@@ -49,6 +52,7 @@ export function Dashboard({
     refresh: refreshCatalog,
   } = useCatalog()
   const { flash, notify } = useFlash()
+  const online = useOnline()
 
   const session = useStoreSession({
     catalog,
@@ -80,6 +84,7 @@ export function Dashboard({
     newCount,
     finishOrder,
     saveNow,
+    refreshCurrentOrder,
     clearError,
   } = session
 
@@ -101,14 +106,40 @@ export function Dashboard({
   const isLoading = catalogLoading || loading
   const errorMessage = error ?? catalogError
 
+  const isOffline = !online
+  const effectiveError = isOffline
+    ? 'Você está offline. Verifique a conexão e tente novamente.'
+    : errorMessage
+
+  const wasOfflineRef = useRef(false)
+  useEffect(() => {
+    if (isOffline) {
+      wasOfflineRef.current = true
+      return
+    }
+    if (!wasOfflineRef.current) return
+    wasOfflineRef.current = false
+    void (async () => {
+      if (errorMessage) {
+        clearError()
+        reloadCatalog()
+      }
+      const { flushed } = await flushQueue()
+      if (flushed > 0) {
+        notify('Alterações sincronizadas.', 'success')
+        await refreshCurrentOrder()
+      }
+    })()
+  }, [isOffline, errorMessage, clearError, reloadCatalog, refreshCurrentOrder, notify])
+
   if (isLoading) {
     return <LoadingScreen />
   }
 
-  if (errorMessage) {
+  if (effectiveError) {
     return (
       <ErrorScreen
-        message={errorMessage}
+        message={effectiveError}
         onRetry={() => {
           clearError()
           reloadCatalog()
@@ -119,6 +150,7 @@ export function Dashboard({
 
   return (
     <div className="min-h-screen bg-shell pb-24 text-gray-900">
+      <OfflineBanner />
       <AppHeader
         stores={catalog.stores}
         orders={orders}

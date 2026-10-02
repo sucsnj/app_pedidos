@@ -12,8 +12,16 @@ import { itemKey } from '../types/app'
 import type { Order } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
 import {
+  enqueueFinishOrder,
+  enqueueCreateOrder,
+  isOffline,
+  isOfflineError,
+  newId,
+} from '../lib/offlineQueue'
+import {
   mapOrderItems,
   mergeOrderRow,
+  sameCountedList,
   resolveItemForCount,
   adjustCountedItems,
   setCountedQuantity,
@@ -296,6 +304,14 @@ export function useStoreSession({
       onNavigate('entry')
       return true
     } catch (err) {
+      if (isOffline() || isOfflineError(err)) {
+        notify(
+          'Sem conexão — a conclusão do pedido será sincronizada automaticamente.',
+        )
+        await enqueueFinishOrder(order.id).catch(() => undefined)
+        onNavigate('entry')
+        return true
+      }
       notify(getErrorMessage(err), 'error')
       return false
     } finally {
@@ -345,6 +361,28 @@ export function useStoreSession({
       onNavigate('count')
       notify('Nova contagem iniciada.', 'success')
     } catch (err) {
+      if (isOffline() || isOfflineError(err)) {
+        const optimistic: Order = {
+          id: newId(),
+          store_id: activeStoreId,
+          requester_name: '',
+          status: 'Rascunho',
+          total_items: 0,
+          notes: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        await enqueueCreateOrder(optimistic).catch(() => undefined)
+        setCurrentOrder(optimistic)
+        setOrders((previous) => [optimistic, ...previous].slice(0, 25))
+        setItems([])
+        setRequesterName('')
+        setNotes('')
+        resetSavedAt()
+        onNavigate('count')
+        notify('Nova contagem iniciada — será sincronizada quando houver rede.')
+        return
+      }
       notify(getErrorMessage(err), 'error')
     }
   }, [
@@ -405,6 +443,24 @@ export function useStoreSession({
     ],
   )
 
+  const refreshCurrentOrder = useCallback(async (): Promise<void> => {
+    const order = currentOrder
+    if (!order) return
+    try {
+      const [orderResult, rows] = await Promise.all([
+        supabase.from('orders').select('*').eq('id', order.id).single(),
+        fetchOrderItems(order.id),
+      ])
+      if (orderResult.error) throw orderResult.error
+      if (orderResult.data) {
+        commitSyncedOrder(orderResult.data)
+        setItems((previous) => (sameCountedList(previous, rows) ? previous : rows))
+      }
+    } catch {
+      // Reconciliação auxiliar após o sync da fila; falhas não bloqueiam o app.
+    }
+  }, [currentOrder, commitSyncedOrder, fetchOrderItems])
+
   const clearError = useCallback((): void => setError(null), [])
 
   return {
@@ -430,6 +486,7 @@ export function useStoreSession({
     newCount,
     finishOrder,
     saveNow,
+    refreshCurrentOrder,
     clearError,
   }
 }

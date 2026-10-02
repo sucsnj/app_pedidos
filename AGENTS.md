@@ -8,7 +8,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Stack e scripts
 
-- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`.
+- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`. PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
 - Sem teste automatizado. Sem config de ESLint (há `// eslint-disable` apenas de legado).
 - Scripts (`npm run`):
   - `dev` — Vite dev server.
@@ -22,7 +22,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 - Hooks: `useAuth` (sessão Supabase), `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente).
 - `App.tsx` é o **gate de autenticação**: `useAuth` decide entre `LoginScreen` (anônimo) e `Dashboard` (logado). Após o login, o próprio `App.tsx` consulta `public.profiles` (`maybeSingle()` por `user.id`, falha de leitura não bloqueia), define `userRole` (`profile?.role || 'gerente'`) e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` para depuração. `Dashboard` é o orquestrador que **compõe hooks** e renderiza telas.
-- `useStoreSession` (~394 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Contrato de retorno (~24 campos) deve permanecer intacto — `App.tsx` destrutura tudo.
+- `useStoreSession` (~394 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Contrato de retorno deve permanecer intacto — o orquestrador (`Dashboard`) destrutura tudo; adições são permitidas (ex.: `refreshCurrentOrder` para reconciliar o pedido corrente após o flush da fila offline).
 - Boards (`components/`): `CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard` — sem estado próprio de sessão, recebem props.
 - Camada pura: `lib/orders.ts` concentra regras de contagem/pedidos (sem dependência de React). Utils genéricos em `lib/utils.ts` (`getErrorMessage`).
 - Tipos: `types/app.ts` (domínio da UI/sessão) e `types/database.ts` (linhas do banco + `Database` para o supabase-js).
@@ -38,9 +38,14 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/hooks/useRealtimeOrder.ts` | Subscription Supabase por pedido + reload no guard |
 | `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts` | Suporte: catálogo, notificações, relatório |
 | `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos, `orderLabel` |
+| `src/lib/offlineQueue.ts` | Fila de ações offline (IndexedDB `pedidos-pwa/queue`): `enqueuePersistDraft`, `enqueueFinishOrder`, `enqueueCreateOrder`, `flushQueue`, `isOffline`/`isOfflineError` |
+| `src/lib/supabase.ts` | Cliente Supabase tipado |
+| `src/pwa.ts` | Registro do SW (`setupPWA`), estado de atualização/offline-ready e `applyUpdate` (bridges via `subscribePWA`) |
+| `src/hooks/useOnline.ts` | Hook de conectividade (`navigator.onLine` + eventos online/offline) |
+| `src/components/PwaUpdatePrompt.tsx` | Banners "Nova versão disponível" (Atualizar/Depois) e "Pronto para uso offline" |
+| `src/components/OfflineBanner.tsx` | Banner "Sem conexão — as alterações serão sincronizadas quando houver rede" |
 | `src/lib/orderText.ts` | Resumo do pedido em texto p/ colar (legado/WhatsApp) — `buildOrderSummary` + `copyTextToClipboard` |
 | `src/lib/utils.ts` | `getErrorMessage`, datas pt-BR (`formatDate`/`formatDateTime`), `parseNumber`, `emptyText` |
-| `src/lib/supabase.ts` | Cliente Supabase tipado |
 | `src/types/app.ts` | `Catalog`, `CountedItem`, `ItemKey`, `SuggestionsMap`, `TabId`, flash/report, `compareByEntryCode`, `SYNTHETIC_VARIATION_ID`/`defaultVariationForProduct` |
 | `src/types/database.ts` | Tipos de tabelas + interface `Database` |
 | `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards |
@@ -87,12 +92,22 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Resumo em texto**: `buildOrderSummary` (`lib/orderText.ts`) gera o pedido para colagem (WhatsApp/legado), com ordem PLU/SKU; `copyTextToClipboard` tem fallback via `document.execCommand`.
 - **Lista de pedidos**: máx. 25 por loja, ordenada por `updated_at desc`.
 
+## PWA e offline
+
+- **Service Worker**: Workbox `generateSW` via `vite-plugin-pwa` (`vite.config.ts`) com `registerType: 'prompt'`, precache automático (JS/CSS/icons), `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` e `navigateFallbackDenylist` para não servir HTML para requisitos de API.
+- **Caching** (`runtimeCaching`): navegação **NetworkFirst** (`navigation-cache`); GETs cross-origin do Supabase **só de catálogo** (`stores|categories|products|product_variations`) em **NetworkFirst** + TTL 7d (`catalog-cache`). Dados sensíveis (`orders`, `order_items`, `profiles`, `vw_product_suggestions`, relatório) **nunca** entram em cache.
+- **Ciclo de vida**: `src/pwa.ts` registra via `virtual:pwa-register` (`onNeedRefresh`/`onOfflineReady`); `PwaUpdatePrompt` mostra "Nova versão disponível" (Atualizar/Depois) e "Pronto para uso offline".
+- **Fila de ações offline** (`lib/offlineQueue.ts`, IndexedDB `pedidos-pwa/queue`): `persist-draft` (update orders + delete+insert items, mesmo formato do persist online), `finish-order` (status `Concluido`), `create-order` (id otimista uuid do cliente). `flushQueue` replay com o cliente supabase vivo (sessão fresca → evita 401 de JWT expirado) em ordem de `createdAt`, parando em falha de rede. `isOffline`/`isOfflineError` detectam o cenário.
+- **Integração**: `persistOrder` enfileira `persist-draft` (sem toast repetido); `finishOrder` enfileira `finish-order` e navega para Digitação; `newCount` cria pedido otimista e enfileira `create-order`. Após o flush (transição offline→online no `Dashboard`), `refreshCurrentOrder` reconcilia pedido corrente via `commitSyncedOrder` (limpa `dirty`/guard do realtime).
+- **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`) e `toggleEntered` de pedido já agendado para concluir — limites conscientes.
+
 ## Fontes de verdade (onde procurar)
 
 - **Schema/colunas**: `src/types/database.ts` — canônico (alimenta o generic do supabase-js). `docs/data-model.md` resume a semântica — se conflitar, vale o tipo.
 - **Regras de contagem/pedidos**: `src/lib/orders.ts` (funções puras, sem React).
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
 - **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `emptyText`).
+- **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
 - **Autenticação/perfil**: `src/hooks/useAuth.ts` (sessão) + `src/App.tsx` (consulta `public.profiles`, `userRole`) + `src/types/database.ts`.
 - **Catálogo/notificações/relatório**: `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts`.
@@ -112,8 +127,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Estado do repo
 
-- Branch: `agente` — modularização concluída (`App.tsx` é o gate de auth; `Dashboard.tsx` ~conteúdo autenticado; `useStoreSession` ~394).
-- `HEAD`: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Autenticação B2B implementada (`useAuth`, `LoginScreen`, RBAC por cargo, `CollaboratorsBoard` com `auth.signUp` + restauração de sessão do admin + revogação) — alterações ainda não commitadas.
+- Branch: `pwa` — comporta a implementação PWA (manifest/SW, caches, ciclo de vida e fila de ações offline). Modularização concluída (`App.tsx` é o gate de auth; `Dashboard.tsx` ~conteúdo autenticado; `useStoreSession` ~460).
+- `HEAD` base: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Autenticação B2B implementada (`useAuth`, `LoginScreen`, RBAC por cargo, `CollaboratorsBoard` com `auth.signUp` + restauração de sessão do admin + revogação). Detalhes por etapa no `PROJECT_STATUS.md`.
 - Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado".
 
 ## Padrão de atuação do agente
@@ -129,6 +144,7 @@ Sempre que fizer qualquer alteração:
 
 - Não altere o contrato de retorno de `useStoreSession` sem ajustar `App.tsx`.
 - Não mude o debounce (700ms), o guard do realtime (`saving || dirty || <1500ms`) nem a estratégia delete+insert dos itens sem motivo — são decisões base de concorrência.
+- Ao mexer na fila offline, preserve a ordem `createdAt`, o replay com o cliente vivo e a reconciliação via `refreshCurrentOrder`/`commitSyncedOrder` (evita 401 de JWT e fila "presa" com guard do realtime).
 - Ao mexer em hooks, valide com `npm run typecheck` e `npm run build`.
 
 ## Receita para mudanças seguras

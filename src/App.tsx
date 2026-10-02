@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth'
 import { LoadingScreen } from './components/AppScreen'
 import { LoginScreen } from './components/LoginScreen'
 import { Dashboard } from './components/Dashboard'
+import { PwaUpdatePrompt } from './components/PwaUpdatePrompt'
 
 export default function App() {
   const { user, loading, signIn, signOut } = useAuth()
@@ -38,23 +39,36 @@ export default function App() {
   }, [user?.id, signOut])
 
   if (loading) {
-    return <LoadingScreen message="Verificando sessão..." />
+    return (
+      <>
+        <PwaUpdatePrompt />
+        <LoadingScreen message="Verificando sessão..." />
+      </>
+    )
   }
 
   if (!user) {
-    return <LoginScreen onSignIn={signIn} />
+    return (
+      <>
+        <PwaUpdatePrompt />
+        <LoginScreen onSignIn={signIn} />
+      </>
+    )
   }
 
   const baseName = profile?.full_name || user.email || 'Usuário'
   const userName = profile?.username ? `${baseName} (@${profile.username})` : baseName
 
   return (
-    <Dashboard
-      profile={profile}
-      userName={userName}
-      isAdmin={userRole === 'admin'}
-      currentUserId={user.id}
-      onSignOut={signOut}
-    />
+    <>
+      <PwaUpdatePrompt />
+      <Dashboard
+        profile={profile}
+        userName={userName}
+        isAdmin={userRole === 'admin'}
+        currentUserId={user.id}
+        onSignOut={signOut}
+      />
+    </>
   )
 }
