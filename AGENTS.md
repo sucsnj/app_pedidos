@@ -78,6 +78,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 - `locksOrder` = `currentOrder !== null && currentOrder.status !== 'Rascunho'` — trava edição quando o pedido não é rascunho.
 - Concluir um pedido navega para `entry` ("Modo Digitação"); em seguida o `comparativo` compara com a última contagem.
+- **Layout responsivo**: container de `Header`/`Nav`/`main` é `max-w-3xl` (mobile-first) alargando em `lg:max-w-5xl`/`xl:max-w-6xl`/`2xl:max-w-7xl`; no widescreen a Prancheta mostra produtos por categoria em 2–3 colunas (`lg:grid-cols-2 xl:grid-cols-3`) e a Digitação em 2 colunas (`lg:grid-cols-2`), usando `grid gap-px bg-gray-100 p-px` (linhas 1px, rótulos em células com `bg` opaco).
 
 ## Regras de domínio (resumo)
 

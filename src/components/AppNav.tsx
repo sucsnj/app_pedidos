@@ -38,7 +38,7 @@ export function AppNav({
   })
   return (
     <nav className="sticky top-0 z-20 border-b border-gray-200 bg-shell/95 backdrop-blur">
-      <div className="mx-auto flex max-w-3xl items-center gap-1.5 px-4 py-2">
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5 px-4 py-2 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
         <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
           {visibleTabs.map((entry) => {
             const active = tab === entry.id

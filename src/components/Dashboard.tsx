@@ -210,7 +210,7 @@ export function Dashboard({
         onFinish={() => void handleFinishOrder()}
       />
 
-      <main className="mx-auto max-w-3xl px-3 pt-4">
+      <main className="mx-auto w-full max-w-3xl px-3 pt-4 lg:max-w-5xl lg:px-6 xl:max-w-6xl 2xl:max-w-7xl">
         {tab === 'count' && (
           <CountingBoard
             storeName={activeStore?.name ?? 'Nenhuma loja selecionada'}

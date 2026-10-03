@@ -191,7 +191,7 @@ export function CountingBoard({
               />
             </button>
             {collapsedCategories.has(category.id) ? null : (
-              <div className="divide-y divide-gray-100">
+              <div className="grid gap-px bg-gray-100 p-px lg:grid-cols-2 xl:grid-cols-3">
                   {categoryProducts.map((product) => {
                 const productVariations = variations.filter(
                   (variation) => variation.product_id === product.id,
@@ -202,7 +202,7 @@ export function CountingBoard({
                     : [defaultVariationForProduct(product)]
 
                 return (
-                  <div key={product.id} className="px-4 py-3">
+                  <div key={product.id} className="min-w-0 bg-white px-4 py-3">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <p className="min-w-0 flex-1 truncate text-base font-semibold text-gray-800">
                         {product.name}

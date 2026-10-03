@@ -111,3 +111,4 @@ Decisões de design (validadas):
 | 2026-10-01 | 6 | Leitura offline: espelho local (IndexedDB v2 `mirror`) + fallback "servidor 1º, espelho" em sessão/relatórios/perfil. |
 | 2026-10-03 | 6b | Endurecimento offline: detecção de falha de rede por mensagem (`PostgrestError` "Failed to fetch"/`AbortError`) + fetch com timeout de 10s no cliente Supabase. |
 | 2026-10-03 | 6c | Sync com feedback: `subscribePending`/`usePendingSync`/`SyncBanner`, `flushQueue(force?)` e auto-sync no mount/transição/20s + botão "Sincronizar". |
+| 2026-10-03 | 7 | Layout responsivo widescreen: container alarga para `max-w-7xl` (lg/xl/2xl); Prancheta em 2–3 colunas e Digitação em 2 colunas em telas grandes. |

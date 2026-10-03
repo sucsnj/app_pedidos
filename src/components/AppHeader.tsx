@@ -44,7 +44,7 @@ export function AppHeader({
 
   return (
     <header className="bg-wine-700 text-white shadow-md">
-      <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-3 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-400">
