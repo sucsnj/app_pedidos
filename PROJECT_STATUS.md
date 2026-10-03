@@ -83,6 +83,7 @@ Decisões de design (validadas):
 - [x] Estratégia **servidor 1º, espelho fallback**: `useStoreSession` (carga da loja, `fetchOrderItems`, `fetchSuggestions`), `useStoreReports` e `App.tsx` (perfil) só leem o espelho quando a leitura falha por offline (`isOffline`/`isOfflineError`); toda leitura/escrita bem-sucedida atualiza o espelho.
 - [x] Salvamento espelha sempre: `persistOrder` (online e offline), `finishOrder`, `newCount` (online e otimista) e `refreshCurrentOrder` gravam `updateOrderInStore`/`cacheCountedItems` — abrir offline mostra o estado da última sincronização, inclusive ações ainda na fila.
 - [x] Sessão/login offline preservada: `App.tsx` cai para o perfil espelhado (role/loja) quando `profiles` falha.
+- [x] Detecção de offline robusta + timeout: `isOfflineError` reconhece falha de rede por mensagem (ex.: `PostgrestError` "Failed to fetch"/"fetch failed" e `AbortError`), além do `TypeError`/`navigator.onLine` — corrige toasts de erro e tela de erro ao cair a rede com sessão ativa ou no F5 offline. Cliente Supabase usa fetch com abort em 10s (`lib/supabase.ts`) para falhar rápido em "conectado sem internet".
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK; aviso de chunk ~560 kB não bloqueante).
 - [ ] Limitação documentada: catálogo continua dependente do cache NetworkFirst do SW (TTL 7d) — sem rede por mais de 7 dias, o catálogo exige reconexão; primeira abertura 100% offline sem espelho prévio mostra a tela de offline.
 
@@ -101,3 +102,4 @@ Decisões de design (validadas):
 | 2026-10-01 | 1–4 | Shell PWA (manifest/SW), caches (NetworkFirst/CacheFirst), ciclo de vida `prompt` e fila de ações offline (IndexedDB). |
 | 2026-10-01 | 5 | Docs/contexto de agentes + validação final. |
 | 2026-10-01 | 6 | Leitura offline: espelho local (IndexedDB v2 `mirror`) + fallback "servidor 1º, espelho" em sessão/relatórios/perfil. |
+| 2026-10-03 | 6b | Endurecimento offline: detecção de falha de rede por mensagem (`PostgrestError` "Failed to fetch"/`AbortError`) + fetch com timeout de 10s no cliente Supabase. |

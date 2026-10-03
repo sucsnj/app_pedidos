@@ -43,12 +43,20 @@ export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && !navigator.onLine
 }
 
+const NETWORK_FAILURE_PATTERN =
+  /failed to fetch|fetch failed|load failed|network request failed|network error|econnrefused|enotfound|ehostunreach|enetunreach|net::err/i
+
 export function isOfflineError(err: unknown): boolean {
   if (isOffline()) return true
-  return (
-    err instanceof TypeError &&
-    /fetch|network|load failed/i.test(err.message)
-  )
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err instanceof TypeError && /fetch|network|load failed/i.test(err.message)) {
+    return true
+  }
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: unknown }).message)
+      : ''
+  return message ? NETWORK_FAILURE_PATTERN.test(message) : false
 }
 
 function readAll(db: IDBDatabase): Promise<QueuedAction[]> {

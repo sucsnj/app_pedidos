@@ -10,4 +10,21 @@ if (!supabaseUrl || !supabaseKey) {
   )
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey)
+const REQUEST_TIMEOUT_MS = 10000
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const signals: AbortSignal[] = [controller.signal]
+  if (init?.signal) {
+    signals.push(init.signal)
+  }
+  const signal = signals.length === 1 ? signals[0] : AbortSignal.any(signals)
+  return fetch(input, { ...init, signal }).finally(() => clearTimeout(timer))
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+  global: {
+    fetch: fetchWithTimeout,
+  },
+})
