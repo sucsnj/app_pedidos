@@ -87,11 +87,18 @@ Decisões de design (validadas):
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK; aviso de chunk ~560 kB não bloqueante).
 - [ ] Limitação documentada: catálogo continua dependente do cache NetworkFirst do SW (TTL 7d) — sem rede por mais de 7 dias, o catálogo exige reconexão; primeira abertura 100% offline sem espelho prévio mostra a tela de offline.
 
+### Etapa 6c — Sync com feedback (Concluída)
+- [x] `subscribePending` (em `lib/offlineQueue.ts`): emite o contador real da fila a cada enqueue/flush — fonte de verdade independente do `navigator.onLine`.
+- [x] `usePendingSync` (novo hook) + `SyncBanner` (novo componente): banner "X alterações aguardando sincronização" com botão "Sincronizar" e estado "Sincronizando…".
+- [x] `flushQueue(force?)`: `force` ignora o guard `isOffline()` — retry/botão funcionam mesmo com `navigator.onLine` defasado (WiFi "conectado" sem internet).
+- [x] `Dashboard`: auto-sync no mount (pendências de sessões anteriores), na transição offline→online e a cada 20s enquanto houver pendência online; toast "Alterações sincronizadas." + `refreshCurrentOrder` só no sucesso.
+- [x] Validação automática: `npm run typecheck` + `npm run build` (OK).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
 - [ ] Redes offline (DevTools) e recarregar: shell abre, catálogo vem do cache e dados (pedido/itens/sugestões/relatório/perfil) vêm do espelho local.
-- [ ] Fazer contagem offline (editar/novo pedido/concluir) → voltar online → verificar sync da fila + espelho atualizado.
+- [ ] Fazer contagem offline (editar/novo pedido/concluir) → banner "X alterações aguardando sincronização" aparece → voltar online → auto-sync ou botão "Sincronizar" → toast "Alterações sincronizadas." + espelho atualizado.
 - [ ] Publicar nova versão → ver banner de atualização → confirmar reload com dados preservados.
 
 ## Histórico
@@ -103,3 +110,4 @@ Decisões de design (validadas):
 | 2026-10-01 | 5 | Docs/contexto de agentes + validação final. |
 | 2026-10-01 | 6 | Leitura offline: espelho local (IndexedDB v2 `mirror`) + fallback "servidor 1º, espelho" em sessão/relatórios/perfil. |
 | 2026-10-03 | 6b | Endurecimento offline: detecção de falha de rede por mensagem (`PostgrestError` "Failed to fetch"/`AbortError`) + fetch com timeout de 10s no cliente Supabase. |
+| 2026-10-03 | 6c | Sync com feedback: `subscribePending`/`usePendingSync`/`SyncBanner`, `flushQueue(force?)` e auto-sync no mount/transição/20s + botão "Sincronizar". |

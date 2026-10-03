@@ -4,6 +4,7 @@ import type { Profile, Store as StoreRow } from '../types/database'
 import { useCatalog } from '../hooks/useCatalog'
 import { useFlash } from '../hooks/useFlash'
 import { useOnline } from '../hooks/useOnline'
+import { usePendingSync } from '../hooks/usePendingSync'
 import { useStoreReports } from '../hooks/useStoreReports'
 import { useStoreSession } from '../hooks/useStoreSession'
 import { flushQueue } from '../lib/offlineQueue'
@@ -12,6 +13,7 @@ import { AppNav } from './AppNav'
 import { FlashToast } from './FlashToast'
 import { MobileStatusBar } from './MobileStatusBar'
 import { OfflineBanner } from './OfflineBanner'
+import { SyncBanner } from './SyncBanner'
 import { LoadingScreen, ErrorScreen } from './AppScreen'
 import { CountingBoard } from './CountingBoard'
 import { DataEntryBoard } from './DataEntryBoard'
@@ -53,6 +55,8 @@ export function Dashboard({
   } = useCatalog()
   const { flash, notify } = useFlash()
   const online = useOnline()
+  const { pending, refresh } = usePendingSync()
+  const [syncing, setSyncing] = useState(false)
 
   const session = useStoreSession({
     catalog,
@@ -111,6 +115,24 @@ export function Dashboard({
     ? 'Você está offline. Verifique a conexão e tente novamente.'
     : errorMessage
 
+  const syncingRef = useRef(false)
+  const syncPending = useCallback(async (): Promise<void> => {
+    if (syncingRef.current) return
+    syncingRef.current = true
+    setSyncing(true)
+    try {
+      const { flushed, remaining } = await flushQueue(true)
+      if (flushed > 0) {
+        notify('Alterações sincronizadas.', 'success')
+        await refreshCurrentOrder()
+      }
+      if (remaining === 0) void refresh()
+    } finally {
+      syncingRef.current = false
+      setSyncing(false)
+    }
+  }, [notify, refreshCurrentOrder, refresh])
+
   const wasOfflineRef = useRef(false)
   useEffect(() => {
     if (isOffline) {
@@ -119,18 +141,28 @@ export function Dashboard({
     }
     if (!wasOfflineRef.current) return
     wasOfflineRef.current = false
-    void (async () => {
-      if (errorMessage) {
-        clearError()
-        reloadCatalog()
-      }
-      const { flushed } = await flushQueue()
-      if (flushed > 0) {
-        notify('Alterações sincronizadas.', 'success')
-        await refreshCurrentOrder()
-      }
-    })()
-  }, [isOffline, errorMessage, clearError, reloadCatalog, refreshCurrentOrder, notify])
+    if (errorMessage) {
+      clearError()
+      reloadCatalog()
+    }
+    void syncPending()
+  }, [isOffline, errorMessage, clearError, reloadCatalog, syncPending])
+
+  const didAttemptMountSync = useRef(false)
+  useEffect(() => {
+    if (didAttemptMountSync.current) return
+    didAttemptMountSync.current = true
+    if (!isOffline) void syncPending()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!online || pending === 0) return
+    const timer = window.setInterval(() => {
+      void syncPending()
+    }, 20000)
+    return () => window.clearInterval(timer)
+  }, [online, pending, syncPending])
 
   if (isLoading) {
     return <LoadingScreen />
@@ -151,6 +183,7 @@ export function Dashboard({
   return (
     <div className="min-h-screen bg-shell pb-24 text-gray-900">
       <OfflineBanner />
+      <SyncBanner pending={pending} syncing={syncing} onSync={() => void syncPending()} />
       <AppHeader
         stores={catalog.stores}
         orders={orders}

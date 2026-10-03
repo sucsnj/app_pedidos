@@ -86,6 +86,27 @@ function remove(db: IDBDatabase, id: string): Promise<void> {
   })
 }
 
+type PendingListener = (count: number) => void
+const pendingListeners = new Set<PendingListener>()
+
+export function subscribePending(listener: PendingListener): () => void {
+  pendingListeners.add(listener)
+  void pendingCount()
+    .then(listener)
+    .catch(() => undefined)
+  return () => {
+    pendingListeners.delete(listener)
+  }
+}
+
+function emitPending(): void {
+  void pendingCount()
+    .then((count) => {
+      for (const listener of pendingListeners) listener(count)
+    })
+    .catch(() => undefined)
+}
+
 async function enqueue(action: OfflineAction): Promise<void> {
   await withDB(async (db) => {
     const current = await readAll(db)
@@ -112,6 +133,7 @@ async function enqueue(action: OfflineAction): Promise<void> {
 
     if (previousId) await remove(db, previousId)
     await write(db, { id: newId(), createdAt: Date.now(), action })
+    emitPending()
   })
 }
 
@@ -200,8 +222,8 @@ export interface FlushResult {
   remaining: number
 }
 
-export async function flushQueue(): Promise<FlushResult> {
-  if (isOffline()) return { flushed: 0, remaining: 0 }
+export async function flushQueue(force = false): Promise<FlushResult> {
+  if (!force && isOffline()) return { flushed: 0, remaining: 0 }
   const entries = await listPending()
   let flushed = 0
   for (const entry of entries) {
@@ -214,5 +236,6 @@ export async function flushQueue(): Promise<FlushResult> {
     }
   }
   const remaining = await pendingCount()
+  emitPending()
   return { flushed, remaining }
 }
