@@ -24,8 +24,8 @@ export const APP_SECTIONS: AppSection[] = [
     path: MANAGEMENT_PATH,
     label: 'Gestão',
     icon: Settings,
-    description: 'Cadastro de lojas, produtos e usuários, além de relatórios gerenciais.',
-    ready: false,
+    description: 'Indicadores de vendas e metas, além de cadastros e relatórios gerenciais.',
+    ready: true,
   },
 ]
 

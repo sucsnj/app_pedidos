@@ -1,6 +1,9 @@
 import { supabase } from './supabase'
 import { withDB } from './localCache'
+import { newId } from './utils'
 import type { Order } from '../types/database'
+
+export { newId }
 
 export interface DraftItemRow {
   product_id: string | null
@@ -31,13 +34,6 @@ interface QueuedAction {
 }
 
 const STORE_NAME = 'queue'
-
-export function newId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
 
 export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && !navigator.onLine

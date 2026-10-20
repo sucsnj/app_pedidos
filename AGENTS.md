@@ -8,12 +8,14 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Stack e scripts
 
-- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`, `react-router-dom` v7 (rotas da SPA). PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
-- Sem teste automatizado. Sem config de ESLint (há `// eslint-disable` apenas de legado).
+- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`, `react-router-dom` v7 (rotas da SPA), Vitest 5 (testes unitários). PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
+- Testes: `npm test` (`vitest run`), arquivos `src/**/*.test.ts`, config em `vitest.config.ts` (ambiente `node`, sem o plugin PWA).
+- Sem config de ESLint (há `// eslint-disable` apenas de legado).
 - Scripts (`npm run`):
   - `dev` — Vite dev server.
   - `build` — `tsc -b && vite build`.
   - `typecheck` / `lint` — `tsc -b --noEmit` (idênticos).
+  - `test` — `vitest run` (unitários do `lib/`).
 - Para rodar: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (obrigatório, o `lib/supabase.ts` lança erro sem elas).
 
 ## Arquitetura (visão geral)
@@ -37,6 +39,11 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/TopNav.tsx` | Navbar de seções (marca + links `NavLink` + usuário/cargo/Sair) — compartilhada por todas as rotas |
 | `src/components/SectionPlaceholder.tsx` | Tela genérica "em construção" (ícone, descrição da seção, selo "em breve") |
 | `src/lib/sections.ts` | Registro das seções/endpoints (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) + `DEFAULT_SECTION_PATH` |
+| `src/lib/salesMetrics.ts` | Service puro do cálculo de vendas: `normalizeSalesPayload` (validação → 400), `buildSalesPayloadFromForm` (formulário → payload), `calculateSalesMetrics` (regras de negócio), `round2`, `processSalesPayload` |
+| `src/types/sales.ts` | DTOs do módulo de vendas (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`) |
+| `src/hooks/useSalesMetrics.ts` | Controller do módulo: estado do formulário (meta + linhas de vendedor), `addSeller`/`updateSeller`/`removeSeller`, `process`/`clear`/`loadExample` e erro de validação (`status` 400) |
+| `src/components/SalesMetricsPanel.tsx` | UI do cálculo: campo de meta, linhas de vendedor (adicionar/remover), botão Calcular, cards de resumo e detalhamento por vendedor |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho da seção + `SalesMetricsPanel`) |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
@@ -79,7 +86,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`, escolha lembrada em `localStorage`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving` |
 | Navegação | `AppNav` | Tabs + botão "Concluir Pedido" à direita da aba "Contagem" (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
 | Navbar de seções | `TopNav` | Marca do app + links `NavLink` para as seções (`APP_SECTIONS`), nome do usuário (toque mostra o nome completo em popover ~2,5s), badge de cargo (ADMIN/GERENTE) e botão Sair (`signOut`) — visível em **todas** as rotas |
-| Rota `/management` | `SectionPlaceholder` | Tela "em construção" (ícone, descrição da seção, selo "em breve") — genérica, serve a qualquer seção ainda não implementada |
+| Rota `/management` | `ManagementScreen` + `SalesMetricsPanel` | Cálculo de vendas por **formulário** (campo de meta + linhas de vendedor com nome/valor) → resumo (`totalSold`, `effectiveBaseTotal`, `averageTicket`, `count`, `targetAchievementPercentage`, `topSale`) e `salesReport` com `percentage`. Dados inválidos → erro 400 na tela. Seção placeholder (`SectionPlaceholder`) continua como fallback para seções sem implementação |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
 | Toast | `FlashToast` | Notificações via `useFlash` (`notify`) |
 
@@ -118,8 +125,9 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 - **Schema/colunas**: `src/types/database.ts` — canônico (alimenta o generic do supabase-js). `docs/data-model.md` resume a semântica — se conflitar, vale o tipo.
 - **Regras de contagem/pedidos**: `src/lib/orders.ts` (funções puras, sem React).
+- **Regras de vendas/métricas**: `src/lib/salesMetrics.ts` (service puro, com testes em `salesMetrics.test.ts`) + DTOs em `src/types/sales.ts`.
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
-- **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `emptyText`).
+- **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `parseNumberOrNull`, `newId`, `emptyText`, `formatCurrency`, `formatPercentage`).
 - **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/lib/localCache.ts` (espelho de leitura) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
 - **Autenticação/perfil**: `src/hooks/useAuth.ts` (sessão) + `src/App.tsx` (consulta `public.profiles`, `userRole`) + `src/types/database.ts`.

@@ -2,9 +2,10 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import type { Profile } from '../types/database'
-import { APP_SECTIONS, DEFAULT_SECTION_PATH, ORDERS_PATH } from '../lib/sections'
+import { APP_SECTIONS, DEFAULT_SECTION_PATH, MANAGEMENT_PATH, ORDERS_PATH } from '../lib/sections'
 import type { AppSection } from '../lib/sections'
 import { Dashboard } from './Dashboard'
+import { ManagementScreen } from './ManagementScreen'
 import { SectionPlaceholder } from './SectionPlaceholder'
 import { TopNav } from './TopNav'
 
@@ -34,6 +35,9 @@ export function AppShell({
       return (
         <Dashboard profile={profile} isAdmin={isAdmin} currentUserId={currentUserId} />
       )
+    }
+    if (section.path === MANAGEMENT_PATH) {
+      return <ManagementScreen />
     }
     return <SectionPlaceholder section={section} />
   }

@@ -124,6 +124,21 @@ Dono **de todos os estados** da sessão:
   - `topProducts` — agrega `quantity` dos últimos 30 dias por `itemKey` (top 10), `label` = nome do produto + variação; `topProduct` = primeira entrada.
 - Falhas são silenciosas (relatório auxiliar não bloqueia o app); em falha **offline** lê `readLastOrder`/`readReport` do espelho. `bumpReport()` força recarga; `App.tsx` o chama após `finishOrder` bem-sucedido.
 
+## Cálculo de vendas (`/management`)
+
+Módulo **estateless** (não persiste nada no banco): o usuário informa um payload JSON e a tela mostra o resumo e o detalhamento.
+
+- **DTOs** (`types/sales.ts`): `SalesPayload` (`customTotalBase: number | null`, `sales: SalesItemInput[]`), `SalesItemInput` (`id: string | number`, `name: string`, `value: number`), `SalesSummary`, `SalesReportItem` (`SalesItemInput` + `percentage`), `SalesMetricsResult` (`{ summary, salesReport }`), `SalesValidationError` (`status: 400`, `message`, `details`).
+- **Service** (`lib/salesMetrics.ts`, puro e testado):
+  - `normalizeSalesPayload(input)` — valida tipos e valores (`id` texto/número, `name` não vazio, `value` número finito `>= 0`, `customTotalBase` número `>= 0`, `sales` lista). Acumula **todos** os erros e lança `SalesPayloadError` (`status 400`, `details[]`).
+  - `calculateSalesMetrics(payload)` — regras: `totalSold` = soma dos valores; `effectiveBaseTotal` = base informada se `> 0`, senão `totalSold`; `percentage` = `value / effectiveBaseTotal * 100` (**0** quando a base é 0); `averageTicket` = `totalSold / count` (**0** com lista vazia); `topSale` = maior `value` (empate mantém o **primeiro**; lista vazia → `null`); `targetAchievementPercentage` = `totalSold / base * 100` quando há base válida, senão `100` (ou `0` sem vendas).
+  - `round2` — arredonda para 2 casas; `processSalesPayload` — atalho entrada → saída.
+  - `buildSalesPayloadFromForm({ meta, rows })` — converte o **formulário** (meta + linhas de vendedor) no payload do contrato, acumulando os erros de digitação (`status 400`): nome vazio, valor não numérico/negativo, meta não numérica/negativa. Valores aceitam vírgula decimal (`parseNumberOrNull`).
+- **Controller** (`hooks/useSalesMetrics.ts`): estado do formulário (`meta`, `sellers[]` com `uid`/`name`/`value`), `addSeller`/`updateSeller`/`removeSeller` (remove só com mais de uma linha), `process` (formulário → payload → service; erro → `SalesValidationError` com `status` 400), `clear`, `loadExample`.
+- **UI** (`components/SalesMetricsPanel.tsx`): campo de **Meta** (opcional), linhas de **vendedor** (nome + valor, botão "Adicionar vendedor" e lixeira por linha), botões Calcular/Exemplo/Limpar; erro 400 com lista de detalhes; cards de resumo (`sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4`) e detalhamento por vendedor em cards com barra de `percentage` (`sm:grid-cols-2 xl:grid-cols-3`).
+- **Rota**: `/management` → `ManagementScreen` (cabeçalho da seção + painel). Seções ainda sem implementação continuam caindo no `SectionPlaceholder` ("em construção").
+- **Testes** (`lib/salesMetrics.test.ts`, Vitest): base customizada, fallback sem base, lista vazia, divisão por zero, empate no `topSale`, arredondamento, validação 400 e conversão do formulário (meta + vendedores → payload).
+
 ## Telas — comportamentos notáveis
 
 - **`CatalogBoard` (tab Cadastro, só `admin`)**: CRUD de lojas/categorias/produtos/variações com escrita **direta no Supabase** (fora do `useStoreSession`; sem chain/persist). Cada operação chama `refreshCatalog` (= `loadCatalog`, recarrega o catálogo) e mostra toast. Nova categoria usa `display_order = max + 1` (ou 1 se vazio); novo produto usa `max display_order` dos produtos da categoria selecionada + 1; preço/ordem via `parseNumber`. Produtos do catálogo carregam por `display_order` (depois `name`) — a contagem exibe cada categoria nessa ordem.

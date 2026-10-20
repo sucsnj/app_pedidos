@@ -9,6 +9,8 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 
 ## Conjuntos de dados
 
+> Módulo de vendas (`/management`): **não usa tabelas** — meta e vendedores são informados no formulário e calculados em memória (`src/lib/salesMetrics.ts`, DTOs em `src/types/sales.ts`).
+
 ### stores
 | coluna | tipo |
 | --- | --- |

@@ -20,21 +20,22 @@ Obrigatório: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` �
 | `npm run dev` | Vite dev server |
 | `npm run build` | `tsc -b && vite build` |
 | `npm run typecheck` / `npm run lint` | `tsc -b --noEmit` (idênticos) |
+| `npm test` | `vitest run` (testes unitários) |
 
 ## Estrutura
 
 - `src/App.tsx` — gate de autenticação; logado, monta o `AppShell` (rotas).
 - `src/hooks/` — `useStoreSession` (sessão/orquestrador), `useDraftPersistence` (persistência/autosave), `useRealtimeOrder` (subscription), `useCatalog`, `useFlash`, `useStoreReports`.
-- `src/components/` — shell/rotas (`AppShell`, `TopNav`, `SectionPlaceholder`), header, nav, telas de loading/erro, toast, status bar e boards (`CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`).
-- `src/lib/` — lógica pura de pedidos (`orders.ts`), resumo em texto (`orderText.ts`), seções/endpoints (`sections.ts`), utilitários e cliente Supabase.
-- `src/types/` — domínio da UI (`app.ts`) e tipos do banco (`database.ts`).
+- `src/components/` — shell/rotas (`AppShell`, `TopNav`, `SectionPlaceholder`), header, nav, telas de loading/erro, toast, status bar e boards (`CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`, `SalesMetricsPanel`).
+- `src/lib/` — lógica pura de pedidos (`orders.ts`), métricas de vendas (`salesMetrics.ts`), resumo em texto (`orderText.ts`), seções/endpoints (`sections.ts`), utilitários e cliente Supabase.
+- `src/types/` — domínio da UI (`app.ts`), DTOs de vendas (`sales.ts`) e tipos do banco (`database.ts`).
 
 ## Rotas
 
 | Rota | Tela |
 | --- | --- |
 | `/orders` | Pedidos: contagem, digitação, cadastro de produtos e comparativo. |
-| `/management` | Gestão — em construção. |
+| `/management` | Gestão: cálculo de vendas/métricas (meta + vendedores → resumo + detalhamento). |
 
 A navbar (`TopNav`) navega entre as seções declaradas em `src/lib/sections.ts`.
 
