@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { BarChart3, CheckCircle2, ClipboardList, MonitorCheck, Package } from 'lucide-react'
 import type { TabId } from '../types/app'
-import { Spinner } from './ui'
+import { Spinner, barClass } from './ui'
 
 interface AppNavProps {
   tab: TabId
@@ -38,7 +38,7 @@ export function AppNav({
   })
   return (
     <nav className="sticky top-0 z-20 border-b border-gray-200 bg-shell/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5 px-4 py-2 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+      <div className={`${barClass} flex items-center gap-1.5 py-2`}>
         <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
           {visibleTabs.map((entry) => {
             const active = tab === entry.id

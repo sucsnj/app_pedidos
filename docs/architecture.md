@@ -7,10 +7,17 @@ Aprofundamento do `AGENTS.md`. Foco na composição de hooks, na persistência c
 ```
 App.tsx (gate de autenticação)
  ├─ useAuth ........... sessão Supabase (getSession/onAuthStateChange) + perfil public.profiles
- │   └─ Rende LoginScreen (anônimo) ou Dashboard (logado)
+ │   └─ Rende LoginScreen (anônimo) ou AppShell (logado)
  ├─ PwaUpdatePrompt ... banners "Nova versão disponível" / "Pronto para uso offline" (src/pwa.ts)
 
-Dashboard.tsx (conteúdo autenticado)
+AppShell.tsx (shell das rotas)
+ ├─ TopNav ............ navbar de seções (NavLink) + marca + usuário/cargo/Sair
+ └─ <Routes> .......... uma rota por APP_SECTIONS (lib/sections.ts)
+     ├─ /orders ....... Dashboard (abas internas de pedidos)
+     └─ /management ... SectionPlaceholder ("em construção")
+         └─ * ......... Navigate para DEFAULT_SECTION_PATH (/orders)
+
+Dashboard.tsx (conteúdo autenticado — rota /orders)
  ├─ useOnline .......... conectividade (navigator.onLine) — banner offline + flush da fila
  ├─ useCatalog ......... catálogo (stores, categories, products, variations) + reload/refresh
  ├─ useFlash ........... toast (notify estável; auto-dismiss 3500ms)
@@ -21,16 +28,19 @@ Dashboard.tsx (conteúdo autenticado)
  └─ lib/offlineQueue ... fila de ações offline (IndexedDB) — flush na transição online
 ```
 
+- **Rotas** (`react-router-dom` v7): `BrowserRouter` fica em `main.tsx`; `App.tsx` continua sendo o gate de autenticação e, logado, monta `AppShell`. As seções/endpoints são **declarados** em `lib/sections.ts` (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) — a `TopNav` gera os links a partir dessa lista e o `AppShell` gera as rotas; a tela de cada seção é escolhida em `renderSection` (`/orders` → `Dashboard`; qualquer outra sem implementação → `SectionPlaceholder` "em construção"). Rota desconhecida → `Navigate` para `DEFAULT_SECTION_PATH`.
+- **Deep link/offline**: `_redirects` (`/* /index.html 200`) no Netlify e `navigateFallback: '/index.html'` do SW mantêm `/orders` e `/management` funcionando ao abrir direto (inclusive offline).
+
 - **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId })` retorna ~25 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, refreshCurrentOrder, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
 
 ## Autenticação (`useAuth` + `App.tsx`)
 
-- `App.tsx` é o gate: `useAuth` expõe `{ user, loading, signIn, signOut }`. Anônimo → `LoginScreen`; logado → `Dashboard`.
+- `App.tsx` é o gate: `useAuth` expõe `{ user, loading, signIn, signOut }`. Anônimo → `LoginScreen`; logado → `AppShell` (que resolve a rota).
 - Sessão via `getSession` na montagem + `onAuthStateChange` (login/logout refletem na hora).
 - **Perfil/role**: quando `user` existe, o próprio `App.tsx` consulta `public.profiles` (`select('*').eq('id', user.id).maybeSingle()` — falha de leitura não bloqueia o login), define `userRole = profile?.role || 'gerente'`, desloga se `is_active === false` e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` (depuração). O header exibe o nome + badge de cargo (ADMIN/GERENTE).
 - `signIn` usa `signInWithPassword` e mapeia credenciais inválidas para "Email ou senha inválidos." · `signOut` chama `supabase.auth.signOut` e o header volta ao Login.
 - **Login por usuário ou e-mail**: o campo "Usuário ou E-mail" aceita username (ex.: `maria_souza`) ou e-mail completo. Se não contém `@`, o `LoginScreen` resolve o e-mail real via `public.profiles` (`select('email').eq('username', <lowercase>).maybeSingle()`); sem match, mostra "Nome de usuário não encontrado.".
-- **Cargos (RBAC)**: `Dashboard` recebe `isAdmin = userRole === 'admin'`. `admin` vê todas as abas (incl. Cadastro + Comparativo) e o seletor de loja no header. `gerente` vê só Contagem e Digitação, fica com a `store_id` do perfil (o header exibe a loja sem seletor) e `Dashboard` força a aba de volta para `count` se ela cair em Cadastro/Comparativo.
+- **Cargos (RBAC)**: `Dashboard` (rota `/orders`) recebe `isAdmin = userRole === 'admin'`. `admin` vê todas as abas (incl. Cadastro + Comparativo) e o seletor de loja no header. `gerente` vê só Contagem e Digitação, fica com a `store_id` do perfil (o header exibe a loja sem seletor) e `Dashboard` força a aba de volta para `count` se ela cair em Cadastro/Comparativo.
 - **Loja padrão**: `profile.store_id` vira `preferredStoreId` do `useStoreSession` — a loja selecionada automaticamente no carregamento.
 - **Perfil offline**: `App.tsx` espelha `public.profiles` (`cacheProfile`) e, em falha de leitura offline, restaura role/loja do espelho (`readProfile`) — preserva admin/gerente e a loja sem rede.
 

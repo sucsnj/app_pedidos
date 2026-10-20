@@ -5,6 +5,14 @@ export const inputClass =
 
 export const selectClass = inputClass
 
+/** Container padrão do conteúdo (mobile-first, alarga em telas grandes). */
+export const contentClass =
+  'mx-auto w-full max-w-3xl px-3 pt-4 lg:max-w-5xl lg:px-6 xl:max-w-6xl 2xl:max-w-7xl'
+
+/** Container padrão das barras (cabeçalho, navbar) alinhado ao conteúdo. */
+export const barClass =
+  'mx-auto w-full max-w-3xl px-4 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl'
+
 export function Field({
   label,
   children,

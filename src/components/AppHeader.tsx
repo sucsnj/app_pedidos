@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
-import { ClipboardList, LogOut, Plus, Store } from 'lucide-react'
+import { Plus, Store } from 'lucide-react'
 import type { Order, Store as StoreRow } from '../types/database'
 import { orderLabel } from '../lib/orders'
-import { Spinner } from './ui'
+import { Spinner, barClass } from './ui'
 
 interface AppHeaderProps {
   stores: StoreRow[]
@@ -10,13 +9,10 @@ interface AppHeaderProps {
   activeStoreId: string
   currentOrderId: string | null
   saving: boolean
-  userName: string
-  isAdmin: boolean
   showStoreSelector: boolean
   onSelectStore: (storeId: string) => void
   onSelectOrder: (orderId: string) => void
   onNewCount: () => void
-  onSignOut: () => void
 }
 
 export function AppHeader({
@@ -25,76 +21,16 @@ export function AppHeader({
   activeStoreId,
   currentOrderId,
   saving,
-  userName,
-  isAdmin,
   showStoreSelector,
   onSelectStore,
   onSelectOrder,
   onNewCount,
-  onSignOut,
 }: AppHeaderProps) {
-  const [showUserName, setShowUserName] = useState(false)
   const activeStoreName = stores.find((store) => store.id === activeStoreId)?.name ?? 'Nenhuma loja'
 
-  useEffect(() => {
-    if (!showUserName) return
-    const timer = window.setTimeout(() => setShowUserName(false), 2500)
-    return () => window.clearTimeout(timer)
-  }, [showUserName])
-
   return (
-    <header className="bg-wine-700 text-white shadow-md">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-3 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-400">
-              <ClipboardList className="h-5 w-5 text-wine-800" />
-            </span>
-            <div>
-              <h1 className="text-sm font-extrabold leading-tight">
-                Pedidos & Abastecimento
-              </h1>
-              <p className="text-[11px] text-gold-300">Contagem física · Prancheta digital</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {saving ? (
-              <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold sm:inline-flex">
-                <Spinner className="h-3.5 w-3.5" /> Salvando
-              </span>
-            ) : null}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowUserName((previous) => !previous)}
-                className="max-w-[210px] truncate text-xs font-semibold text-gold-300 sm:max-w-[260px]"
-              >
-                {userName}
-              </button>
-              {showUserName ? (
-                <div className="absolute right-0 top-full z-30 mt-2 whitespace-normal rounded-lg bg-wine-900 px-3 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/20">
-                  {userName}
-                </div>
-              ) : null}
-            </div>
-            <span
-              className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
-                isAdmin ? 'bg-gold-400 text-wine-800' : 'bg-white/10 text-gold-300'
-              }`}
-            >
-              {isAdmin ? 'ADMIN' : 'GERENTE'}
-            </span>
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20 active:scale-95"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sair
-            </button>
-          </div>
-        </div>
-
+    <header className="bg-wine-800 text-white shadow-sm">
+      <div className={`${barClass} flex flex-col gap-2 py-2.5`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {showStoreSelector ? (
@@ -127,7 +63,7 @@ export function AppHeader({
               value={currentOrderId ?? ''}
               onChange={(event) => onSelectOrder(event.target.value)}
               disabled={orders.length === 0}
-              className="min-w-0 flex-1 rounded-lg border border-gold-500/40 bg-wine-800/70 px-3 py-2 text-sm font-medium text-white outline-none focus:border-gold-400 disabled:opacity-50"
+              className="min-w-0 flex-1 rounded-lg border border-gold-500/40 bg-wine-900/70 px-3 py-2 text-sm font-medium text-white outline-none focus:border-gold-400 disabled:opacity-50"
             >
               <option value="">Sem pedido</option>
               {orders.map((order) => (
@@ -146,6 +82,12 @@ export function AppHeader({
               <span className="sm:hidden">Novo</span>
             </button>
           </div>
+
+          {saving ? (
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-white/10 px-3 py-1 text-xs font-semibold sm:self-auto">
+              <Spinner className="h-3.5 w-3.5" /> Salvando
+            </span>
+          ) : null}
         </div>
       </div>
     </header>

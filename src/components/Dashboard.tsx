@@ -15,6 +15,7 @@ import { MobileStatusBar } from './MobileStatusBar'
 import { OfflineBanner } from './OfflineBanner'
 import { SyncBanner } from './SyncBanner'
 import { LoadingScreen, ErrorScreen } from './AppScreen'
+import { contentClass } from './ui'
 import { CountingBoard } from './CountingBoard'
 import { DataEntryBoard } from './DataEntryBoard'
 import { CatalogBoard } from './CatalogBoard'
@@ -23,19 +24,11 @@ import { CollaboratorsBoard } from './CollaboratorsBoard'
 
 interface DashboardProps {
   profile: Profile | null
-  userName: string
   isAdmin: boolean
   currentUserId: string
-  onSignOut: () => void
 }
 
-export function Dashboard({
-  profile,
-  userName,
-  isAdmin,
-  currentUserId,
-  onSignOut,
-}: DashboardProps) {
+export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
   const [tab, setTab] = useState<TabId>('count')
   const canManageCatalog = isAdmin
   const canSeeComparativo = isAdmin
@@ -181,7 +174,7 @@ export function Dashboard({
   }
 
   return (
-    <div className="min-h-screen bg-shell pb-24 text-gray-900">
+    <div className="pb-24">
       <OfflineBanner />
       <SyncBanner pending={pending} syncing={syncing} onSync={() => void syncPending()} />
       <AppHeader
@@ -190,13 +183,10 @@ export function Dashboard({
         activeStoreId={activeStoreId}
         currentOrderId={currentOrder?.id ?? null}
         saving={saving}
-        userName={userName}
-        isAdmin={isAdmin}
         showStoreSelector={isAdmin}
         onSelectStore={selectStore}
         onSelectOrder={(orderId) => void selectOrder(orderId)}
         onNewCount={() => void newCount()}
-        onSignOut={onSignOut}
       />
 
       <AppNav
@@ -210,7 +200,7 @@ export function Dashboard({
         onFinish={() => void handleFinishOrder()}
       />
 
-      <main className="mx-auto w-full max-w-3xl px-3 pt-4 lg:max-w-5xl lg:px-6 xl:max-w-6xl 2xl:max-w-7xl">
+      <main className={contentClass}>
         {tab === 'count' && (
           <CountingBoard
             storeName={activeStore?.name ?? 'Nenhuma loja selecionada'}

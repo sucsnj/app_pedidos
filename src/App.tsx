@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth'
 import { cacheProfile, readProfile } from './lib/localCache'
 import { LoadingScreen } from './components/AppScreen'
 import { LoginScreen } from './components/LoginScreen'
-import { Dashboard } from './components/Dashboard'
+import { AppShell } from './components/AppShell'
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt'
 
 export default function App() {
@@ -78,7 +78,7 @@ export default function App() {
   return (
     <>
       <PwaUpdatePrompt />
-      <Dashboard
+      <AppShell
         profile={profile}
         userName={userName}
         isAdmin={userRole === 'admin'}

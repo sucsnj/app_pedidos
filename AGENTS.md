@@ -8,7 +8,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Stack e scripts
 
-- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`. PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
+- React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`, `react-router-dom` v7 (rotas da SPA). PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
 - Sem teste automatizado. Sem config de ESLint (há `// eslint-disable` apenas de legado).
 - Scripts (`npm run`):
   - `dev` — Vite dev server.
@@ -21,7 +21,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 `src/App.tsx` (176 linhas) é o orquestrador que **compõe hooks** e renderiza telas:
 
 - Hooks: `useAuth` (sessão Supabase), `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente).
-- `App.tsx` é o **gate de autenticação**: `useAuth` decide entre `LoginScreen` (anônimo) e `Dashboard` (logado). Após o login, o próprio `App.tsx` consulta `public.profiles` (`maybeSingle()` por `user.id`, falha de leitura não bloqueia), define `userRole` (`profile?.role || 'gerente'`) e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` para depuração. `Dashboard` é o orquestrador que **compõe hooks** e renderiza telas.
+- `App.tsx` é o **gate de autenticação**: `useAuth` decide entre `LoginScreen` (anônimo) e `AppShell` (logado). Após o login, o próprio `App.tsx` consulta `public.profiles` (`maybeSingle()` por `user.id`, falha de leitura não bloqueia), define `userRole` (`profile?.role || 'gerente'`) e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` para depuração.
+- **Rotas** (`react-router-dom` v7, `BrowserRouter` em `main.tsx`): `AppShell` monta a `TopNav` (navbar de seções) + `<Routes>`; as seções são declaradas em `lib/sections.ts` (`APP_SECTIONS`). `/orders` → `Dashboard` (tela atual de pedidos, com as abas internas); `/management` → `SectionPlaceholder` ("em construção"); rota desconhecida → redireciona para `DEFAULT_SECTION_PATH` (`/orders`).
 - `useStoreSession` (~394 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Contrato de retorno deve permanecer intacto — o orquestrador (`Dashboard`) destrutura tudo; adições são permitidas (ex.: `refreshCurrentOrder` para reconciliar o pedido corrente após o flush da fila offline).
 - Boards (`components/`): `CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard` — sem estado próprio de sessão, recebem props.
 - Camada pura: `lib/orders.ts` concentra regras de contagem/pedidos (sem dependência de React). Utils genéricos em `lib/utils.ts` (`getErrorMessage`).
@@ -31,7 +32,11 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `src/App.tsx` | Gate de autenticação: `useAuth` decide entre `LoginScreen` (anônimo) e `Dashboard` (logado); consulta `public.profiles`, define `userRole` e desloga perfil `is_active = false` |
+| `src/App.tsx` | Gate de autenticação: `useAuth` decide entre `LoginScreen` (anônimo) e `AppShell` (logado); consulta `public.profiles`, define `userRole` e desloga perfil `is_active = false` |
+| `src/components/AppShell.tsx` | Shell das rotas: `TopNav` + `<Routes>` (uma rota por `APP_SECTIONS`); `/orders` → `Dashboard`, demais → `SectionPlaceholder`; rota desconhecida → `/orders` |
+| `src/components/TopNav.tsx` | Navbar de seções (marca + links `NavLink` + usuário/cargo/Sair) — compartilhada por todas as rotas |
+| `src/components/SectionPlaceholder.tsx` | Tela genérica "em construção" (ícone, descrição da seção, selo "em breve") |
+| `src/lib/sections.ts` | Registro das seções/endpoints (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) + `DEFAULT_SECTION_PATH` |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
@@ -55,7 +60,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/Dashboard.tsx` | Conteúdo autenticado: compõe hooks de sessão/catálogo e renderiza telas; aplica RBAC por cargo |
 | `src/components/LoginScreen.tsx` | Tela de login (email/senha via `signInWithPassword`), erros visuais e indicador de carregamento |
 | `src/components/CollaboratorsBoard.tsx` | Gestão de usuários (visível só p/ `admin`): cadastra gerente (`auth.signUp` + `profiles`, restaurando a sessão do admin) e lista/edita loja, cargo e acesso. Cards colapsáveis com cabeçalho no mesmo estilo do `Section` do `CatalogBoard` |
-| `src/components/AppHeader.tsx` | Cabeçalho: seletor loja/pedido, "Nova contagem", indicador `saving`, nome do usuário (toque abre popover breve ~2,5s com o nome completo) + badge de cargo + Sair (`signOut`) |
+| `src/components/AppHeader.tsx` | Cabeçalho da seção Pedidos: seletor loja/pedido, "Nova contagem" e indicador `saving` (marca, usuário/cargo/Sair ficam na `TopNav`) |
 | `src/components/AppNav.tsx` | Tabs + botão "Concluir Pedido" logo à direita da aba "Contagem" (habilita via `canFinish`; `finishing`/`totalCounted` para estado) |
 | `src/components/CountingBoard.tsx` | Categorias colapsáveis (estado local; cabeçalho **e** rodapé alternam o colapso), campo de busca por nome/código de produto (ao lado de "Salvar rascunho", desabilitado quando travado), sugestão por item clicável (aplica a quantidade sugerida via `onSetQuantity`), nome do item em `text-base` |
 | `src/components/CatalogBoard.tsx` | Seções colapsáveis (`Section` reutilizada por Lojas/Categorias/Produtos/Variações); formulário de produto com chips de variações + exclusão manual de variações + campo **Ordem** (criação e edição) |
@@ -71,8 +76,10 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | Digitação (`entry`) | `DataEntryBoard` | Lista itens com quantidade (ordenados por PLU/SKU via `compareByEntryCode`), progresso X/Y, alterna `isEnteredInLegacy` (`toggleEntered`) e "Copiar Resumo em Texto" (`buildOrderSummary`) |
 | Cadastro & Produtos (`catalog`, só `admin`) | `CatalogBoard` + `CollaboratorsBoard` | CRUD do catálogo (lojas/categorias/produtos/variações) gravando **direto no Supabase** e gestão de usuários (cadastro de gerente, edição de loja/cargo, revogar acesso). Formulário de produto com **chips de variações** (selecionar/desmarcar sincroniza vínculos; desmarcar não exclui). Produtos reordenáveis por categoria (`display_order`, campo Ordem, auto = max da categoria + 1) |
 | Comparativo (`comparativo`) | `ComparisonBoard` | Compara a contagem corrente com a última (`lastOrder`) e mostra o `report` (pedidos do mês, top produto, variação semanal, top produtos) — definições no `architecture.md` |
-| Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`, escolha lembrada em `localStorage`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving`, nome do usuário (toque mostra o nome completo em popover ~2,5s) + badge de cargo (ADMIN/GERENTE) + botão Sair (`signOut`) |
+| Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`, escolha lembrada em `localStorage`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving` |
 | Navegação | `AppNav` | Tabs + botão "Concluir Pedido" à direita da aba "Contagem" (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
+| Navbar de seções | `TopNav` | Marca do app + links `NavLink` para as seções (`APP_SECTIONS`), nome do usuário (toque mostra o nome completo em popover ~2,5s), badge de cargo (ADMIN/GERENTE) e botão Sair (`signOut`) — visível em **todas** as rotas |
+| Rota `/management` | `SectionPlaceholder` | Tela "em construção" (ícone, descrição da seção, selo "em breve") — genérica, serve a qualquer seção ainda não implementada |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
 | Toast | `FlashToast` | Notificações via `useFlash` (`notify`) |
 

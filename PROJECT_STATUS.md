@@ -94,12 +94,22 @@ Decisões de design (validadas):
 - [x] `Dashboard`: auto-sync no mount (pendências de sessões anteriores), na transição offline→online e a cada 20s enquanto houver pendência online; toast "Alterações sincronizadas." + `refreshCurrentOrder` só no sucesso.
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK).
 
+### Etapa 8 — Rotas por endpoint (Concluída)
+- [x] `react-router-dom` v7 instalado; `BrowserRouter` em `main.tsx`; `App.tsx` continua sendo o gate de autenticação e monta o `AppShell` quando logado.
+- [x] `src/lib/sections.ts`: registro genérico das seções (`APP_SECTIONS` — `path`, `label`, `icon`, `description`, `ready`) + `DEFAULT_SECTION_PATH`.
+- [x] `src/components/TopNav.tsx`: navbar de seções (`NavLink`) compartilhada por todas as rotas, com marca, usuário/cargo e Sair (movidos do `AppHeader`).
+- [x] `src/components/AppShell.tsx`: `<Routes>` com uma rota por seção; `/orders` → `Dashboard` (comportamento atual, abas internas), `/management` → placeholder "em construção"; rota desconhecida → `/orders`.
+- [x] `src/components/SectionPlaceholder.tsx`: tela genérica "em construção" (ícone, descrição, selo "em breve") — reusável por qualquer seção futura.
+- [x] Deep link funciona (dev, preview e Netlify `_redirects`) e offline (`navigateFallback` do SW).
+- [x] Validação automática: `npm run typecheck` + `npm run build` (OK).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
 - [ ] Redes offline (DevTools) e recarregar: shell abre, catálogo vem do cache e dados (pedido/itens/sugestões/relatório/perfil) vêm do espelho local.
 - [ ] Fazer contagem offline (editar/novo pedido/concluir) → banner "X alterações aguardando sincronização" aparece → voltar online → auto-sync ou botão "Sincronizar" → toast "Alterações sincronizadas." + espelho atualizado.
 - [ ] Publicar nova versão → ver banner de atualização → confirmar reload com dados preservados.
+- [ ] Navegar entre as seções pela navbar (`/orders` ↔ `/management`), abrir `/management` direto (deep link) e recarregar em `/orders`.
 
 ## Histórico
 
@@ -112,3 +122,4 @@ Decisões de design (validadas):
 | 2026-10-03 | 6b | Endurecimento offline: detecção de falha de rede por mensagem (`PostgrestError` "Failed to fetch"/`AbortError`) + fetch com timeout de 10s no cliente Supabase. |
 | 2026-10-03 | 6c | Sync com feedback: `subscribePending`/`usePendingSync`/`SyncBanner`, `flushQueue(force?)` e auto-sync no mount/transição/20s + botão "Sincronizar". |
 | 2026-10-03 | 7 | Layout responsivo widescreen: container alarga para `max-w-7xl` (lg/xl/2xl); Prancheta em 2–3 colunas e Digitação em 2 colunas em telas grandes. |
+| 2026-10-03 | 8 | Rotas por endpoint: `react-router-dom` v7, `AppShell` + `TopNav` + `APP_SECTIONS`; `/orders` (tela de pedidos) e `/management` ("em construção"). |
