@@ -43,6 +43,7 @@ let root: ReturnType<typeof createRoot>
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  window.localStorage.clear()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -183,5 +184,36 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(confirmSpy).toHaveBeenCalled()
     expect(deleteCalculation).toHaveBeenCalledWith('calc-1')
     confirmSpy.mockRestore()
+  })
+
+  it('colapsa o card e mantém o estado ao remontar a tela', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const collapseButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Recolher Cálculo de vendas"]',
+    )
+    if (!collapseButton) throw new Error('botão de colapso não encontrado')
+
+    await act(async () => {
+      collapseButton.click()
+    })
+
+    expect(container.querySelector('[aria-label="Meta de vendas"]')).toBeNull()
+    expect(window.localStorage.getItem('pedidos:card:management-calculo')).toBe('0')
+
+    await act(async () => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    expect(container.querySelector('[aria-label="Meta de vendas"]')).toBeNull()
+    expect(
+      container.querySelector('[aria-label="Expandir Cálculo de vendas"]'),
+    ).not.toBeNull()
   })
 })

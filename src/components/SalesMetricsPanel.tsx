@@ -1,5 +1,6 @@
 import { AlertTriangle, Calculator, Save } from 'lucide-react'
 import { inputClass } from './ui'
+import { CollapsibleCard } from './CollapsibleCard'
 import type { ManagementError } from '../hooks/useSalesManagement'
 
 interface SalesMetricsPanelProps {
@@ -22,17 +23,12 @@ export function SalesMetricsPanel({
   onRegister,
 }: SalesMetricsPanelProps) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2">
-        <Calculator className="h-5 w-5 text-wine-600" />
-        <div>
-          <p className="text-sm font-bold text-gray-800">Cálculo de vendas</p>
-          <p className="text-xs text-gray-500">
-            Data de referência e meta. Os indicadores são calculados em tempo real.
-          </p>
-        </div>
-      </div>
-
+    <CollapsibleCard
+      storageKey="management-calculo"
+      title="Cálculo de vendas"
+      subtitle="Data de referência e meta — os indicadores são calculados em tempo real."
+      icon={<Calculator className="h-5 w-5" />}
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -95,6 +91,6 @@ export function SalesMetricsPanel({
           O registro grava a consolidação e as vendas no banco (histórico).
         </span>
       </div>
-    </section>
+    </CollapsibleCard>
   )
 }

@@ -1,5 +1,6 @@
 import { History, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, formatPercentage } from '../lib/utils'
+import { CollapsibleCard } from './CollapsibleCard'
 import type { SalesCalculation } from '../types/database'
 
 interface SalesHistoryPanelProps {
@@ -20,24 +21,19 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
   const total = history.reduce((sum, entry) => sum + Number(entry.total_sold), 0)
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <History className="h-5 w-5 text-wine-600" />
-          <div>
-            <p className="text-sm font-bold text-gray-800">Histórico</p>
-            <p className="text-xs text-gray-500">
-              Clique em um lançamento para carregá-lo no formulário.
-            </p>
-          </div>
-        </div>
-        {history.length > 0 ? (
+    <CollapsibleCard
+      storageKey="management-historico"
+      title="Histórico"
+      subtitle="Clique em um lançamento para carregá-lo no formulário."
+      icon={<History className="h-5 w-5" />}
+      badge={
+        history.length > 0 ? (
           <span className="text-xs text-gray-500">
             Acumulado: <strong className="text-wine-700">{formatCurrency(total)}</strong>
           </span>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+    >
       {loading ? (
         <p className="text-sm text-gray-400">Carregando histórico...</p>
       ) : history.length === 0 ? (
@@ -95,6 +91,6 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
           })}
         </ul>
       )}
-    </section>
+    </CollapsibleCard>
   )
 }

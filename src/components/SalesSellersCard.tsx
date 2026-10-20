@@ -3,6 +3,7 @@ import { Check, Pencil, Trash2, UserPlus, X } from 'lucide-react'
 import type { Seller } from '../types/database'
 import { formatCurrency, parseNumberOrNull } from '../lib/utils'
 import { inputClass } from './ui'
+import { CollapsibleCard } from './CollapsibleCard'
 
 interface SalesSellersCardProps {
   sellers: Seller[]
@@ -49,14 +50,15 @@ export function SalesSellersCard({
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3">
-        <p className="text-sm font-bold text-gray-800">Vendedores</p>
-        <p className="text-xs text-gray-500">
-          Cadastrados no banco. Informe o valor vendido no período ao lado de cada nome.
-        </p>
-      </div>
-
+    <CollapsibleCard
+      storageKey="management-vendedores"
+      title="Vendedores"
+      subtitle="Cadastrados no banco — informe o valor vendido no período ao lado de cada nome."
+      icon={<UserPlus className="h-5 w-5" />}
+      badge={
+        <span className="text-xs text-gray-500">{sellers.length} cadastrado(s)</span>
+      }
+    >
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
@@ -178,6 +180,6 @@ export function SalesSellersCard({
           })}
         </ul>
       )}
-    </section>
+    </CollapsibleCard>
   )
 }

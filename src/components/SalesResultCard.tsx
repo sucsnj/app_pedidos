@@ -1,4 +1,6 @@
+import { BarChart3 } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '../lib/utils'
+import { CollapsibleCard } from './CollapsibleCard'
 import type { SalesMetricsResult } from '../types/sales'
 
 interface SalesResultCardProps {
@@ -21,14 +23,17 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
   if (!summary) return null
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-bold text-gray-800">Resultado do cálculo</p>
+    <CollapsibleCard
+      storageKey="management-resultado"
+      title="Resultado do cálculo"
+      subtitle="Indicadores consolidados e detalhamento por vendedor."
+      icon={<BarChart3 className="h-5 w-5" />}
+      badge={
         <span className="text-xs text-gray-500">
-          {salesReport.length} registro(s) · atualizado a cada digitação
+          {salesReport.length} registro(s)
         </span>
-      </div>
-
+      }
+    >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         <MetricTile label="Total vendido" value={formatCurrency(summary.totalSold)} />
         <MetricTile
@@ -94,6 +99,6 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
           </ul>
         </div>
       ) : null}
-    </section>
+    </CollapsibleCard>
   )
 }
