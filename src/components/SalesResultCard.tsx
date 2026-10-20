@@ -10,6 +10,7 @@ import {
   Target,
 } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '../lib/utils'
+import { percentageOf } from '../lib/salesMetrics'
 import { CollapsibleCard } from './CollapsibleCard'
 import type { SalesMetricsResult } from '../types/sales'
 
@@ -97,7 +98,13 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
         <MetricTile
           label="Maior venda"
           value={summary.topSale ? summary.topSale.name : '—'}
-          hint={summary.topSale ? formatCurrency(summary.topSale.value) : 'Sem registros'}
+          hint={
+            summary.topSale
+              ? `${formatCurrency(summary.topSale.value)} · ${formatPercentage(
+                  percentageOf(summary.topSale.value, summary.effectiveBaseTotal),
+                )}`
+              : 'Sem registros'
+          }
           icon={<Award className="h-4 w-4" />}
         />
       </div>

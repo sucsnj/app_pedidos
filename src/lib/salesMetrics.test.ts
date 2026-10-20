@@ -3,6 +3,7 @@ import {
   buildSalesPayloadFromForm,
   calculateSalesMetrics,
   normalizeSalesPayload,
+  percentageOf,
   processSalesPayload,
   round2,
   SalesPayloadError,
@@ -262,8 +263,18 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
   })
 })
 
-describe('salesMetrics — processSalesPayload (entrada → saída)', () => {
-  it('devolve o contrato summary + salesReport', () => {
+describe('salesMetrics — percentageOf', () => {
+  it('calcula a participação de um valor sobre a base', () => {
+    expect(percentageOf(2500, 10000)).toBe(25)
+    expect(percentageOf(1234.56, 5000)).toBe(24.69)
+  })
+
+  it('devolve 0 quando a base é zero', () => {
+    expect(percentageOf(100, 0)).toBe(0)
+  })
+})
+
+describe('salesMetrics — processSalesPayload (entrada → saída)', () => {  it('devolve o contrato summary + salesReport', () => {
     const result = processSalesPayload({
       customTotalBase: 200,
       sales: [{ id: 'a', name: 'Ana', value: 50 }],

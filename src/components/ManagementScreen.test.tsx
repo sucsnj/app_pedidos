@@ -186,6 +186,22 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
+  it('mostra no histórico a % do melhor vendedor e a % da meta', async () => {
+    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const text = screenText()
+    // melhor vendedor: 3289,49 sobre a base 50000 → 6,58%
+    expect(text).toContain('Melhor:')
+    expect(text).toContain('Ana Souza')
+    expect(text).toContain('6,58%')
+    // atingimento da meta: 3289,49 / 50000 → 6,58%
+    expect(text).toContain('da meta')
+  })
+
   it('colapsa o card e mantém o estado ao remontar a tela', async () => {    await act(async () => {
       root.render(<ManagementScreen />)
     })

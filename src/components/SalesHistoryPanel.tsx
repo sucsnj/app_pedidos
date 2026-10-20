@@ -1,5 +1,6 @@
 import { History, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, formatPercentage } from '../lib/utils'
+import { percentageOf } from '../lib/salesMetrics'
 import { CollapsibleCard } from './CollapsibleCard'
 import type { SalesCalculation } from '../types/database'
 
@@ -10,11 +11,19 @@ interface SalesHistoryPanelProps {
   onDelete: (id: string) => Promise<void>
 }
 
-function topSaleName(entry: SalesCalculation): string | null {
+interface TopSaleInfo {
+  name: string
+  value: number
+}
+
+function topSaleInfo(entry: SalesCalculation): TopSaleInfo | null {
   const top = entry.top_sale
   if (!top || typeof top !== 'object' || Array.isArray(top)) return null
   const name = (top as { name?: unknown }).name
-  return typeof name === 'string' ? name : null
+  const value = (top as { value?: unknown }).value
+  if (typeof name !== 'string' || name === '') return null
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return { name, value }
 }
 
 export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesHistoryPanelProps) {
@@ -43,7 +52,13 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {history.map((entry) => {
-            const top = topSaleName(entry)
+            const top = topSaleInfo(entry)
+            const base = Number(entry.effective_base_total)
+            const topPercentage = top ? percentageOf(top.value, base) : null
+            const metaPercentage =
+              entry.target_achievement_percentage === null
+                ? null
+                : Number(entry.target_achievement_percentage)
             return (
               <li
                 key={entry.id}
@@ -53,25 +68,30 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
                   type="button"
                   onClick={() => void onLoad(entry)}
                   aria-label={`Carregar lançamento de ${entry.reference_date}`}
-                  className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-left transition hover:bg-wine-50/50 active:scale-[0.99]"
+                  className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2 px-3 py-2.5 text-left transition hover:bg-wine-50/50 active:scale-[0.99]"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-800">
                       {formatDate(new Date(`${entry.reference_date}T12:00:00`))}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {entry.record_count} vendedor(es) · base{' '}
-                      {formatCurrency(Number(entry.effective_base_total))}
-                      {top ? ` · maior: ${top}` : ''}
+                      {entry.record_count} vendedor(es) · base {formatCurrency(base)}
                     </p>
+                    {top ? (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Melhor: <span className="font-semibold text-wine-700">{top.name}</span> ·{' '}
+                        {formatCurrency(top.value)}
+                        {topPercentage !== null ? ` (${formatPercentage(topPercentage)})` : ''}
+                      </p>
+                    ) : null}
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums text-wine-700">
                       {formatCurrency(Number(entry.total_sold))}
                     </p>
-                    {entry.target_achievement_percentage !== null ? (
-                      <p className="text-xs tabular-nums text-gray-500">
-                        {formatPercentage(Number(entry.target_achievement_percentage))} da meta
+                    {metaPercentage !== null ? (
+                      <p className="text-xs font-semibold tabular-nums text-gray-500">
+                        {formatPercentage(metaPercentage)} da meta
                       </p>
                     ) : null}
                   </div>

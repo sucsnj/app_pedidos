@@ -25,6 +25,12 @@ export function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
+/** Percentual de `value` sobre `base` (0 quando a base é 0). */
+export function percentageOf(value: number, base: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(base) || base === 0) return 0
+  return round2((value / base) * 100)
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
