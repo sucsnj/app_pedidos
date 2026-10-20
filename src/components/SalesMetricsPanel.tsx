@@ -1,14 +1,14 @@
 import { AlertTriangle, Calculator, Save } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '../lib/utils'
 import { inputClass } from './ui'
-import type { SalesMetricsResult, SalesValidationError } from '../types/sales'
+import type { SalesMetricsResult } from '../types/sales'
+import type { ManagementError } from '../hooks/useSalesManagement'
 
 interface SalesMetricsPanelProps {
   meta: string
   referenceDate: string
   result: SalesMetricsResult | null
-  error: string | null
-  formError: SalesValidationError | null
+  error: ManagementError | null
   saving: boolean
   onMetaChange: (value: string) => void
   onReferenceDateChange: (value: string) => void
@@ -30,7 +30,6 @@ export function SalesMetricsPanel({
   referenceDate,
   result,
   error,
-  formError,
   saving,
   onMetaChange,
   onReferenceDateChange,
@@ -82,26 +81,20 @@ export function SalesMetricsPanel({
           </label>
         </div>
 
-        {formError ? (
+        {error ? (
           <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
             <p className="flex items-center gap-2 text-sm font-bold text-red-700">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              Erro {formError.status} — {formError.message}
+              {error.status ? `Erro ${error.status} — ` : ''}
+              {error.message}
             </p>
-            <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-red-600">
-              {formError.details.map((detail) => (
-                <li key={detail}>{detail}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {error && !formError ? (
-          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
-            <p className="flex items-center gap-2 text-sm font-bold text-red-700">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {error}
-            </p>
+            {error.details.length > 0 ? (
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-red-600">
+                {error.details.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         ) : null}
 

@@ -40,10 +40,10 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/SectionPlaceholder.tsx` | Tela genérica "em construção" (ícone, descrição da seção, selo "em breve") |
 | `src/lib/sections.ts` | Registro das seções/endpoints (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) + `DEFAULT_SECTION_PATH` |
 | `src/lib/salesMetrics.ts` | Service puro do cálculo de vendas: `normalizeSalesPayload` (validação → 400), `buildSalesPayloadFromForm` (formulário → payload), `calculateSalesMetrics` (regras de negócio), `round2`, `processSalesPayload` |
-| `src/lib/salesStore.ts` | Persistência do módulo de Gestão: `fetchSellers`/`createSeller`/`deleteSeller`, `fetchHistory`, `recordSales` (snapshot + vendas) |
+| `src/lib/salesStore.ts` | Persistência do módulo de Gestão: `fetchSellers`/`createSeller`/`updateSeller`/`deleteSeller`, `fetchHistory`, `recordSales` (snapshot + vendas) |
 | `src/types/sales.ts` | DTOs do módulo de vendas (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`) |
-| `src/hooks/useSalesManagement.ts` | Controller do módulo: vendedores (do banco), valores do período, meta, data, histórico e **cálculo derivado** (`useMemo` — instantâneo); `addSeller`/`removeSeller`/`register` |
-| `src/components/SalesSellersCard.tsx` | Cadastro de vendedores (grava no banco) + valor vendido na mesma linha |
+| `src/hooks/useSalesManagement.ts` | Controller do módulo: vendedores (do banco), valores do período, meta, data, histórico e **cálculo derivado** (`useMemo` — instantâneo); `addSeller`/`renameSeller`/`removeSeller`/`register` (o erro 400 **só** aparece ao registrar) |
+| `src/components/SalesSellersCard.tsx` | Cadastro/edição/exclusão de vendedores (grava no banco) + valor vendido na mesma linha (com eco do valor lido) |
 | `src/components/SalesMetricsPanel.tsx` | UI do cálculo: data de referência, meta, cards de resumo, detalhamento por vendedor e botão "Registrar vendas" |
 | `src/components/SalesHistoryPanel.tsx` | Histórico de consolidações (do banco) para análise futura |
 | `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + `SalesSellersCard`/`SalesMetricsPanel`/`SalesHistoryPanel` + toast) |

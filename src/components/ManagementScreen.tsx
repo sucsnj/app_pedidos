@@ -35,6 +35,7 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
           values={sales.values}
           saving={sales.saving}
           onAdd={sales.addSeller}
+          onRename={sales.renameSeller}
           onRemove={sales.removeSeller}
           onValueChange={sales.setValue}
         />
@@ -44,7 +45,6 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
           referenceDate={sales.referenceDate}
           result={sales.result}
           error={sales.error}
-          formError={sales.formError}
           saving={sales.saving}
           onMetaChange={sales.setMeta}
           onReferenceDateChange={sales.setReferenceDate}

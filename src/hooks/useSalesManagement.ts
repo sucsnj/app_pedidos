@@ -4,7 +4,7 @@ import {
   calculateSalesMetrics,
   normalizeSalesPayload,
 } from '../lib/salesMetrics'
-import { createSeller, deleteSeller, fetchHistory, fetchSellers, recordSales } from '../lib/salesStore'
+import { createSeller, deleteSeller, fetchHistory, fetchSellers, recordSales, updateSeller } from '../lib/salesStore'
 import { getErrorMessage, parseNumberOrNull } from '../lib/utils'
 import type { Seller, SalesCalculation } from '../types/database'
 import type { FlashKind } from '../types/app'
@@ -13,6 +13,12 @@ import type { SalesMetricsResult } from '../types/sales'
 export interface SalesManagementParams {
   storeId?: string | null
   notify: (message: string, kind?: FlashKind) => void
+}
+
+export interface ManagementError {
+  status: number | null
+  message: string
+  details: string[]
 }
 
 function today(): string {
@@ -27,7 +33,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
   const [history, setHistory] = useState<SalesCalculation[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ManagementError | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     const [sellersData, historyData] = await Promise.all([fetchSellers(), fetchHistory()])
@@ -41,7 +47,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     setError(null)
     load()
       .catch((err) => {
-        if (!cancelled) setError(getErrorMessage(err))
+        if (!cancelled) setError({ status: null, message: getErrorMessage(err), details: [] })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -55,7 +61,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     async (name: string): Promise<boolean> => {
       const trimmed = name.trim()
       if (trimmed === '') {
-        setError('Informe o nome do vendedor.')
+        setError({ status: 400, message: 'Informe o nome do vendedor.', details: [] })
         return false
       }
       setSaving(true)
@@ -69,7 +75,37 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
         return true
       } catch (err) {
         const message = getErrorMessage(err)
-        setError(message)
+        setError({ status: null, message, details: [] })
+        notify(message, 'error')
+        return false
+      } finally {
+        setSaving(false)
+      }
+    },
+    [notify],
+  )
+
+  const renameSeller = useCallback(
+    async (id: string, name: string): Promise<boolean> => {
+      const trimmed = name.trim()
+      if (trimmed === '') {
+        setError({ status: 400, message: 'Informe o nome do vendedor.', details: [] })
+        return false
+      }
+      setSaving(true)
+      setError(null)
+      try {
+        const updated = await updateSeller(id, trimmed)
+        setSellers((previous) =>
+          previous
+            .map((seller) => (seller.id === id ? updated : seller))
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+        )
+        notify('Vendedor atualizado.', 'success')
+        return true
+      } catch (err) {
+        const message = getErrorMessage(err)
+        setError({ status: null, message, details: [] })
         notify(message, 'error')
         return false
       } finally {
@@ -94,7 +130,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
         notify('Vendedor removido.', 'success')
       } catch (err) {
         const message = getErrorMessage(err)
-        setError(message)
+        setError({ status: null, message, details: [] })
         notify(message, 'error')
       } finally {
         setSaving(false)
@@ -127,6 +163,12 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
 
   const register = useCallback(async (): Promise<boolean> => {
     if (formError) {
+      const validation: ManagementError = {
+        status: 400,
+        message: 'Dados inválidos.',
+        details: formError.details,
+      }
+      setError(validation)
       notify('Corrija os campos destacados antes de registrar.', 'error')
       return false
     }
@@ -141,7 +183,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
 
     if (filled.length === 0) {
       const message = 'Informe o valor de ao menos um vendedor.'
-      setError(message)
+      setError({ status: 400, message, details: [] })
       notify(message, 'error')
       return false
     }
@@ -166,7 +208,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
       return true
     } catch (err) {
       const message = getErrorMessage(err)
-      setError(message)
+      setError({ status: null, message, details: [] })
       notify(message, 'error')
       return false
     } finally {
@@ -186,9 +228,9 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     loading,
     saving,
     error,
-    formError,
     result,
     addSeller,
+    renameSeller,
     removeSeller,
     register,
     reload: load,

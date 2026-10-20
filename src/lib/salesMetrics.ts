@@ -168,8 +168,9 @@ export interface SalesFormResult {
 
 /**
  * Converte o formulário (meta + linhas de vendedor) no payload do contrato.
- * Linha em branco ou **valor não informado** ficam de fora do cálculo (sem erro);
- * valores preenchidos e inválidos viram erro 400 (acumulados).
+ * O **payload** cobre apenas as linhas válidas (base do cálculo ao vivo);
+ * o **erro** reúne todos os problemas (valor em branco, não numérico, negativo,
+ * nome ausente) — é ele que trava o "Registrar vendas".
  */
 export function buildSalesPayloadFromForm(input: SalesFormInput): SalesFormResult {
   const details: string[] = []
@@ -180,14 +181,16 @@ export function buildSalesPayloadFromForm(input: SalesFormInput): SalesFormResul
     const raw = row.value.trim()
     if (name === '' && raw === '') return
 
-    const label = name !== '' ? name : `Vendedor ${index + 1}`
+    const label = `Vendedor ${index + 1}`
     const value = parseNumberOrNull(row.value)
 
     if (name === '') {
       details.push(`${label}: informe o nome.`)
     }
-    if (raw === '') return
-
+    if (raw === '') {
+      details.push(`${label}: informe um valor numérico.`)
+      return
+    }
     if (value === null) {
       details.push(`${label}: informe um valor numérico.`)
     } else if (value < 0) {

@@ -89,4 +89,24 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
 
     expect(screenText()).not.toContain('Erro 400')
   })
+
+  it('mostra o erro 400 somente ao clicar em "Registrar vendas"', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    expect(screenText()).not.toContain('Erro 400')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    expect(screenText()).toContain('Erro 400')
+    expect(screenText()).toContain('informe um valor numérico')
+  })
 })

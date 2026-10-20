@@ -157,7 +157,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | created_at | timestamptz default now() |
 | created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
 
-- Uma linha por vendedor lançado em cada consolidação; `percentage` guarda a participação individual daquela consolidação.
+- Uma linha por vendedor lançado em cada consolidação; `percentage` guarda a participação individual daquela consolidação. `seller_name` é a **cópia** do nome no momento do lançamento — renomear o vendedor não altera o histórico.
 
 - **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`). O schema real vive no Supabase — aplicar a migration antes de usar a tela.
 

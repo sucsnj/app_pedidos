@@ -215,12 +215,12 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
     expect(error?.status).toBe(400)
     expect(error?.details).toContain('Meta: informe um valor numérico.')
     expect(error?.details).toContain('Vendedor 1: informe o nome.')
-    expect(error?.details).toContain('Bruno: informe um valor numérico.')
-    expect(error?.details).toContain('Carla: o valor não pode ser negativo.')
+    expect(error?.details).toContain('Vendedor 2: informe um valor numérico.')
+    expect(error?.details).toContain('Vendedor 3: o valor não pode ser negativo.')
     expect(payload?.sales).toEqual([{ id: 1, name: 'Dani', value: 20 }])
   })
 
-  it('ignora linhas em branco e valores não informados (sem erro)', () => {
+  it('ignora linhas em branco e sinaliza valor não informado (fora do cálculo)', () => {
     const { payload, error } = buildSalesPayloadFromForm({
       meta: '',
       rows: [
@@ -229,7 +229,7 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
         { name: 'Bruno', value: '100' },
       ],
     })
-    expect(error).toBeNull()
+    expect(error?.details).toContain('Vendedor 2: informe um valor numérico.')
     expect(payload?.sales).toEqual([{ id: 1, name: 'Bruno', value: 100 }])
   })
 

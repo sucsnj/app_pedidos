@@ -118,9 +118,11 @@ Decisões de design (validadas):
 - [x] Tipos canônicos em `src/types/database.ts` (`Seller`, `SalesCalculation`, `SalesRecord` + `Insert`/`Update`, padrão `Recordish`).
 - [x] Persistência `src/lib/salesStore.ts`: `fetchSellers`/`createSeller`/`deleteSeller`/`fetchHistory`/`recordSales` (grava snapshot + vendas; rollback do snapshot se as vendas falharem).
 - [x] Controller `src/hooks/useSalesManagement.ts`: vendedores do banco, valores do período, meta, data de referência, histórico e cálculo derivado (`useMemo`, instantâneo); `addSeller`/`removeSeller`/`register` com toasts.
-- [x] UI: `SalesSellersCard` (cadastro no banco + valor na mesma linha), `SalesMetricsPanel` (data, meta, resumo, detalhamento, "Registrar vendas"), `SalesHistoryPanel` (histórico + total acumulado) e `ManagementScreen` compondo tudo.
+- [x] UI: `SalesSellersCard` (cadastro no banco + **edição inline do nome** + valor na mesma linha com eco do valor lido), `SalesMetricsPanel` (data, meta, resumo, detalhamento, "Registrar vendas"), `SalesHistoryPanel` (histórico + total acumulado) e `ManagementScreen` compondo tudo.
 - [x] Removidos o payload JSON e o botão "Carregar exemplo".
-- [x] Validação automática: `npm run typecheck` + `npm test` (19 testes) + `npm run build` (OK).
+- [x] Parser tolerante (`parseNumberOrNull`): aceita vírgula, ponto, separador de milhar ("3.289,49") e moeda ("R$ 3.289,49").
+- [x] **Erro 400 só aparece ao clicar em "Registrar vendas"** (antes era exibido durante a digitação).
+- [x] Validação automática: `npm run typecheck` + `npm test` (28 testes, inclui teste de DOM da tela) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 

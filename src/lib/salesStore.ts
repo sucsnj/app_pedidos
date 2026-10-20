@@ -27,6 +27,22 @@ export async function createSeller(name: string): Promise<Seller> {
   return data
 }
 
+export async function updateSeller(id: string, name: string): Promise<Seller> {
+  const { data, error } = await supabase
+    .from('sellers')
+    .update({ name })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) {
+    if (error.code === DUPLICATE_NAME) {
+      throw new Error('Já existe um vendedor com esse nome.')
+    }
+    throw error
+  }
+  return data
+}
+
 export async function deleteSeller(id: string): Promise<void> {
   const { error } = await supabase.from('sellers').delete().eq('id', id)
   if (error) throw error
