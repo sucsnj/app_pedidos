@@ -1,4 +1,14 @@
-import { BarChart3 } from 'lucide-react'
+import type { ReactNode } from 'react'
+import {
+  Award,
+  Banknote,
+  BarChart3,
+  ChartColumn,
+  Gauge,
+  ListChecks,
+  Receipt,
+  Target,
+} from 'lucide-react'
 import { formatCurrency, formatPercentage } from '../lib/utils'
 import { CollapsibleCard } from './CollapsibleCard'
 import type { SalesMetricsResult } from '../types/sales'
@@ -7,10 +17,23 @@ interface SalesResultCardProps {
   result: SalesMetricsResult | null
 }
 
-function MetricTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function MetricTile({
+  label,
+  value,
+  hint,
+  icon,
+}: {
+  label: string
+  value: string
+  hint?: string
+  icon: ReactNode
+}) {
   return (
     <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+        <span className="shrink-0 text-wine-500">{icon}</span>
+      </div>
       <p className="mt-1 text-xl font-extrabold tabular-nums text-wine-700">{value}</p>
       {hint ? <p className="mt-0.5 text-[11px] text-gray-400">{hint}</p> : null}
     </div>
@@ -35,7 +58,11 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        <MetricTile label="Total vendido" value={formatCurrency(summary.totalSold)} />
+        <MetricTile
+          label="Total vendido"
+          value={formatCurrency(summary.totalSold)}
+          icon={<Banknote className="h-4 w-4" />}
+        />
         <MetricTile
           label="Base de cálculo"
           value={formatCurrency(summary.effectiveBaseTotal)}
@@ -44,22 +71,34 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
               ? 'Meta informada'
               : 'Fallback: soma das vendas'
           }
+          icon={<ChartColumn className="h-4 w-4" />}
         />
         <MetricTile
           label="Meta informada"
           value={summary.customTotalBase !== null ? formatCurrency(summary.customTotalBase) : '—'}
           hint={summary.customTotalBase !== null ? 'Usada como base' : 'Não informada'}
+          icon={<Target className="h-4 w-4" />}
         />
-        <MetricTile label="Ticket médio" value={formatCurrency(summary.averageTicket)} />
-        <MetricTile label="Registros" value={String(summary.count)} />
+        <MetricTile
+          label="Ticket médio"
+          value={formatCurrency(summary.averageTicket)}
+          icon={<Receipt className="h-4 w-4" />}
+        />
+        <MetricTile
+          label="Registros"
+          value={String(summary.count)}
+          icon={<ListChecks className="h-4 w-4" />}
+        />
         <MetricTile
           label="Atingimento da meta"
           value={formatPercentage(summary.targetAchievementPercentage)}
+          icon={<Gauge className="h-4 w-4" />}
         />
         <MetricTile
           label="Maior venda"
           value={summary.topSale ? summary.topSale.name : '—'}
           hint={summary.topSale ? formatCurrency(summary.topSale.value) : 'Sem registros'}
+          icon={<Award className="h-4 w-4" />}
         />
       </div>
 
