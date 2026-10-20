@@ -161,12 +161,14 @@ export interface ProductSuggestion {
 export interface Seller {
   id: string
   name: string
+  store_id: string | null
   is_active: boolean
   created_at: string
 }
 export interface SellerInsert {
   id?: string
   name: string
+  store_id?: string | null
   is_active?: boolean
 }
 export type SellerUpdate = Partial<SellerInsert>

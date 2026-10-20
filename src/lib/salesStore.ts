@@ -11,14 +11,23 @@ import type { SalesSummary } from '../types/sales'
 
 const DUPLICATE_NAME = '23505'
 
-export async function fetchSellers(): Promise<Seller[]> {
-  const { data, error } = await supabase.from('sellers').select('*').order('name')
+/** Vendedores da loja (`store_id`) + os globais (`store_id is null`, legados). */
+export async function fetchSellers(storeId?: string | null): Promise<Seller[]> {
+  let query = supabase.from('sellers').select('*').order('name')
+  if (storeId) {
+    query = query.or(`store_id.eq.${storeId},store_id.is.null`)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data
 }
 
-export async function createSeller(name: string): Promise<Seller> {
-  const { data, error } = await supabase.from('sellers').insert({ name }).select().single()
+export async function createSeller(name: string, storeId?: string | null): Promise<Seller> {
+  const { data, error } = await supabase
+    .from('sellers')
+    .insert({ name, store_id: storeId ?? null })
+    .select()
+    .single()
   if (error) {
     if (error.code === DUPLICATE_NAME) {
       throw new Error('Já existe um vendedor com esse nome.')
@@ -49,12 +58,20 @@ export async function deleteSeller(id: string): Promise<void> {
   if (error) throw error
 }
 
-export async function fetchHistory(limit = 20): Promise<SalesCalculation[]> {
-  const { data, error } = await supabase
+/** Histórico da loja (`store_id`) + os lançamentos legados (`store_id is null`). */
+export async function fetchHistory(
+  limit = 20,
+  storeId?: string | null,
+): Promise<SalesCalculation[]> {
+  let query = supabase
     .from('sales_calculations')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
+  if (storeId) {
+    query = query.or(`store_id.eq.${storeId},store_id.is.null`)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data
 }

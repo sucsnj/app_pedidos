@@ -95,6 +95,7 @@ export function ManagementScreen({
             <div className="min-w-0 xl:col-span-2">
               <SalesHistoryPanel
                 history={sales.history}
+                stores={selection.stores}
                 loading={sales.loading}
                 onLoad={sales.loadHistory}
                 onDelete={sales.removeHistory}

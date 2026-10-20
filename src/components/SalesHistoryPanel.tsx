@@ -2,10 +2,11 @@ import { History, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, formatPercentage } from '../lib/utils'
 import { percentageOf } from '../lib/salesMetrics'
 import { CollapsibleCard } from './CollapsibleCard'
-import type { SalesCalculation } from '../types/database'
+import type { SalesCalculation, Store } from '../types/database'
 
 interface SalesHistoryPanelProps {
   history: SalesCalculation[]
+  stores: Store[]
   loading: boolean
   onLoad: (entry: SalesCalculation) => Promise<boolean>
   onDelete: (id: string) => Promise<void>
@@ -26,7 +27,7 @@ function topSaleInfo(entry: SalesCalculation): TopSaleInfo | null {
   return { name, value }
 }
 
-export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesHistoryPanelProps) {
+export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }: SalesHistoryPanelProps) {
   const total = history.reduce((sum, entry) => sum + Number(entry.total_sold), 0)
 
   return (
@@ -55,6 +56,7 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
             const top = topSaleInfo(entry)
             const base = Number(entry.effective_base_total)
             const topPercentage = top ? percentageOf(top.value, base) : null
+            const storeName = stores.find((store) => store.id === entry.store_id)?.name
             const metaPercentage =
               entry.target_achievement_percentage === null
                 ? null
@@ -76,6 +78,7 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
                     </p>
                     <p className="text-xs text-gray-500">
                       {entry.record_count} vendedor(es) · base {formatCurrency(base)}
+                      {storeName ? ` · ${storeName}` : ''}
                     </p>
                     {top ? (
                       <p className="mt-1 text-xs text-gray-500">

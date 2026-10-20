@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementScreen } from './ManagementScreen'
-import { deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords, recordSales } from '../lib/salesStore'
+import { createSeller, deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords, fetchSellers, recordSales } from '../lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -17,7 +17,15 @@ vi.mock('../lib/salesStore', () => ({
   fetchHistory: vi.fn(async () => []),
   fetchSalesRecords: vi.fn(async () => []),
   deleteCalculation: vi.fn(async () => undefined),
-  createSeller: vi.fn(),
+  createSeller: vi.fn(
+    async (name: string, storeId: string | null) => ({
+      id: 'seller-2',
+      name,
+      store_id: storeId,
+      is_active: true,
+      created_at: '2026-01-01',
+    }),
+  ),
   updateSeller: vi.fn(),
   deleteSeller: vi.fn(),
   recordSales: vi.fn(),
@@ -65,6 +73,8 @@ let root: ReturnType<typeof createRoot>
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   window.localStorage.clear()
+  vi.mocked(fetchHistory).mockReset().mockResolvedValue([])
+  vi.mocked(fetchSalesRecords).mockReset().mockResolvedValue([])
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -152,9 +162,8 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
   })
 
   it('carrega o lançamento do histórico no formulário ao clicar nele', async () => {
-    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
-    vi.mocked(fetchSalesRecords).mockResolvedValueOnce([
-      {
+    vi.mocked(fetchHistory).mockResolvedValue([historyEntry])
+    vi.mocked(fetchSalesRecords).mockResolvedValue([{
         id: 'rec-1',
         calculation_id: 'calc-1',
         seller_id: 'seller-1',
@@ -186,7 +195,7 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
   })
 
   it('exclui um lançamento do histórico', async () => {
-    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
+    vi.mocked(fetchHistory).mockResolvedValue([historyEntry])
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     await act(async () => {
@@ -254,8 +263,35 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(screenText()).toContain('Comparações entre períodos')
   })
 
+  it('vincula o vendedor e o histórico à loja selecionada', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen isAdmin userId="user-1" preferredStoreId="store-1" />)
+    })
+
+    expect(fetchSellers).toHaveBeenCalledWith('store-1')
+    expect(fetchHistory).toHaveBeenCalledWith(20, 'store-1')
+
+    const nameInput = container.querySelector<HTMLInputElement>(
+      '[aria-label="Nome do novo vendedor"]',
+    )
+    if (!nameInput) throw new Error('campo de nome do vendedor não encontrado')
+
+    await type(nameInput, 'Bruno Lima')
+
+    const addButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Cadastrar vendedor'),
+    )
+    if (!addButton) throw new Error('botão cadastrar vendedor não encontrado')
+
+    await act(async () => {
+      addButton.click()
+    })
+
+    expect(createSeller).toHaveBeenCalledWith('Bruno Lima', 'store-1')
+  })
+
   it('mostra no histórico a % do melhor vendedor e a % da meta', async () => {
-    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
+    vi.mocked(fetchHistory).mockResolvedValue([historyEntry])
 
     await act(async () => {
       root.render(<ManagementScreen />)
@@ -387,3 +423,4 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 })
+

@@ -63,7 +63,7 @@ export function SalesSellersCard({
     <CollapsibleCard
       storageKey="management-vendedores"
       title="Vendedores"
-      subtitle="Cadastrados no banco — informe o valor vendido no período ao lado de cada nome."
+      subtitle="Cadastrados no banco e vinculados à loja selecionada — informe o valor vendido no período."
       icon={<UserPlus className="h-5 w-5" />}
       badge={
         <span className="text-xs text-gray-500">{sellers.length} cadastrado(s)</span>

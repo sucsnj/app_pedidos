@@ -132,7 +132,9 @@ Decisões de design (validadas):
 - [x] Histórico mostra também a **% do melhor vendedor** (calculada do snapshot `top_sale` sobre a base, via `percentageOf`) e a **% da meta** em destaque; o card "Maior venda" do resultado passou a exibir a participação do líder.
 - [x] `/management` com abas próprias: **Vendas** (conteúdo atual) e **Comparação** ("em construção"); barra de abas genérica (`TabsBar`) extraída e reaproveitada pelas abas do `/orders` (`AppNav`).
 - [x] `/management` com o **mesmo seletor de loja do `/orders`** (componente `StoreSelect` compartilhado, na mesma barra vinho de largura total) — a preferência continua compartilhada (`lib/storePreference.ts`); a loja escolhida é gravada em `sales_calculations.store_id`.
-- [x] Validação automática: `npm run typecheck` + `npm test` (40 testes) + `npm run build` (OK).
+- [x] Histórico e vendedores **associados à loja selecionada**: nova migration `supabase/migrations/20261003000200_sellers_store.sql` (`sellers.store_id`); `sales_calculations.store_id` passa a ser filtrado na listagem (com os legados `store_id is null`) e o histórico mostra o nome da loja; trocar a loja recarrega vendedores e histórico.
+- [x] Validação automática: `npm run typecheck` + `npm test` (41 testes) + `npm run build` (OK).
+- [ ] **Aplicar a migration `20261003000200_sellers_store.sql` no Supabase** para vincular os vendedores à loja.
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 

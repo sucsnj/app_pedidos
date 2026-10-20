@@ -42,10 +42,13 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
   const [error, setError] = useState<ManagementError | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
-    const [sellersData, historyData] = await Promise.all([fetchSellers(), fetchHistory()])
+    const [sellersData, historyData] = await Promise.all([
+      fetchSellers(storeId),
+      fetchHistory(20, storeId),
+    ])
     setSellers(sellersData)
     setHistory(historyData)
-  }, [])
+  }, [storeId])
 
   useEffect(() => {
     let cancelled = false
@@ -73,7 +76,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
       setSaving(true)
       setError(null)
       try {
-        const seller = await createSeller(trimmed)
+        const seller = await createSeller(trimmed, storeId)
         setSellers((previous) =>
           [...previous, seller].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
         )
@@ -88,7 +91,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
         setSaving(false)
       }
     },
-    [notify],
+    [notify, storeId],
   )
 
   const renameSeller = useCallback(
@@ -274,7 +277,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
         })),
       })
       setValues({})
-      setHistory(await fetchHistory())
+      setHistory(await fetchHistory(20, storeId))
       notify('Vendas registradas — histórico atualizado.', 'success')
       return true
     } catch (err) {
