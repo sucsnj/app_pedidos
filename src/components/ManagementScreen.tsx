@@ -52,7 +52,7 @@ export function ManagementScreen({
 
       <TabsBar tabs={tabs} active={tab} onChange={setTab} />
 
-      <main className={contentClass}>
+      <main className={`${contentClass} pb-12 lg:pb-16`}>
         {tab === 'comparacao' ? (
           <div className="pt-4">
             <SectionPlaceholder
@@ -104,6 +104,11 @@ export function ManagementScreen({
             </div>
           </div>
         )}
+
+        <footer className="mt-8 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
+          {selection.activeStore?.name ?? 'Sem loja'} · {sales.history.length} lançamento(s) no
+          histórico
+        </footer>
       </main>
 
       <FlashToast flash={flash} />
