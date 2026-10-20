@@ -48,7 +48,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/CollapsibleCard.tsx` | Card expansível/colapsável genérico: estado (aberto/fechado) persistido no `localStorage` (`pedidos:card:<chave>`) |
 | `src/components/SalesMetricsPanel.tsx` | Card 1 da tela: data de referência, meta, erro 400 (só ao registrar) e botão "Registrar vendas" |
 | `src/components/SalesResultCard.tsx` | Card 2 da tela: indicadores do cálculo (total, base, meta, ticket médio, registros, atingimento, maior venda) + detalhamento por vendedor |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + cards na ordem: Cálculo → Resultado → Vendedores → Histórico + toast) |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + cards: **Cálculo (2/5) à esquerda e Vendedores (3/5) à direita** em `xl` (grid de 5 colunas), depois Resultado e Histórico + toast) |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |

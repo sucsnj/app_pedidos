@@ -126,7 +126,8 @@ Decisões de design (validadas):
 - [x] Exclusão de vendedor pede confirmação (`window.confirm`, avisa do cascade no histórico) e há botão "Limpar valores" (zera apenas os valores digitados, mantém os vendedores).
 - [x] Registrar **sem meta informada** pede confirmação (`window.confirm`) antes de gravar.
 - [x] Cards expansíveis/colapsáveis (`src/components/CollapsibleCard.tsx`): estado do último uso persistido no `localStorage` (`pedidos:card:<chave>`) e aplicado aos 4 cards do `/management`.
-- [x] Validação automática: `npm run typecheck` + `npm test` (33 testes, inclui teste de DOM da tela) + `npm run build` (OK).
+- [x] Layout: Cálculo (2/5) à esquerda e Vendedores (3/5) à direita, lado a lado em `xl` (grid de 5 colunas); Resultado e Histórico abaixo, em largura total.
+- [x] Validação automática: `npm run typecheck` + `npm test` (35 testes, inclui teste de DOM da tela) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 

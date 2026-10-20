@@ -31,28 +31,34 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
       </div>
 
       <div className="space-y-4">
-        <SalesMetricsPanel
-          meta={sales.meta}
-          referenceDate={sales.referenceDate}
-          error={sales.error}
-          saving={sales.saving}
-          onMetaChange={sales.setMeta}
-          onReferenceDateChange={sales.setReferenceDate}
-          onRegister={sales.register}
-        />
+        <div className="grid gap-4 xl:grid-cols-5">
+          <div className="xl:col-span-2">
+            <SalesMetricsPanel
+              meta={sales.meta}
+              referenceDate={sales.referenceDate}
+              error={sales.error}
+              saving={sales.saving}
+              onMetaChange={sales.setMeta}
+              onReferenceDateChange={sales.setReferenceDate}
+              onRegister={sales.register}
+            />
+          </div>
+
+          <div className="xl:col-span-3">
+            <SalesSellersCard
+              sellers={sales.sellers}
+              values={sales.values}
+              saving={sales.saving}
+              onAdd={sales.addSeller}
+              onRename={sales.renameSeller}
+              onRemove={sales.removeSeller}
+              onValueChange={sales.setValue}
+              onClearValues={sales.clearValues}
+            />
+          </div>
+        </div>
 
         <SalesResultCard result={sales.result} />
-
-        <SalesSellersCard
-          sellers={sales.sellers}
-          values={sales.values}
-          saving={sales.saving}
-          onAdd={sales.addSeller}
-          onRename={sales.renameSeller}
-          onRemove={sales.removeSeller}
-          onValueChange={sales.setValue}
-          onClearValues={sales.clearValues}
-        />
 
         <SalesHistoryPanel
           history={sales.history}
