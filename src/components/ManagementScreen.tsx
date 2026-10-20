@@ -51,6 +51,7 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
           onRename={sales.renameSeller}
           onRemove={sales.removeSeller}
           onValueChange={sales.setValue}
+          onClearValues={sales.clearValues}
         />
 
         <SalesHistoryPanel

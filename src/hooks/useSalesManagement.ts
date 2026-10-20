@@ -149,6 +149,11 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     setValues((previous) => ({ ...previous, [sellerId]: value }))
   }, [])
 
+  /** Limpa todos os valores digitados (mantém os vendedores cadastrados). */
+  const clearValues = useCallback((): void => {
+    setValues({})
+  }, [])
+
   /** Carrega um lançamento do histórico no formulário (valores, meta e data). */
   const loadHistory = useCallback(
     async (entry: SalesCalculation): Promise<boolean> => {
@@ -278,6 +283,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     sellers,
     values,
     setValue,
+    clearValues,
     meta,
     setMeta,
     referenceDate,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Pencil, Trash2, UserPlus, X } from 'lucide-react'
+import { Check, Eraser, Pencil, Trash2, UserPlus, X } from 'lucide-react'
 import type { Seller } from '../types/database'
 import { formatCurrency, parseNumberOrNull } from '../lib/utils'
 import { inputClass } from './ui'
@@ -13,6 +13,7 @@ interface SalesSellersCardProps {
   onRename: (id: string, name: string) => Promise<boolean>
   onRemove: (id: string) => Promise<void>
   onValueChange: (sellerId: string, value: string) => void
+  onClearValues: () => void
 }
 
 export function SalesSellersCard({
@@ -23,6 +24,7 @@ export function SalesSellersCard({
   onRename,
   onRemove,
   onValueChange,
+  onClearValues,
 }: SalesSellersCardProps) {
   const [name, setName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -47,6 +49,14 @@ export function SalesSellersCard({
     if (!editingId) return
     const saved = await onRename(editingId, editingName)
     if (saved) cancelEdit()
+  }
+
+  const handleRemove = async (seller: Seller) => {
+    const confirmed = window.confirm(
+      `Excluir o vendedor "${seller.name}"? Os lançamentos dele no histórico também serão removidos.`,
+    )
+    if (!confirmed) return
+    await onRemove(seller.id)
   }
 
   return (
@@ -89,7 +99,22 @@ export function SalesSellersCard({
           Nenhum vendedor cadastrado. Cadastre acima para começar o lançamento.
         </p>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <span className="text-xs text-gray-500">
+              {sellers.length} vendedor(es) · valores do período
+            </span>
+            <button
+              type="button"
+              onClick={onClearValues}
+              disabled={Object.keys(values).length === 0}
+              aria-label="Limpar valores dos vendedores"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-95 disabled:opacity-40"
+            >
+              <Eraser className="h-3.5 w-3.5" /> Limpar valores
+            </button>
+          </div>
+          <ul className="mt-2 space-y-3">
           {sellers.map((seller) => {
             const raw = values[seller.id] ?? ''
             const parsed = parseNumberOrNull(raw)
@@ -158,7 +183,7 @@ export function SalesSellersCard({
                   </button>
                   <button
                     type="button"
-                    onClick={() => void onRemove(seller.id)}
+                    onClick={() => void handleRemove(seller)}
                     disabled={saving}
                     aria-label={`Remover ${seller.name}`}
                     className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:opacity-30"
@@ -178,7 +203,8 @@ export function SalesSellersCard({
               </li>
             )
           })}
-        </ul>
+          </ul>
+        </>
       )}
     </CollapsibleCard>
   )

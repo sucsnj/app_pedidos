@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementScreen } from './ManagementScreen'
-import { deleteCalculation, fetchHistory, fetchSalesRecords } from '../lib/salesStore'
+import { deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords } from '../lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -186,8 +186,7 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
-  it('colapsa o card e mantém o estado ao remontar a tela', async () => {
-    await act(async () => {
+  it('colapsa o card e mantém o estado ao remontar a tela', async () => {    await act(async () => {
       root.render(<ManagementScreen />)
     })
 
@@ -215,5 +214,47 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(
       container.querySelector('[aria-label="Expandir Cálculo de vendas"]'),
     ).not.toBeNull()
+  })
+
+  it('pede confirmação antes de excluir um vendedor', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const removeButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Remover Ana Souza"]',
+    )
+    if (!removeButton) throw new Error('botão de remoção não encontrado')
+
+    await act(async () => {
+      removeButton.click()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(deleteSeller).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('limpa os valores digitados dos vendedores', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const valueInput = inputByLabel('Valor de Ana Souza')
+    await type(valueInput, '3289,49')
+    expect(valueInput.value).toBe('3289,49')
+
+    const clearButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Limpar valores dos vendedores"]',
+    )
+    if (!clearButton) throw new Error('botão de limpar valores não encontrado')
+
+    await act(async () => {
+      clearButton.click()
+    })
+
+    expect(inputByLabel('Valor de Ana Souza').value).toBe('')
   })
 })
