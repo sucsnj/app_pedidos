@@ -30,42 +30,44 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="grid gap-4 xl:grid-cols-5">
-          <div className="xl:col-span-2">
-            <SalesMetricsPanel
-              meta={sales.meta}
-              referenceDate={sales.referenceDate}
-              error={sales.error}
-              saving={sales.saving}
-              onMetaChange={sales.setMeta}
-              onReferenceDateChange={sales.setReferenceDate}
-              onRegister={sales.register}
-            />
-          </div>
-
-          <div className="xl:col-span-3">
-            <SalesSellersCard
-              sellers={sales.sellers}
-              values={sales.values}
-              saving={sales.saving}
-              onAdd={sales.addSeller}
-              onRename={sales.renameSeller}
-              onRemove={sales.removeSeller}
-              onValueChange={sales.setValue}
-              onClearValues={sales.clearValues}
-            />
-          </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <div className="min-w-0">
+          <SalesMetricsPanel
+            meta={sales.meta}
+            referenceDate={sales.referenceDate}
+            error={sales.error}
+            saving={sales.saving}
+            onMetaChange={sales.setMeta}
+            onReferenceDateChange={sales.setReferenceDate}
+            onRegister={sales.register}
+          />
         </div>
 
-        <SalesResultCard result={sales.result} />
+        <div className="min-w-0">
+          <SalesSellersCard
+            sellers={sales.sellers}
+            values={sales.values}
+            saving={sales.saving}
+            onAdd={sales.addSeller}
+            onRename={sales.renameSeller}
+            onRemove={sales.removeSeller}
+            onValueChange={sales.setValue}
+            onClearValues={sales.clearValues}
+          />
+        </div>
 
-        <SalesHistoryPanel
-          history={sales.history}
-          loading={sales.loading}
-          onLoad={sales.loadHistory}
-          onDelete={sales.removeHistory}
-        />
+        <div className="min-w-0 xl:col-span-2">
+          <SalesResultCard result={sales.result} />
+        </div>
+
+        <div className="min-w-0 xl:col-span-2">
+          <SalesHistoryPanel
+            history={sales.history}
+            loading={sales.loading}
+            onLoad={sales.loadHistory}
+            onDelete={sales.removeHistory}
+          />
+        </div>
       </div>
 
       <FlashToast flash={flash} />

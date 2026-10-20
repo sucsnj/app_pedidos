@@ -29,7 +29,7 @@ function MetricTile({
   icon: ReactNode
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+    <div className="min-w-0 rounded-xl border border-gray-100 bg-gray-50 p-3">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
         <span className="shrink-0 text-wine-500">{icon}</span>
@@ -111,7 +111,7 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
             {salesReport.map((item) => (
               <li
                 key={`${item.id}-${item.name}`}
-                className="rounded-xl border border-gray-200 bg-white p-3"
+                className="min-w-0 rounded-xl border border-gray-200 bg-white p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

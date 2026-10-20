@@ -43,12 +43,12 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/lib/salesStore.ts` | Persistência do módulo de Gestão: `fetchSellers`/`createSeller`/`updateSeller`/`deleteSeller`, `fetchHistory`, `fetchSalesRecords`, `deleteCalculation` (cascade), `recordSales` (snapshot + vendas) |
 | `src/types/sales.ts` | DTOs do módulo de vendas (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`) |
 | `src/hooks/useSalesManagement.ts` | Controller do módulo: vendedores (do banco), valores do período, meta, data, histórico e **cálculo derivado** (`useMemo` — instantâneo); `addSeller`/`renameSeller`/`removeSeller`/`loadHistory`/`removeHistory`/`register` (o erro 400 **só** aparece ao registrar) |
-| `src/components/SalesSellersCard.tsx` | Card 3 da tela: cadastro/edição/exclusão de vendedores (grava no banco; exclusão pede `window.confirm`) + valor vendido na mesma linha (com eco do valor lido) e botão "Limpar valores" |
-| `src/components/SalesHistoryPanel.tsx` | Card 4 da tela: histórico de consolidações (do banco): **clicar carrega** o lançamento no formulário + botão de **exclusão** (cascade) |
+| `src/components/SalesSellersCard.tsx` | Card 3 da tela: cadastro/edição/exclusão de vendedores (grava no banco; exclusão pede `window.confirm`) + valor vendido na mesma célula (com eco do valor lido) e botão "Limpar valores"; lista em colunas (`sm:grid-cols-2 xl:grid-cols-3`, células com borda) |
+| `src/components/SalesHistoryPanel.tsx` | Card 4 da tela: histórico de consolidações (do banco): **clicar carrega** o lançamento no formulário + botão de **exclusão** (cascade); lista em colunas (`sm:grid-cols-2 xl:grid-cols-3`, células com borda) |
 | `src/components/CollapsibleCard.tsx` | Card expansível/colapsável genérico: estado (aberto/fechado) persistido no `localStorage` (`pedidos:card:<chave>`) |
 | `src/components/SalesMetricsPanel.tsx` | Card 1 da tela: data de referência, meta, erro 400 (só ao registrar) e botão "Registrar vendas" |
 | `src/components/SalesResultCard.tsx` | Card 2 da tela: indicadores do cálculo (total, base, meta, ticket médio, registros, atingimento, maior venda) + detalhamento por vendedor |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + cards: **Cálculo (2/5) à esquerda e Vendedores (3/5) à direita** em `xl` (grid de 5 colunas), depois Resultado e Histórico + toast) |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + grid de 5 colunas em `xl`: **Cálculo (2/5) e Vendedores (3/5) lado a lado**, Resultado e Histórico em largura total; **empilhados** abaixo de `xl` — Vendedores fica logo abaixo de Cálculo) + toast |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
@@ -97,7 +97,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 - `locksOrder` = `currentOrder !== null && currentOrder.status !== 'Rascunho'` — trava edição quando o pedido não é rascunho.
 - Concluir um pedido navega para `entry` ("Modo Digitação"); em seguida o `comparativo` compara com a última contagem.
-- **Layout responsivo**: container de `Header`/`Nav`/`main` é `max-w-3xl` (mobile-first) alargando em `lg:max-w-5xl`/`xl:max-w-6xl`/`2xl:max-w-7xl`; no widescreen a Prancheta mostra produtos por categoria em 2–3 colunas (`lg:grid-cols-2 xl:grid-cols-3`) e a Digitação em 2 colunas (`lg:grid-cols-2`), usando `grid gap-px bg-gray-100 p-px` (linhas 1px, rótulos em células com `bg` opaco).
+- **Layout responsivo**: container de `Header`/`Nav`/`main` é `max-w-3xl` (mobile-first) alargando em `lg:max-w-5xl`/`xl:max-w-6xl`/`2xl:max-w-7xl`; no widescreen a Prancheta mostra produtos por categoria em 2–3 colunas (`lg:grid-cols-2 xl:grid-cols-3`) e a Digitação em 2 colunas (`lg:grid-cols-2`). Listas em colunas usam **bordas nas células** (`border-l border-t` no contêiner + `border-b border-r` na célula) — **nunca** `bg-gray-100` no contêiner do grid, senão as colunas vazias da última linha ficam cinzas (visual quebrado).
+- **Grid no layout**: track `1fr` é `minmax(auto,1fr)` → o mínimo da coluna é o **min-content** dos itens, e o grid estourra o contêiner. Use `minmax(0,…)` nas tracks (`xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]`) **e** `min-w-0` nos itens do grid — vale para page-level e para as listas internas dos cards.
 
 ## Regras de domínio (resumo)
 

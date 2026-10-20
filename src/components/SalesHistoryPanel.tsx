@@ -41,16 +41,19 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
           Nenhum registro ainda. Lance as vendas para começar o histórico.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {history.map((entry) => {
             const top = topSaleName(entry)
             return (
-              <li key={entry.id} className="flex items-stretch gap-2">
+              <li
+                key={entry.id}
+                className="flex min-w-0 items-stretch gap-1 rounded-xl border border-gray-200 bg-white p-1"
+              >
                 <button
                   type="button"
                   onClick={() => void onLoad(entry)}
                   aria-label={`Carregar lançamento de ${entry.reference_date}`}
-                  className="flex flex-1 flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-left transition hover:border-wine-300 hover:bg-wine-50/50 active:scale-[0.99]"
+                  className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-left transition hover:bg-wine-50/50 active:scale-[0.99]"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-800">
@@ -82,7 +85,7 @@ export function SalesHistoryPanel({ history, loading, onLoad, onDelete }: SalesH
                     if (confirmed) void onDelete(entry.id)
                   }}
                   aria-label={`Excluir lançamento de ${entry.reference_date}`}
-                  className="inline-flex w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 active:scale-95"
+                  className="my-1 mr-1 inline-flex w-9 shrink-0 items-center justify-center self-stretch rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

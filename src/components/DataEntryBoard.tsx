@@ -90,12 +90,12 @@ export function DataEntryBoard({
         </EmptyState>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <ul className="grid gap-px bg-gray-100 p-px lg:grid-cols-2">
+          <ul className="grid border-l border-t border-gray-100 lg:grid-cols-2">
             {pending.map((item) => {
               const code = item.product.code ?? item.variation.sku_code ?? '---'
               const entered = item.isEnteredInLegacy
               return (
-                <li key={item.key} className="min-w-0">
+                <li key={item.key} className="min-w-0 border-b border-r border-gray-100">
                   <button
                     type="button"
                     onClick={() => onToggleEntered(item.key)}

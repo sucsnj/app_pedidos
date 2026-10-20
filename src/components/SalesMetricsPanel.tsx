@@ -29,7 +29,7 @@ export function SalesMetricsPanel({
       subtitle="Data de referência e meta — os indicadores são calculados em tempo real."
       icon={<Calculator className="h-5 w-5" />}
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:max-w-3xl">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
             Data de referência

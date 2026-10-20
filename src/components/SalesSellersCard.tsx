@@ -69,7 +69,7 @@ export function SalesSellersCard({
         <span className="text-xs text-gray-500">{sellers.length} cadastrado(s)</span>
       }
     >
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row sm:max-w-2xl">
         <input
           type="text"
           value={name}
@@ -114,53 +114,81 @@ export function SalesSellersCard({
               <Eraser className="h-3.5 w-3.5" /> Limpar valores
             </button>
           </div>
-          <ul className="mt-2 space-y-3">
-          {sellers.map((seller) => {
-            const raw = values[seller.id] ?? ''
-            const parsed = parseNumberOrNull(raw)
-            const invalid = raw.trim() !== '' && (parsed === null || parsed < 0)
-            return (
-              <li key={seller.id} className="space-y-1">
-                <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_160px_40px_40px]">
-                  {editingId === seller.id ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editingName}
-                        onChange={(event) => setEditingName(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault()
-                            void saveEdit()
-                          }
-                          if (event.key === 'Escape') cancelEdit()
-                        }}
-                        aria-label={`Editar nome de ${seller.name}`}
-                        className={inputClass}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void saveEdit()}
-                        disabled={saving}
-                        aria-label="Salvar nome"
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-wine-500 text-white transition hover:bg-wine-600 active:scale-95 disabled:opacity-40"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        aria-label="Cancelar edição"
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 active:scale-95"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="min-w-0 truncate text-sm font-medium text-gray-800">
-                      {seller.name}
-                    </span>
-                  )}
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {sellers.map((seller) => {
+              const raw = values[seller.id] ?? ''
+              const parsed = parseNumberOrNull(raw)
+              const invalid = raw.trim() !== '' && (parsed === null || parsed < 0)
+              const isEditing = editingId === seller.id
+              return (
+                <li
+                  key={seller.id}
+                  className="min-w-0 rounded-xl border border-gray-200 bg-white p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    {isEditing ? (
+                      <div className="flex min-w-0 flex-1 items-center gap-1">
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(event) => setEditingName(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault()
+                              void saveEdit()
+                            }
+                            if (event.key === 'Escape') cancelEdit()
+                          }}
+                          aria-label={`Editar nome de ${seller.name}`}
+                          className={`${inputClass} min-w-0 flex-1`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void saveEdit()}
+                          disabled={saving}
+                          aria-label="Salvar nome"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-wine-500 text-white transition hover:bg-wine-600 active:scale-95 disabled:opacity-40"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          aria-label="Cancelar edição"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 active:scale-95"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="min-w-0 truncate text-sm font-medium text-gray-800">
+                          {seller.name}
+                        </p>
+                        <div className="flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(seller)}
+                            disabled={saving}
+                            aria-label={`Editar ${seller.name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-wine-700 active:scale-95 disabled:opacity-30"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleRemove(seller)}
+                            disabled={saving}
+                            aria-label={`Remover ${seller.name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:opacity-30"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   <input
                     type="text"
                     inputMode="decimal"
@@ -168,41 +196,22 @@ export function SalesSellersCard({
                     onChange={(event) => onValueChange(seller.id, event.target.value)}
                     placeholder="Valor (0,00)"
                     aria-label={`Valor de ${seller.name}`}
-                    className={`${inputClass} text-right tabular-nums ${
+                    className={`${inputClass} mt-2 text-right tabular-nums ${
                       invalid ? 'border-red-400 focus:border-red-500' : ''
                     }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => startEdit(seller)}
-                    disabled={saving}
-                    aria-label={`Editar ${seller.name}`}
-                    className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-wine-700 active:scale-95 disabled:opacity-30"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(seller)}
-                    disabled={saving}
-                    aria-label={`Remover ${seller.name}`}
-                    className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:opacity-30"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                {invalid ? (
-                  <p className="text-xs font-medium text-red-600">
-                    {parsed === null
-                      ? 'Valor inválido — use números (ex.: 3289,49).'
-                      : 'O valor não pode ser negativo.'}
-                  </p>
-                ) : parsed !== null ? (
-                  <p className="text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
-                ) : null}
-              </li>
-            )
-          })}
+                  {invalid ? (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      {parsed === null
+                        ? 'Valor inválido — use números (ex.: 3289,49).'
+                        : 'O valor não pode ser negativo.'}
+                    </p>
+                  ) : parsed !== null ? (
+                    <p className="mt-1 text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
         </>
       )}
