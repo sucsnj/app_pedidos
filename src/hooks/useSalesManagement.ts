@@ -124,6 +124,32 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     [notify],
   )
 
+  /** Vincula um vendedor "global" (sem loja) à loja selecionada. */
+  const bindSeller = useCallback(
+    async (id: string): Promise<boolean> => {
+      const seller = sellers.find((entry) => entry.id === id)
+      if (!seller || !storeId) return false
+      setSaving(true)
+      setError(null)
+      try {
+        const updated = await updateSeller(id, seller.name, storeId)
+        setSellers((previous) =>
+          previous.map((entry) => (entry.id === id ? updated : entry)),
+        )
+        notify('Vendedor vinculado à loja.', 'success')
+        return true
+      } catch (err) {
+        const message = getErrorMessage(err)
+        setError({ status: null, message, details: [] })
+        notify(message, 'error')
+        return false
+      } finally {
+        setSaving(false)
+      }
+    },
+    [sellers, storeId, notify],
+  )
+
   const removeSeller = useCallback(
     async (id: string): Promise<void> => {
       setSaving(true)
@@ -306,6 +332,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     result,
     addSeller,
     renameSeller,
+    bindSeller,
     removeSeller,
     loadHistory,
     removeHistory,

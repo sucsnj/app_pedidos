@@ -6,6 +6,7 @@ import type {
   SalesRecord,
   SalesRecordInsert,
   Seller,
+  SellerUpdate,
 } from '../types/database'
 import type { SalesSummary } from '../types/sales'
 
@@ -37,10 +38,16 @@ export async function createSeller(name: string, storeId?: string | null): Promi
   return data
 }
 
-export async function updateSeller(id: string, name: string): Promise<Seller> {
+export async function updateSeller(
+  id: string,
+  name: string,
+  storeId?: string | null,
+): Promise<Seller> {
+  const payload: Recordish<SellerUpdate> = { name }
+  if (storeId !== undefined) payload.store_id = storeId
   const { data, error } = await supabase
     .from('sellers')
-    .update({ name })
+    .update(payload)
     .eq('id', id)
     .select()
     .single()

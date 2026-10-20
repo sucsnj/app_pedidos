@@ -44,6 +44,13 @@ vi.mock('../lib/supabase', () => ({
               is_active: true,
               created_at: '2026-01-01',
             },
+            {
+              id: 'store-2',
+              code: 'L2',
+              name: 'Loja Norte',
+              is_active: true,
+              created_at: '2026-01-01',
+            },
           ],
           error: null,
         }),
@@ -261,6 +268,32 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
 
     expect(screenText()).toContain('Em construção')
     expect(screenText()).toContain('Comparações entre períodos')
+  })
+
+  it('recarrega vendedores e histórico ao trocar de loja', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen isAdmin userId="user-1" preferredStoreId="store-1" />)
+    })
+
+    expect(fetchSellers).toHaveBeenCalledWith('store-1')
+    expect(fetchHistory).toHaveBeenCalledWith(20, 'store-1')
+
+    const select = container.querySelector<HTMLSelectElement>(
+      '[aria-label="Selecionar loja"]',
+    )
+    if (!select) throw new Error('seletor de loja não encontrado')
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype,
+        'value',
+      )?.set
+      setter?.call(select, 'store-2')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    expect(fetchSellers).toHaveBeenLastCalledWith('store-2')
+    expect(fetchHistory).toHaveBeenLastCalledWith(20, 'store-2')
   })
 
   it('vincula o vendedor e o histórico à loja selecionada', async () => {

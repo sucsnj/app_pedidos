@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Eraser, Pencil, Trash2, UserPlus, X } from 'lucide-react'
+import { Check, Eraser, Link2, Pencil, Trash2, UserPlus, X } from 'lucide-react'
 import type { Seller } from '../types/database'
 import { formatCurrency, parseNumberOrNull } from '../lib/utils'
 import { inputClass } from './ui'
@@ -11,6 +11,7 @@ interface SalesSellersCardProps {
   saving: boolean
   onAdd: (name: string) => Promise<boolean>
   onRename: (id: string, name: string) => Promise<boolean>
+  onBind: (id: string) => Promise<boolean>
   onRemove: (id: string) => Promise<void>
   onValueChange: (sellerId: string, value: string) => void
   onClearValues: () => void
@@ -22,6 +23,7 @@ export function SalesSellersCard({
   saving,
   onAdd,
   onRename,
+  onBind,
   onRemove,
   onValueChange,
   onClearValues,
@@ -209,6 +211,22 @@ export function SalesSellersCard({
                   ) : parsed !== null ? (
                     <p className="mt-1 text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
                   ) : null}
+
+                  {seller.store_id ? null : (
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-semibold text-gray-500">
+                        sem loja
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void onBind(seller.id)}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1 rounded-md bg-wine-50 px-1.5 py-0.5 text-[11px] font-bold text-wine-700 transition hover:bg-wine-100 active:scale-95 disabled:opacity-40"
+                      >
+                        <Link2 className="h-3 w-3" /> Vincular a esta loja
+                      </button>
+                    </div>
+                  )}
                 </li>
               )
             })}

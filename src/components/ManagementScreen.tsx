@@ -82,6 +82,7 @@ export function ManagementScreen({
                 saving={sales.saving}
                 onAdd={sales.addSeller}
                 onRename={sales.renameSeller}
+                onBind={sales.bindSeller}
                 onRemove={sales.removeSeller}
                 onValueChange={sales.setValue}
                 onClearValues={sales.clearValues}
