@@ -186,6 +186,30 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
+  it('possui as abas Vendas e Comparação, com a Comparação em construção', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const tabs = Array.from(container.querySelectorAll('nav button'))
+    const labels = tabs.map((button) => button.textContent ?? '')
+    expect(labels.some((label) => label.includes('Vendas'))).toBe(true)
+    expect(labels.some((label) => label.includes('Comparação'))).toBe(true)
+    expect(screenText()).not.toContain('Em construção')
+
+    const comparacao = tabs.find(
+      (button) => button.textContent?.includes('Comparação'),
+    ) as HTMLButtonElement | undefined
+    if (!comparacao) throw new Error('aba Comparação não encontrada')
+
+    await act(async () => {
+      comparacao.click()
+    })
+
+    expect(screenText()).toContain('Em construção')
+    expect(screenText()).toContain('Comparações entre períodos')
+  })
+
   it('mostra no histórico a % do melhor vendedor e a % da meta', async () => {
     vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
 

@@ -8,6 +8,7 @@ import { Dashboard } from './Dashboard'
 import { ManagementScreen } from './ManagementScreen'
 import { SectionPlaceholder } from './SectionPlaceholder'
 import { TopNav } from './TopNav'
+import { contentClass } from './ui'
 
 interface AppShellProps {
   profile: Profile | null
@@ -39,7 +40,15 @@ export function AppShell({
     if (section.path === MANAGEMENT_PATH) {
       return <ManagementScreen storeId={profile?.store_id ?? null} />
     }
-    return <SectionPlaceholder section={section} />
+    return (
+      <main className={contentClass}>
+        <SectionPlaceholder
+          title="Em construção"
+          description={section.description}
+          badge={`${section.label} · em breve`}
+        />
+      </main>
+    )
   }
 
   return (

@@ -130,7 +130,8 @@ Decisões de design (validadas):
 - [x] Correção do estouro de largura: tracks do grid com `minmax(0,…)` + `min-w-0` nos itens (track `1fr` = `minmax(auto,1fr)` herda o min-content dos cards e estourava o contêiner).
 - [x] Correção do layout em telas grandes: listas em colunas passam a usar **bordas nas células** (o `bg-gray-100` no contêiner do grid deixava as colunas vazias da última linha em cinza) — aplicado em `/management` **e** na Prancheta/Digitação do `/orders`.
 - [x] Histórico mostra também a **% do melhor vendedor** (calculada do snapshot `top_sale` sobre a base, via `percentageOf`) e a **% da meta** em destaque; o card "Maior venda" do resultado passou a exibir a participação do líder.
-- [x] Validação automática: `npm run typecheck` + `npm test` (38 testes) + `npm run build` (OK).
+- [x] `/management` com abas próprias: **Vendas** (conteúdo atual) e **Comparação** ("em construção"); barra de abas genérica (`TabsBar`) extraída e reaproveitada pelas abas do `/orders` (`AppNav`).
+- [x] Validação automática: `npm run typecheck` + `npm test` (39 testes) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
