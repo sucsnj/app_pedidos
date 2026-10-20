@@ -118,7 +118,7 @@ Decisões de design (validadas):
 - [x] Tipos canônicos em `src/types/database.ts` (`Seller`, `SalesCalculation`, `SalesRecord` + `Insert`/`Update`, padrão `Recordish`).
 - [x] Persistência `src/lib/salesStore.ts`: `fetchSellers`/`createSeller`/`deleteSeller`/`fetchHistory`/`recordSales` (grava snapshot + vendas; rollback do snapshot se as vendas falharem).
 - [x] Controller `src/hooks/useSalesManagement.ts`: vendedores do banco, valores do período, meta, data de referência, histórico e cálculo derivado (`useMemo`, instantâneo); `addSeller`/`removeSeller`/`register` com toasts.
-- [x] UI: `SalesSellersCard` (cadastro no banco + **edição inline do nome** + valor na mesma linha com eco do valor lido), `SalesMetricsPanel` (data, meta, resumo, detalhamento, "Registrar vendas"), `SalesHistoryPanel` (histórico + total acumulado) e `ManagementScreen` compondo tudo.
+- [x] UI: `SalesMetricsPanel` (card 1 — data, meta, "Registrar vendas"), `SalesResultCard` (card 2 — indicadores + detalhamento), `SalesSellersCard` (card 3 — cadastro no banco + **edição inline do nome** + valor na mesma linha), `SalesHistoryPanel` (card 4 — histórico + total acumulado) e `ManagementScreen` compondo na ordem pedida.
 - [x] Removidos o payload JSON e o botão "Carregar exemplo".
 - [x] Parser tolerante (`parseNumberOrNull`): aceita vírgula, ponto, separador de milhar ("3.289,49") e moeda ("R$ 3.289,49").
 - [x] **Erro 400 só aparece ao clicar em "Registrar vendas"** (antes era exibido durante a digitação).

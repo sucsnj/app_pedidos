@@ -43,10 +43,11 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/lib/salesStore.ts` | Persistência do módulo de Gestão: `fetchSellers`/`createSeller`/`updateSeller`/`deleteSeller`, `fetchHistory`, `fetchSalesRecords`, `deleteCalculation` (cascade), `recordSales` (snapshot + vendas) |
 | `src/types/sales.ts` | DTOs do módulo de vendas (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`) |
 | `src/hooks/useSalesManagement.ts` | Controller do módulo: vendedores (do banco), valores do período, meta, data, histórico e **cálculo derivado** (`useMemo` — instantâneo); `addSeller`/`renameSeller`/`removeSeller`/`loadHistory`/`removeHistory`/`register` (o erro 400 **só** aparece ao registrar) |
-| `src/components/SalesSellersCard.tsx` | Cadastro/edição/exclusão de vendedores (grava no banco) + valor vendido na mesma linha (com eco do valor lido) |
-| `src/components/SalesMetricsPanel.tsx` | UI do cálculo: data de referência, meta, cards de resumo, detalhamento por vendedor e botão "Registrar vendas" |
-| `src/components/SalesHistoryPanel.tsx` | Histórico de consolidações (do banco): **clicar carrega** o lançamento no formulário + botão de **exclusão** (cascade) |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + `SalesSellersCard`/`SalesMetricsPanel`/`SalesHistoryPanel` + toast) |
+| `src/components/SalesSellersCard.tsx` | Card 3 da tela: cadastro/edição/exclusão de vendedores (grava no banco) + valor vendido na mesma linha (com eco do valor lido) |
+| `src/components/SalesHistoryPanel.tsx` | Card 4 da tela: histórico de consolidações (do banco): **clicar carrega** o lançamento no formulário + botão de **exclusão** (cascade) |
+| `src/components/SalesMetricsPanel.tsx` | Card 1 da tela: data de referência, meta, erro 400 (só ao registrar) e botão "Registrar vendas" |
+| `src/components/SalesResultCard.tsx` | Card 2 da tela: indicadores do cálculo (total, base, meta, ticket médio, registros, atingimento, maior venda) + detalhamento por vendedor |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + cards na ordem: Cálculo → Resultado → Vendedores → Histórico + toast) |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |

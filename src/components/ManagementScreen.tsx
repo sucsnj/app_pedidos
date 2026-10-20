@@ -5,6 +5,7 @@ import { contentClass } from './ui'
 import { FlashToast } from './FlashToast'
 import { SalesHistoryPanel } from './SalesHistoryPanel'
 import { SalesMetricsPanel } from './SalesMetricsPanel'
+import { SalesResultCard } from './SalesResultCard'
 import { SalesSellersCard } from './SalesSellersCard'
 
 interface ManagementScreenProps {
@@ -30,6 +31,18 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
       </div>
 
       <div className="space-y-4">
+        <SalesMetricsPanel
+          meta={sales.meta}
+          referenceDate={sales.referenceDate}
+          error={sales.error}
+          saving={sales.saving}
+          onMetaChange={sales.setMeta}
+          onReferenceDateChange={sales.setReferenceDate}
+          onRegister={sales.register}
+        />
+
+        <SalesResultCard result={sales.result} />
+
         <SalesSellersCard
           sellers={sales.sellers}
           values={sales.values}
@@ -38,17 +51,6 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
           onRename={sales.renameSeller}
           onRemove={sales.removeSeller}
           onValueChange={sales.setValue}
-        />
-
-        <SalesMetricsPanel
-          meta={sales.meta}
-          referenceDate={sales.referenceDate}
-          result={sales.result}
-          error={sales.error}
-          saving={sales.saving}
-          onMetaChange={sales.setMeta}
-          onReferenceDateChange={sales.setReferenceDate}
-          onRegister={sales.register}
         />
 
         <SalesHistoryPanel
