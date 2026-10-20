@@ -1,7 +1,8 @@
-import { Plus, Store } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { Order, Store as StoreRow } from '../types/database'
 import { orderLabel } from '../lib/orders'
 import { Spinner, barClass } from './ui'
+import { StoreSelect } from './StoreSelect'
 
 interface AppHeaderProps {
   stores: StoreRow[]
@@ -26,37 +27,16 @@ export function AppHeader({
   onSelectOrder,
   onNewCount,
 }: AppHeaderProps) {
-  const activeStoreName = stores.find((store) => store.id === activeStoreId)?.name ?? 'Nenhuma loja'
-
   return (
     <header className="bg-wine-800 text-white shadow-sm">
       <div className={`${barClass} flex flex-col gap-2 py-2.5`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            {showStoreSelector ? (
-              <>
-                <Store className="hidden h-4 w-4 shrink-0 text-gold-300 sm:block" />
-                <select
-                  value={activeStoreId}
-                  onChange={(event) => onSelectStore(event.target.value)}
-                  className="w-full rounded-lg border border-gold-500 bg-gold-400 px-3 py-2 text-sm font-bold text-wine-800 outline-none focus:border-wine-900"
-                >
-                  <option value="">Selecione a loja</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                      {store.code ? ' (' + store.code + ')' : ''}
-                    </option>
-                  ))}
-                </select>
-              </>
-            ) : (
-              <div className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-gold-500 bg-gold-400 px-3 py-2">
-                <Store className="hidden h-4 w-4 shrink-0 text-wine-800 sm:block" />
-                <span className="truncate text-sm font-bold text-wine-800">{activeStoreName}</span>
-              </div>
-            )}
-          </div>
+          <StoreSelect
+            stores={stores}
+            activeStoreId={activeStoreId}
+            showStoreSelector={showStoreSelector}
+            onSelectStore={onSelectStore}
+          />
 
           <div className="flex min-w-0 gap-2">
             <select

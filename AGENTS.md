@@ -50,7 +50,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/SalesResultCard.tsx` | Card 2 da tela: indicadores do cálculo (total, base, meta, ticket médio, registros, atingimento, maior venda) + detalhamento por vendedor |
 | `src/hooks/useStoreSelection.ts` | Seleção de loja para telas fora da sessão de pedidos (busca `stores`; preferência `localStorage` → loja do perfil → primeira ativa); `storeId`/`selectStore` |
 | `src/lib/storePreference.ts` | Preferência de loja por usuário (`localStorage`, `pedidos:selectedStore:<userId>`) — compartilhada por `/orders` e `/management` |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho com **seletor de loja** + abas próprias `TabsBar`: **Vendas** e **Comparação** — esta última "em construção") |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (barra vinho com o **mesmo seletor de loja** do `/orders` + abas próprias `TabsBar`: **Vendas** e **Comparação** — esta última "em construção") |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
@@ -75,6 +75,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/LoginScreen.tsx` | Tela de login (email/senha via `signInWithPassword`), erros visuais e indicador de carregamento |
 | `src/components/CollaboratorsBoard.tsx` | Gestão de usuários (visível só p/ `admin`): cadastra gerente (`auth.signUp` + `profiles`, restaurando a sessão do admin) e lista/edita loja, cargo e acesso. Cards colapsáveis com cabeçalho no mesmo estilo do `Section` do `CatalogBoard` |
 | `src/components/AppHeader.tsx` | Cabeçalho da seção Pedidos: seletor loja/pedido, "Nova contagem" e indicador `saving` (marca, usuário/cargo/Sair ficam na `TopNav`) |
+| `src/components/StoreSelect.tsx` | Seletor de loja **compartilhado** por `/orders` (`AppHeader`) e `/management` (mesmo componente, estilo e posição) |
 | `src/components/TabsBar.tsx` | Barra de abas genérica (genérica em `T`, sticky, mesmo visual das abas do `/orders`); `renderTabExtra` permite ação extra após uma aba (botão "Concluir Pedido") |
 | `src/components/AppNav.tsx` | Abas do `/orders` (Contagem/Digitação/Cadastro/Comparativo) sobre `TabsBar` + botão "Concluir Pedido" logo à direita da aba Contagem |
 | `src/components/CountingBoard.tsx` | Categorias colapsáveis (estado local; cabeçalho **e** rodapé alternam o colapso), campo de busca por nome/código de produto (ao lado de "Salvar rascunho", desabilitado quando travado), sugestão por item clicável (aplica a quantidade sugerida via `onSetQuantity`), nome do item em `text-base` |
