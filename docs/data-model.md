@@ -142,7 +142,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | created_at | timestamptz default now() |
 | created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
 
-- **Snapshot** de cada cálculo registrado: base para análises futuras (tendência, meta atingida, ranking).
+- **Snapshot** de cada cálculo registrado: base para análises futuras (tendência, meta atingida, ranking). Excluir a consolidação remove em cascata as vendas vinculadas (`sales_records.calculation_id`).
 
 ### sales_records (vendas por vendedor)
 | coluna | tipo |

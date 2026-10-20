@@ -4,7 +4,7 @@ import {
   calculateSalesMetrics,
   normalizeSalesPayload,
 } from '../lib/salesMetrics'
-import { createSeller, deleteSeller, fetchHistory, fetchSellers, recordSales, updateSeller } from '../lib/salesStore'
+import { createSeller, deleteCalculation, deleteSeller, fetchHistory, fetchSellers, fetchSalesRecords, recordSales, updateSeller } from '../lib/salesStore'
 import { getErrorMessage, parseNumberOrNull } from '../lib/utils'
 import type { Seller, SalesCalculation } from '../types/database'
 import type { FlashKind } from '../types/app'
@@ -23,6 +23,12 @@ export interface ManagementError {
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+/** Formata um número para o campo de texto (pt-BR, 2 casas). */
+function formatAmountInput(value: number): string {
+  if (!Number.isFinite(value)) return ''
+  return value.toFixed(2).replace('.', ',')
 }
 
 export function useSalesManagement({ storeId = null, notify }: SalesManagementParams) {
@@ -143,6 +149,58 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     setValues((previous) => ({ ...previous, [sellerId]: value }))
   }, [])
 
+  /** Carrega um lançamento do histórico no formulário (valores, meta e data). */
+  const loadHistory = useCallback(
+    async (entry: SalesCalculation): Promise<boolean> => {
+      setSaving(true)
+      setError(null)
+      try {
+        const records = await fetchSalesRecords(entry.id)
+        const next: Record<string, string> = {}
+        for (const record of records) {
+          next[record.seller_id] = formatAmountInput(Number(record.amount))
+        }
+        setValues(next)
+        setReferenceDate(entry.reference_date)
+        setMeta(
+          entry.custom_total_base === null
+            ? ''
+            : formatAmountInput(Number(entry.custom_total_base)),
+        )
+        notify('Histórico carregado no formulário.', 'success')
+        return true
+      } catch (err) {
+        const message = getErrorMessage(err)
+        setError({ status: null, message, details: [] })
+        notify(message, 'error')
+        return false
+      } finally {
+        setSaving(false)
+      }
+    },
+    [notify],
+  )
+
+  /** Exclui uma consolidação do histórico (as vendas vinculadas caem em cascata). */
+  const removeHistory = useCallback(
+    async (id: string): Promise<void> => {
+      setSaving(true)
+      setError(null)
+      try {
+        await deleteCalculation(id)
+        setHistory((previous) => previous.filter((entry) => entry.id !== id))
+        notify('Lançamento excluído do histórico.', 'success')
+      } catch (err) {
+        const message = getErrorMessage(err)
+        setError({ status: null, message, details: [] })
+        notify(message, 'error')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [notify],
+  )
+
   const { payload, error: formError } = useMemo(
     () =>
       buildSalesPayloadFromForm({
@@ -232,6 +290,8 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     addSeller,
     renameSeller,
     removeSeller,
+    loadHistory,
+    removeHistory,
     register,
     reload: load,
   }

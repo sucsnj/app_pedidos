@@ -3,6 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementScreen } from './ManagementScreen'
+import { deleteCalculation, fetchHistory, fetchSalesRecords } from '../lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -14,10 +15,28 @@ vi.mock('../lib/salesStore', () => ({
     { id: 'seller-1', name: 'Ana Souza', is_active: true, created_at: '2026-01-01' },
   ]),
   fetchHistory: vi.fn(async () => []),
+  fetchSalesRecords: vi.fn(async () => []),
+  deleteCalculation: vi.fn(async () => undefined),
   createSeller: vi.fn(),
+  updateSeller: vi.fn(),
   deleteSeller: vi.fn(),
   recordSales: vi.fn(),
 }))
+
+const historyEntry = {
+  id: 'calc-1',
+  store_id: null,
+  reference_date: '2026-10-01',
+  total_sold: 3289.49,
+  effective_base_total: 50000,
+  custom_total_base: 50000,
+  average_ticket: 3289.49,
+  record_count: 1,
+  target_achievement_percentage: 6.58,
+  top_sale: { id: 'seller-1', name: 'Ana Souza', value: 3289.49 },
+  created_at: '2026-10-01T10:00:00.000Z',
+  created_by: null,
+}
 
 let container: HTMLDivElement
 let root: ReturnType<typeof createRoot>
@@ -108,5 +127,61 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
 
     expect(screenText()).toContain('Erro 400')
     expect(screenText()).toContain('informe um valor numérico')
+  })
+
+  it('carrega o lançamento do histórico no formulário ao clicar nele', async () => {
+    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
+    vi.mocked(fetchSalesRecords).mockResolvedValueOnce([
+      {
+        id: 'rec-1',
+        calculation_id: 'calc-1',
+        seller_id: 'seller-1',
+        seller_name: 'Ana Souza',
+        amount: 3289.49,
+        percentage: 6.58,
+        reference_date: '2026-10-01',
+        created_at: '2026-10-01T10:00:00.000Z',
+        created_by: null,
+      },
+    ])
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const historyButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Carregar lançamento de 2026-10-01"]',
+    )
+    if (!historyButton) throw new Error('lançamento do histórico não encontrado')
+
+    await act(async () => {
+      historyButton.click()
+    })
+
+    expect(inputByLabel('Valor de Ana Souza').value).toBe('3289,49')
+    expect(inputByLabel('Meta de vendas').value).toBe('50000,00')
+    expect(inputByLabel('Data de referência').value).toBe('2026-10-01')
+  })
+
+  it('exclui um lançamento do histórico', async () => {
+    vi.mocked(fetchHistory).mockResolvedValueOnce([historyEntry])
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    const deleteButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Excluir lançamento de 2026-10-01"]',
+    )
+    if (!deleteButton) throw new Error('botão de exclusão não encontrado')
+
+    await act(async () => {
+      deleteButton.click()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(deleteCalculation).toHaveBeenCalledWith('calc-1')
+    confirmSpy.mockRestore()
   })
 })

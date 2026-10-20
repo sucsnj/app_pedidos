@@ -60,6 +60,7 @@ export function SalesMetricsPanel({
               type="date"
               value={referenceDate}
               onChange={(event) => onReferenceDateChange(event.target.value)}
+              aria-label="Data de referência"
               className={inputClass}
             />
           </label>
@@ -73,6 +74,7 @@ export function SalesMetricsPanel({
               value={meta}
               onChange={(event) => onMetaChange(event.target.value)}
               placeholder="Ex.: 50000 (opcional)"
+              aria-label="Meta de vendas"
               className={inputClass}
             />
             <span className="mt-1 block text-xs text-gray-400">

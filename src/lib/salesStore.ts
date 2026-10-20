@@ -3,6 +3,7 @@ import type {
   Recordish,
   SalesCalculation,
   SalesCalculationInsert,
+  SalesRecord,
   SalesRecordInsert,
   Seller,
 } from '../types/database'
@@ -56,6 +57,22 @@ export async function fetchHistory(limit = 20): Promise<SalesCalculation[]> {
     .limit(limit)
   if (error) throw error
   return data
+}
+
+/** Vendas por vendedor de uma consolidação (para carregar o histórico no formulário). */
+export async function fetchSalesRecords(calculationId: string): Promise<SalesRecord[]> {
+  const { data, error } = await supabase
+    .from('sales_records')
+    .select('*')
+    .eq('calculation_id', calculationId)
+  if (error) throw error
+  return data
+}
+
+/** Exclui uma consolidação — as vendas vinculadas caem em cascata (`calculation_id`). */
+export async function deleteCalculation(id: string): Promise<void> {
+  const { error } = await supabase.from('sales_calculations').delete().eq('id', id)
+  if (error) throw error
 }
 
 export interface SalesRecordInput {

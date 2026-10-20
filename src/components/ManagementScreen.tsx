@@ -51,7 +51,12 @@ export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
           onRegister={sales.register}
         />
 
-        <SalesHistoryPanel history={sales.history} loading={sales.loading} />
+        <SalesHistoryPanel
+          history={sales.history}
+          loading={sales.loading}
+          onLoad={sales.loadHistory}
+          onDelete={sales.removeHistory}
+        />
       </div>
 
       <FlashToast flash={flash} />
