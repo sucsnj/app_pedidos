@@ -47,14 +47,7 @@ export interface StoreSessionParams {
   userId?: string | null
 }
 
-const STORE_PREFERENCE_KEY = 'pedidos:selectedStore:'
-
-function persistStorePreference(userId: string, storeId: string): void {
-  try {
-    localStorage.setItem(STORE_PREFERENCE_KEY + userId, storeId)
-  } catch {}
-}
-
+import { readStorePreference, writeStorePreference } from '../lib/storePreference'
 export function useStoreSession({
   catalog,
   notify,
@@ -106,9 +99,7 @@ export function useStoreSession({
 
   useEffect(() => {
     if (activeStoreId || catalog.stores.length === 0) return
-    const persistedStoreId = userId
-      ? localStorage.getItem(STORE_PREFERENCE_KEY + userId)
-      : null
+    const persistedStoreId = readStorePreference(userId)
     const defaultStore =
       (persistedStoreId
         ? catalog.stores.find((store) => store.id === persistedStoreId)
@@ -467,7 +458,7 @@ export function useStoreSession({
         markDirty()
         void enqueuePersist().catch(() => undefined)
       }
-      if (userId) persistStorePreference(userId, storeId)
+      writeStorePreference(userId, storeId)
       setActiveStoreId(storeId)
     },
     [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty, userId],

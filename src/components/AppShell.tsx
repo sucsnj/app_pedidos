@@ -38,7 +38,13 @@ export function AppShell({
       )
     }
     if (section.path === MANAGEMENT_PATH) {
-      return <ManagementScreen storeId={profile?.store_id ?? null} />
+      return (
+        <ManagementScreen
+          userId={currentUserId}
+          isAdmin={isAdmin}
+          preferredStoreId={profile?.store_id ?? null}
+        />
+      )
     }
     return (
       <main className={contentClass}>

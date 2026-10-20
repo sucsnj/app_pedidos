@@ -23,6 +23,27 @@ vi.mock('../lib/salesStore', () => ({
   recordSales: vi.fn(),
 }))
 
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        order: async () => ({
+          data: [
+            {
+              id: 'store-1',
+              code: 'L1',
+              name: 'Loja Central',
+              is_active: true,
+              created_at: '2026-01-01',
+            },
+          ],
+          error: null,
+        }),
+      }),
+    }),
+  },
+}))
+
 const historyEntry = {
   id: 'calc-1',
   store_id: null,
@@ -184,6 +205,29 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(confirmSpy).toHaveBeenCalled()
     expect(deleteCalculation).toHaveBeenCalledWith('calc-1')
     confirmSpy.mockRestore()
+  })
+
+  it('mostra o seletor de loja para o admin e a loja fixa para o gerente', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen isAdmin userId="user-1" />)
+    })
+
+    const select = container.querySelector<HTMLSelectElement>(
+      '[aria-label="Selecionar loja"]',
+    )
+    if (!select) throw new Error('seletor de loja não encontrado')
+    expect(select.textContent).toContain('Loja Central')
+
+    await act(async () => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    await act(async () => {
+      root.render(<ManagementScreen userId="user-1" preferredStoreId="store-1" />)
+    })
+
+    expect(container.querySelector('[aria-label="Selecionar loja"]')).toBeNull()
+    expect(screenText()).toContain('Loja Central')
   })
 
   it('possui as abas Vendas e Comparação, com a Comparação em construção', async () => {

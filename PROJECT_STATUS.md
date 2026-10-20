@@ -131,7 +131,8 @@ Decisões de design (validadas):
 - [x] Correção do layout em telas grandes: listas em colunas passam a usar **bordas nas células** (o `bg-gray-100` no contêiner do grid deixava as colunas vazias da última linha em cinza) — aplicado em `/management` **e** na Prancheta/Digitação do `/orders`.
 - [x] Histórico mostra também a **% do melhor vendedor** (calculada do snapshot `top_sale` sobre a base, via `percentageOf`) e a **% da meta** em destaque; o card "Maior venda" do resultado passou a exibir a participação do líder.
 - [x] `/management` com abas próprias: **Vendas** (conteúdo atual) e **Comparação** ("em construção"); barra de abas genérica (`TabsBar`) extraída e reaproveitada pelas abas do `/orders` (`AppNav`).
-- [x] Validação automática: `npm run typecheck` + `npm test` (39 testes) + `npm run build` (OK).
+- [x] `/management` com **seletor de loja** no cabeçalho (admin escolhe; gerente vê a loja do perfil) — mesma preferência do `/orders` (`lib/storePreference.ts` compartilhada); a loja escolhida é gravada em `sales_calculations.store_id`.
+- [x] Validação automática: `npm run typecheck` + `npm test` (40 testes) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
