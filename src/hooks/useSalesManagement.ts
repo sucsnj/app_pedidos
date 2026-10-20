@@ -251,6 +251,14 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
       return false
     }
 
+    const hasMeta = result.summary.customTotalBase !== null && result.summary.customTotalBase > 0
+    if (!hasMeta) {
+      const confirmed = window.confirm(
+        'A meta (base de cálculo) não foi informada. Registrar mesmo assim? O cálculo usará a soma das vendas como base.',
+      )
+      if (!confirmed) return false
+    }
+
     setSaving(true)
     setError(null)
     try {

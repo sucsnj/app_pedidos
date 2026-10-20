@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementScreen } from './ManagementScreen'
-import { deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords } from '../lib/salesStore'
+import { deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords, recordSales } from '../lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -237,8 +237,7 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
-  it('limpa os valores digitados dos vendedores', async () => {
-    await act(async () => {
+  it('limpa os valores digitados dos vendedores', async () => {    await act(async () => {
       root.render(<ManagementScreen />)
     })
 
@@ -256,5 +255,51 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     expect(inputByLabel('Valor de Ana Souza').value).toBe('')
+  })
+
+  it('pede confirmação ao registrar sem meta informada', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(recordSales).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('registra sem meta quando o usuário confirma', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(recordSales).toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 })

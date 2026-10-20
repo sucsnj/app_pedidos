@@ -124,6 +124,7 @@ Decisões de design (validadas):
 - [x] **Erro 400 só aparece ao clicar em "Registrar vendas"** (antes era exibido durante a digitação).
 - [x] Histórico: **clicar em um lançamento carrega** seus dados no formulário (valores, meta e data) e **lixeira exclui** a consolidação (cascade nas vendas, com `window.confirm`).
 - [x] Exclusão de vendedor pede confirmação (`window.confirm`, avisa do cascade no histórico) e há botão "Limpar valores" (zera apenas os valores digitados, mantém os vendedores).
+- [x] Registrar **sem meta informada** pede confirmação (`window.confirm`) antes de gravar.
 - [x] Cards expansíveis/colapsáveis (`src/components/CollapsibleCard.tsx`): estado do último uso persistido no `localStorage` (`pedidos:card:<chave>`) e aplicado aos 4 cards do `/management`.
 - [x] Validação automática: `npm run typecheck` + `npm test` (33 testes, inclui teste de DOM da tela) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.

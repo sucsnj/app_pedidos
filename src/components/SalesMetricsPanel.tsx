@@ -88,7 +88,8 @@ export function SalesMetricsPanel({
           <Save className="h-4 w-4" /> Registrar vendas
         </button>
         <span className="text-xs text-gray-400">
-          O registro grava a consolidação e as vendas no banco (histórico).
+          O registro grava a consolidação e as vendas no banco (histórico). Sem meta informada,
+          o app pede confirmação antes de registrar.
         </span>
       </div>
     </CollapsibleCard>
