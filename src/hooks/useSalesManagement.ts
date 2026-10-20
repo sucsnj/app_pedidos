@@ -34,12 +34,13 @@ function formatAmountInput(value: number): string {
 export function useSalesManagement({ storeId = null, notify }: SalesManagementParams) {
   const [sellers, setSellers] = useState<Seller[]>([])
   const [values, setValues] = useState<Record<string, string>>({})
-  const [meta, setMeta] = useState('')
-  const [referenceDate, setReferenceDate] = useState(today())
+  const [meta, setMetaState] = useState('')
+  const [referenceDate, setReferenceDateState] = useState(today())
   const [history, setHistory] = useState<SalesCalculation[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<ManagementError | null>(null)
+  const [registered, setRegistered] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
     const [sellersData, historyData] = await Promise.all([
@@ -176,11 +177,23 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
 
   const setValue = useCallback((sellerId: string, value: string): void => {
     setValues((previous) => ({ ...previous, [sellerId]: value }))
+    setRegistered(false)
   }, [])
 
   /** Limpa todos os valores digitados (mantém os vendedores cadastrados). */
   const clearValues = useCallback((): void => {
     setValues({})
+    setRegistered(false)
+  }, [])
+
+  const setMeta = useCallback((value: string): void => {
+    setMetaState(value)
+    setRegistered(false)
+  }, [])
+
+  const setReferenceDate = useCallback((value: string): void => {
+    setReferenceDateState(value)
+    setRegistered(false)
   }, [])
 
   /** Carrega um lançamento do histórico no formulário (valores, meta e data). */
@@ -302,7 +315,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
           percentage: result.salesReport[index]?.percentage ?? 0,
         })),
       })
-      setValues({})
+      setRegistered(true)
       setHistory(await fetchHistory(20, storeId))
       notify('Vendas registradas — histórico atualizado.', 'success')
       return true
@@ -316,11 +329,15 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     }
   }, [formError, result, sellers, values, storeId, referenceDate, notify])
 
+  const hasValues = Object.values(values).some((value) => value.trim() !== '')
+
   return {
     sellers,
     values,
     setValue,
     clearValues,
+    hasValues,
+    registered,
     meta,
     setMeta,
     referenceDate,

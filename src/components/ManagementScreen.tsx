@@ -69,9 +69,12 @@ export function ManagementScreen({
                 referenceDate={sales.referenceDate}
                 error={sales.error}
                 saving={sales.saving}
+                hasValues={sales.hasValues}
+                registered={sales.registered}
                 onMetaChange={sales.setMeta}
                 onReferenceDateChange={sales.setReferenceDate}
                 onRegister={sales.register}
+                onClearValues={sales.clearValues}
               />
             </div>
 

@@ -135,7 +135,8 @@ Decisões de design (validadas):
 - [x] Histórico e vendedores **associados à loja selecionada**: migration `supabase/migrations/20261003000200_sellers_store.sql` (`sellers.store_id`, aplicada no Supabase); `sales_calculations.store_id` é gravado no registro, a listagem do histórico é filtrada pela loja (com os legados `store_id is null`) e mostra o nome da loja.
 - [x] Ao trocar de loja, a tela recarrega **os vendedores e o histórico da loja** (`fetchSellers`/`fetchHistory` com `store_id`); os vendedores sem loja (legados) aparecem com a etiqueta "sem loja" e a ação "Vincular a esta loja".
 - [x] Respiro no fim da página: `pb-12 lg:pb-16` no conteúdo do `/management` + rodapé de contexto (loja selecionada e nº de lançamentos do histórico) fechando a visualização.
-- [x] Validação automática: `npm run typecheck` + `npm test` (42 testes) + `npm run build` (OK).
+- [x] Botões contextuais no card de cálculo: **"Registrar vendas"** (aparece quando há valores; envia ao histórico **sem** limpar os campos) → vira **"Novas vendas"** (limpa os campos numéricos); qualquer nova digitação traz o "Registrar vendas" de volta.
+- [x] Validação automática: `npm run typecheck` + `npm test` (44 testes) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 

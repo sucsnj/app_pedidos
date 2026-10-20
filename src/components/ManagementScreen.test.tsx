@@ -12,7 +12,8 @@ declare global {
 
 vi.mock('../lib/salesStore', () => ({
   fetchSellers: vi.fn(async () => [
-    { id: 'seller-1', name: 'Ana Souza', is_active: true, created_at: '2026-01-01' },
+    { id: 'seller-1', name: 'Ana Souza', store_id: 'store-1', is_active: true, created_at: '2026-01-01' },
+    { id: 'seller-2', name: 'Bruno Lima', store_id: 'store-1', is_active: true, created_at: '2026-01-01' },
   ]),
   fetchHistory: vi.fn(async () => []),
   fetchSalesRecords: vi.fn(async () => []),
@@ -154,6 +155,10 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     expect(screenText()).not.toContain('Erro 400')
+    // sem valores preenchidos o botão "Registrar vendas" nem aparece
+    expect(screenText()).not.toContain('Registrar vendas')
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
 
     const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
       button.textContent?.includes('Registrar vendas'),
@@ -166,6 +171,71 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
 
     expect(screenText()).toContain('Erro 400')
     expect(screenText()).toContain('informe um valor numérico')
+  })
+
+  it('troca "Registrar vendas" por "Novas vendas" após registrar e limpa os valores', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+    await type(inputByLabel('Valor de Bruno Lima'), '12750')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    expect(inputByLabel('Valor de Ana Souza').value).toBe('3289,49')
+    expect(screenText()).toContain('Novas vendas')
+    expect(screenText()).not.toContain('Registrar vendas')
+
+    const newSalesButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Novas vendas'),
+    )
+    if (!newSalesButton) throw new Error('botão Novas vendas não encontrado')
+
+    await act(async () => {
+      newSalesButton.click()
+    })
+
+    expect(inputByLabel('Valor de Ana Souza').value).toBe('')
+    expect(inputByLabel('Valor de Bruno Lima').value).toBe('')
+    expect(screenText()).not.toContain('Novas vendas')
+    confirmSpy.mockRestore()
+  })
+
+  it('volta para "Registrar vendas" ao digitar após o registro', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+    await type(inputByLabel('Valor de Bruno Lima'), '12750')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+    expect(screenText()).toContain('Novas vendas')
+
+    await type(inputByLabel('Valor de Ana Souza'), '3500')
+
+    expect(screenText()).toContain('Registrar vendas')
+    expect(screenText()).not.toContain('Novas vendas')
+    confirmSpy.mockRestore()
   })
 
   it('carrega o lançamento do histórico no formulário ao clicar nele', async () => {
@@ -339,7 +409,8 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(text).toContain('da meta')
   })
 
-  it('colapsa o card e mantém o estado ao remontar a tela', async () => {    await act(async () => {
+  it('colapsa o card e mantém o estado ao remontar a tela', async () => {
+    await act(async () => {
       root.render(<ManagementScreen />)
     })
 
@@ -390,7 +461,8 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
-  it('limpa os valores digitados dos vendedores', async () => {    await act(async () => {
+  it('limpa os valores digitados dos vendedores', async () => {
+    await act(async () => {
       root.render(<ManagementScreen />)
     })
 
@@ -418,6 +490,7 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+    await type(inputByLabel('Valor de Bruno Lima'), '12750')
 
     const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
       button.textContent?.includes('Registrar vendas'),
@@ -441,6 +514,7 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+    await type(inputByLabel('Valor de Bruno Lima'), '12750')
 
     const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
       button.textContent?.includes('Registrar vendas'),
