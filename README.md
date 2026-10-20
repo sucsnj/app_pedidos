@@ -27,15 +27,16 @@ Obrigatório: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` �
 - `src/App.tsx` — gate de autenticação; logado, monta o `AppShell` (rotas).
 - `src/hooks/` — `useStoreSession` (sessão/orquestrador), `useDraftPersistence` (persistência/autosave), `useRealtimeOrder` (subscription), `useCatalog`, `useFlash`, `useStoreReports`.
 - `src/components/` — shell/rotas (`AppShell`, `TopNav`, `SectionPlaceholder`), header, nav, telas de loading/erro, toast, status bar e boards (`CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`, `SalesMetricsPanel`).
-- `src/lib/` — lógica pura de pedidos (`orders.ts`), métricas de vendas (`salesMetrics.ts`), resumo em texto (`orderText.ts`), seções/endpoints (`sections.ts`), utilitários e cliente Supabase.
+- `src/lib/` — lógica pura de pedidos (`orders.ts`), métricas de vendas (`salesMetrics.ts`), persistência de vendas (`salesStore.ts`), resumo em texto (`orderText.ts`), seções/endpoints (`sections.ts`), utilitários e cliente Supabase.
 - `src/types/` — domínio da UI (`app.ts`), DTOs de vendas (`sales.ts`) e tipos do banco (`database.ts`).
+- `supabase/migrations/` — DDL das tabelas do módulo de Gestão (`sellers`, `sales_calculations`, `sales_records`).
 
 ## Rotas
 
 | Rota | Tela |
 | --- | --- |
 | `/orders` | Pedidos: contagem, digitação, cadastro de produtos e comparativo. |
-| `/management` | Gestão: cálculo de vendas/métricas (meta + vendedores → resumo + detalhamento). |
+| `/management` | Gestão: vendedores (cadastro no banco), lançamento de vendas com cálculo em tempo real e histórico. |
 
 A navbar (`TopNav`) navega entre as seções declaradas em `src/lib/sections.ts`.
 

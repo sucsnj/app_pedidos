@@ -167,27 +167,34 @@ export interface SalesFormResult {
 }
 
 /**
- * Converte o formulário (meta + linhas de vendedor) no payload do contrato,
- * acumulando os erros de digitação (status 400) em vez de falhar no primeiro.
+ * Converte o formulário (meta + linhas de vendedor) no payload do contrato.
+ * Linha em branco ou **valor não informado** ficam de fora do cálculo (sem erro);
+ * valores preenchidos e inválidos viram erro 400 (acumulados).
  */
 export function buildSalesPayloadFromForm(input: SalesFormInput): SalesFormResult {
   const details: string[] = []
   const sales: SalesItemInput[] = []
 
   input.rows.forEach((row, index) => {
-    const label = `Vendedor ${index + 1}`
     const name = row.name.trim()
+    const raw = row.value.trim()
+    if (name === '' && raw === '') return
+
+    const label = name !== '' ? name : `Vendedor ${index + 1}`
     const value = parseNumberOrNull(row.value)
+
     if (name === '') {
       details.push(`${label}: informe o nome.`)
     }
+    if (raw === '') return
+
     if (value === null) {
       details.push(`${label}: informe um valor numérico.`)
     } else if (value < 0) {
       details.push(`${label}: o valor não pode ser negativo.`)
     }
     if (name !== '' && value !== null && value >= 0) {
-      sales.push({ id: index + 1, name, value })
+      sales.push({ id: sales.length + 1, name, value })
     }
   })
 
@@ -205,7 +212,7 @@ export function buildSalesPayloadFromForm(input: SalesFormInput): SalesFormResul
 
   if (details.length > 0) {
     return {
-      payload: null,
+      payload: { customTotalBase, sales },
       error: { status: 400, message: 'Dados inválidos.', details },
     }
   }

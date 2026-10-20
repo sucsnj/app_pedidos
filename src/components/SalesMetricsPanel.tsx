@@ -1,7 +1,19 @@
-import { AlertTriangle, Calculator, Eraser, Play, RotateCcw, Trash2, UserPlus } from 'lucide-react'
-import { useSalesMetrics } from '../hooks/useSalesMetrics'
+import { AlertTriangle, Calculator, Save } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '../lib/utils'
 import { inputClass } from './ui'
+import type { SalesMetricsResult, SalesValidationError } from '../types/sales'
+
+interface SalesMetricsPanelProps {
+  meta: string
+  referenceDate: string
+  result: SalesMetricsResult | null
+  error: string | null
+  formError: SalesValidationError | null
+  saving: boolean
+  onMetaChange: (value: string) => void
+  onReferenceDateChange: (value: string) => void
+  onRegister: () => Promise<boolean>
+}
 
 function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -13,20 +25,17 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
   )
 }
 
-export function SalesMetricsPanel() {
-  const {
-    meta,
-    setMeta,
-    sellers,
-    addSeller,
-    updateSeller,
-    removeSeller,
-    result,
-    error,
-    process,
-    clear,
-    loadExample,
-  } = useSalesMetrics()
+export function SalesMetricsPanel({
+  meta,
+  referenceDate,
+  result,
+  error,
+  formError,
+  saving,
+  onMetaChange,
+  onReferenceDateChange,
+  onRegister,
+}: SalesMetricsPanelProps) {
   const summary = result?.summary
   const salesReport = result?.salesReport ?? []
 
@@ -38,122 +47,80 @@ export function SalesMetricsPanel() {
           <div>
             <p className="text-sm font-bold text-gray-800">Cálculo de vendas</p>
             <p className="text-xs text-gray-500">
-              Informe a meta e os vendedores para consolidar os indicadores.
+              Os indicadores são calculados em tempo real com os valores informados.
             </p>
           </div>
         </div>
 
-        <label className="block max-w-sm">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Meta (base de cálculo)
-          </span>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={meta}
-            onChange={(event) => setMeta(event.target.value)}
-            placeholder="Ex.: 50000 (opcional)"
-            className={inputClass}
-          />
-          <span className="mt-1 block text-xs text-gray-400">
-            Sem meta, a base do cálculo é a soma das vendas informadas.
-          </span>
-        </label>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-sm font-bold text-gray-800">Vendedores</p>
-            <p className="text-xs text-gray-500">
-              {sellers.length} linha(s) · o valor de cada um entra no cálculo.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={addSeller}
-            className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-95"
-          >
-            <UserPlus className="h-4 w-4" /> Adicionar vendedor
-          </button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Data de referência
+            </span>
+            <input
+              type="date"
+              value={referenceDate}
+              onChange={(event) => onReferenceDateChange(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Meta (base de cálculo)
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={meta}
+              onChange={(event) => onMetaChange(event.target.value)}
+              placeholder="Ex.: 50000 (opcional)"
+              className={inputClass}
+            />
+            <span className="mt-1 block text-xs text-gray-400">
+              Sem meta, a base do cálculo é a soma das vendas informadas.
+            </span>
+          </label>
         </div>
 
-        <ul className="space-y-2">
-          {sellers.map((row, index) => (
-            <li
-              key={row.uid}
-              className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_160px_40px]"
-            >
-              <input
-                type="text"
-                value={row.name}
-                onChange={(event) => updateSeller(row.uid, { name: event.target.value })}
-                placeholder={`Nome do vendedor ${index + 1}`}
-                aria-label={`Nome do vendedor ${index + 1}`}
-                className={inputClass}
-              />
-              <input
-                type="text"
-                inputMode="decimal"
-                value={row.value}
-                onChange={(event) => updateSeller(row.uid, { value: event.target.value })}
-                placeholder="Valor (0,00)"
-                aria-label={`Valor do vendedor ${index + 1}`}
-                className={`${inputClass} text-right tabular-nums`}
-              />
-              <button
-                type="button"
-                onClick={() => removeSeller(row.uid)}
-                disabled={sellers.length <= 1}
-                aria-label={`Remover vendedor ${index + 1}`}
-                className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:opacity-30"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={process}
-            className="inline-flex items-center gap-2 rounded-xl bg-wine-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-wine-600 active:scale-95"
-          >
-            <Play className="h-4 w-4" /> Calcular
-          </button>
-          <button
-            type="button"
-            onClick={loadExample}
-            className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-95"
-          >
-            <RotateCcw className="h-4 w-4" /> Carregar exemplo
-          </button>
-          <button
-            type="button"
-            onClick={clear}
-            className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-95"
-          >
-            <Eraser className="h-4 w-4" /> Limpar
-          </button>
-        </div>
-
-        {error ? (
+        {formError ? (
           <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
             <p className="flex items-center gap-2 text-sm font-bold text-red-700">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              Erro {error.status} — {error.message}
+              Erro {formError.status} — {formError.message}
             </p>
             <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-red-600">
-              {error.details.map((detail) => (
+              {formError.details.map((detail) => (
                 <li key={detail}>{detail}</li>
               ))}
             </ul>
           </div>
         ) : null}
+
+        {error && !formError ? (
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
+            <p className="flex items-center gap-2 text-sm font-bold text-red-700">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {error}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void onRegister()}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl bg-wine-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-wine-600 active:scale-95 disabled:opacity-40"
+          >
+            <Save className="h-4 w-4" /> Registrar vendas
+          </button>
+          <span className="text-xs text-gray-400">
+            O registro grava a consolidação e as vendas no banco (histórico).
+          </span>
+        </div>
       </section>
 
-      {result && summary ? (
+      {summary ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             <MetricCard label="Total vendido" value={formatCurrency(summary.totalSold)} />
@@ -198,19 +165,20 @@ export function SalesMetricsPanel() {
             </section>
           </div>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-800">
-                Detalhamento por vendedor
-              </h3>
-              <span className="text-xs text-gray-500">{salesReport.length} registro(s)</span>
-            </div>
-            {salesReport.length === 0 ? (
-              <p className="text-sm text-gray-400">Nenhuma venda informada.</p>
-            ) : (
+          {salesReport.length > 0 ? (
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-800">
+                  Detalhamento por vendedor
+                </h3>
+                <span className="text-xs text-gray-500">{salesReport.length} registro(s)</span>
+              </div>
               <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {salesReport.map((item) => (
-                  <li key={`${item.id}-${item.name}`} className="rounded-xl border border-gray-200 bg-white p-3">
+                  <li
+                    key={`${item.id}-${item.name}`}
+                    className="rounded-xl border border-gray-200 bg-white p-3"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
@@ -234,8 +202,8 @@ export function SalesMetricsPanel() {
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
+            </section>
+          ) : null}
         </>
       ) : null}
     </div>

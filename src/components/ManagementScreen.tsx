@@ -1,8 +1,20 @@
 import { Settings } from 'lucide-react'
+import { useFlash } from '../hooks/useFlash'
+import { useSalesManagement } from '../hooks/useSalesManagement'
 import { contentClass } from './ui'
+import { FlashToast } from './FlashToast'
+import { SalesHistoryPanel } from './SalesHistoryPanel'
 import { SalesMetricsPanel } from './SalesMetricsPanel'
+import { SalesSellersCard } from './SalesSellersCard'
 
-export function ManagementScreen() {
+interface ManagementScreenProps {
+  storeId?: string | null
+}
+
+export function ManagementScreen({ storeId = null }: ManagementScreenProps) {
+  const { flash, notify } = useFlash()
+  const sales = useSalesManagement({ storeId, notify })
+
   return (
     <main className={contentClass}>
       <div className="mb-4 flex items-center gap-2.5">
@@ -12,12 +24,37 @@ export function ManagementScreen() {
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wide text-gray-800">Gestão</h2>
           <p className="text-xs text-gray-500">
-            Indicadores de vendas e metas. Novos módulos entram aqui.
+            Vendedores, lançamento de vendas e histórico para análise.
           </p>
         </div>
       </div>
 
-      <SalesMetricsPanel />
+      <div className="space-y-4">
+        <SalesSellersCard
+          sellers={sales.sellers}
+          values={sales.values}
+          saving={sales.saving}
+          onAdd={sales.addSeller}
+          onRemove={sales.removeSeller}
+          onValueChange={sales.setValue}
+        />
+
+        <SalesMetricsPanel
+          meta={sales.meta}
+          referenceDate={sales.referenceDate}
+          result={sales.result}
+          error={sales.error}
+          formError={sales.formError}
+          saving={sales.saving}
+          onMetaChange={sales.setMeta}
+          onReferenceDateChange={sales.setReferenceDate}
+          onRegister={sales.register}
+        />
+
+        <SalesHistoryPanel history={sales.history} loading={sales.loading} />
+      </div>
+
+      <FlashToast flash={flash} />
     </main>
   )
 }

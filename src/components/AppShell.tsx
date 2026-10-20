@@ -37,7 +37,7 @@ export function AppShell({
       )
     }
     if (section.path === MANAGEMENT_PATH) {
-      return <ManagementScreen />
+      return <ManagementScreen storeId={profile?.store_id ?? null} />
     }
     return <SectionPlaceholder section={section} />
   }

@@ -202,21 +202,52 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
     expect(payload?.customTotalBase).toBeNull()
   })
 
-  it('acumula erros de digitação com status 400', () => {
+  it('acumula erros de digitação com status 400 e mantém as linhas válidas', () => {
     const { payload, error } = buildSalesPayloadFromForm({
       meta: 'abc',
       rows: [
         { name: '', value: '10' },
         { name: 'Bruno', value: 'xyz' },
         { name: 'Carla', value: '-5' },
+        { name: 'Dani', value: '20' },
       ],
     })
-    expect(payload).toBeNull()
     expect(error?.status).toBe(400)
     expect(error?.details).toContain('Meta: informe um valor numérico.')
     expect(error?.details).toContain('Vendedor 1: informe o nome.')
-    expect(error?.details).toContain('Vendedor 2: informe um valor numérico.')
-    expect(error?.details).toContain('Vendedor 3: o valor não pode ser negativo.')
+    expect(error?.details).toContain('Bruno: informe um valor numérico.')
+    expect(error?.details).toContain('Carla: o valor não pode ser negativo.')
+    expect(payload?.sales).toEqual([{ id: 1, name: 'Dani', value: 20 }])
+  })
+
+  it('ignora linhas em branco e valores não informados (sem erro)', () => {
+    const { payload, error } = buildSalesPayloadFromForm({
+      meta: '',
+      rows: [
+        { name: '', value: '' },
+        { name: 'Ana', value: '' },
+        { name: 'Bruno', value: '100' },
+      ],
+    })
+    expect(error).toBeNull()
+    expect(payload?.sales).toEqual([{ id: 1, name: 'Bruno', value: 100 }])
+  })
+
+  it('aceita vírgula, ponto, separador de milhar e moeda no valor', () => {
+    const { payload, error } = buildSalesPayloadFromForm({
+      meta: 'R$ 50.000,00',
+      rows: [
+        { name: 'Ana', value: '3289,49' },
+        { name: 'Bruno', value: '3289.49' },
+        { name: 'Carla', value: '3.289,49' },
+        { name: 'Dani', value: 'R$ 1.234,56' },
+      ],
+    })
+    expect(error).toBeNull()
+    expect(payload?.customTotalBase).toBe(50000)
+    expect(payload?.sales.map((item) => item.value)).toEqual([
+      3289.49, 3289.49, 3289.49, 1234.56,
+    ])
   })
 
   it('processa o formulário válido de ponta a ponta', () => {

@@ -157,6 +157,72 @@ export interface ProductSuggestion {
   last_ordered_at: string
 }
 
+/* --- sellers --- */
+export interface Seller {
+  id: string
+  name: string
+  is_active: boolean
+  created_at: string
+}
+export interface SellerInsert {
+  id?: string
+  name: string
+  is_active?: boolean
+}
+export type SellerUpdate = Partial<SellerInsert>
+
+/* --- sales_calculations (histórico de consolidações) --- */
+export interface SalesCalculation {
+  id: string
+  store_id: string | null
+  reference_date: string
+  total_sold: number
+  effective_base_total: number
+  custom_total_base: number | null
+  average_ticket: number
+  record_count: number
+  target_achievement_percentage: number | null
+  top_sale: Json | null
+  created_at: string
+  created_by: string | null
+}
+export interface SalesCalculationInsert {
+  id?: string
+  store_id?: string | null
+  reference_date?: string
+  total_sold?: number
+  effective_base_total?: number
+  custom_total_base?: number | null
+  average_ticket?: number
+  record_count?: number
+  target_achievement_percentage?: number | null
+  top_sale?: Json | null
+}
+export type SalesCalculationUpdate = Partial<SalesCalculationInsert>
+
+/* --- sales_records (vendas por vendedor) --- */
+export interface SalesRecord {
+  id: string
+  calculation_id: string | null
+  seller_id: string
+  seller_name: string
+  amount: number
+  percentage: number
+  reference_date: string
+  created_at: string
+  created_by: string | null
+}
+export interface SalesRecordInsert {
+  id?: string
+  calculation_id?: string | null
+  seller_id: string
+  seller_name: string
+  amount: number
+  percentage?: number
+  reference_date?: string
+}
+export type SalesRecordUpdate = Partial<SalesRecordInsert>
+
 /* --- Generic do Supabase (SupabaseDatabase) para consultas 100% tipadas --- */
 /**
  * Interfaces não possuem signature implícita de índice, então não satisfazem
@@ -165,6 +231,8 @@ export interface ProductSuggestion {
  * e torna o tipo atribuível ao generic do cliente.
  */
 type Recordish<T> = T & Record<string, unknown>
+
+export type { Recordish }
 
 export interface Database {
   public: {
@@ -209,6 +277,24 @@ export interface Database {
         Row: Recordish<Profile>
         Insert: Recordish<ProfileInsert>
         Update: Recordish<ProfileUpdate>
+        Relationships: []
+      }
+      sellers: {
+        Row: Recordish<Seller>
+        Insert: Recordish<SellerInsert>
+        Update: Recordish<SellerUpdate>
+        Relationships: []
+      }
+      sales_calculations: {
+        Row: Recordish<SalesCalculation>
+        Insert: Recordish<SalesCalculationInsert>
+        Update: Recordish<SalesCalculationUpdate>
+        Relationships: []
+      }
+      sales_records: {
+        Row: Recordish<SalesRecord>
+        Insert: Recordish<SalesRecordInsert>
+        Update: Recordish<SalesRecordUpdate>
         Relationships: []
       }
     }

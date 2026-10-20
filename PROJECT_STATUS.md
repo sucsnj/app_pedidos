@@ -106,12 +106,23 @@ Decisões de design (validadas):
 ### Etapa 9 — Cálculo de vendas/métricas em `/management` (Concluída)
 - [x] DTOs em `src/types/sales.ts` (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`).
 - [x] Service puro `src/lib/salesMetrics.ts`: `normalizeSalesPayload` (validação → erro 400 com todos os detalhes), `buildSalesPayloadFromForm` (formulário → payload), `calculateSalesMetrics` (total vendido, base efetiva, porcentagem individual, ticket médio, maior venda, atingimento da meta), `round2` (2 casas) e `processSalesPayload`.
-- [x] Controller `src/hooks/useSalesMetrics.ts` (estado do formulário: meta + linhas de vendedor; `addSeller`/`updateSeller`/`removeSeller`; `process`/`clear`/`loadExample`; erro tipado com `status` 400).
-- [x] UI `src/components/SalesMetricsPanel.tsx` + `src/components/ManagementScreen.tsx`: **campo de meta**, linhas de vendedor (nome + valor, adicionar/remover), botão Calcular, cards de resumo e detalhamento por vendedor (com barra de %); responsivo (`sm:grid-cols-2`, `xl:grid-cols-3/4`).
+- [x] Controller `src/hooks/useSalesMetrics.ts` (estado do formulário: meta + linhas de vendedor; `addSeller`/`updateSeller`/`removeSeller`; `clear`/`loadExample`; resultado e erro **derivados** via `useMemo` — cálculo instantâneo, sem botão).
+- [x] UI `src/components/SalesMetricsPanel.tsx` + `src/components/ManagementScreen.tsx`: **campo de meta**, linhas de vendedor (nome + valor, adicionar/remover), cards de resumo e detalhamento por vendedor (com barra de %) atualizados ao vivo; responsivo (`sm:grid-cols-2`, `xl:grid-cols-3/4`).
 - [x] Utils `formatCurrency`/`formatPercentage`/`parseNumberOrNull`/`newId` em `src/lib/utils.ts` (`newId` migrado de `offlineQueue.ts`, com re-export preservado).
-- [x] Testes unitários (Vitest): base customizada, fallback sem base, lista vazia, divisão por zero, empate no `topSale`, arredondamento, validação 400 e formulário → payload — `npm test` (18 testes, OK).
+- [x] Testes unitários (Vitest): base customizada, fallback sem base, lista vazia, divisão por zero, empate no `topSale`, arredondamento, validação 400 e formulário → payload (com linhas em branco ignoradas) — `npm test` (19 testes, OK).
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK).
 - [ ] (não implementado, fora do escopo) persistência dos resultados no Supabase e API HTTP real — hoje o módulo é client-side na rota `/management`.
+
+### Etapa 10 — Vendedores no banco + histórico (Concluída)
+- [x] Migration `supabase/migrations/20261003000100_management_sales.sql`: tabelas `sellers`, `sales_calculations` (snapshot) e `sales_records` (vendas por vendedor), índices e RLS para `authenticated`.
+- [x] Tipos canônicos em `src/types/database.ts` (`Seller`, `SalesCalculation`, `SalesRecord` + `Insert`/`Update`, padrão `Recordish`).
+- [x] Persistência `src/lib/salesStore.ts`: `fetchSellers`/`createSeller`/`deleteSeller`/`fetchHistory`/`recordSales` (grava snapshot + vendas; rollback do snapshot se as vendas falharem).
+- [x] Controller `src/hooks/useSalesManagement.ts`: vendedores do banco, valores do período, meta, data de referência, histórico e cálculo derivado (`useMemo`, instantâneo); `addSeller`/`removeSeller`/`register` com toasts.
+- [x] UI: `SalesSellersCard` (cadastro no banco + valor na mesma linha), `SalesMetricsPanel` (data, meta, resumo, detalhamento, "Registrar vendas"), `SalesHistoryPanel` (histórico + total acumulado) e `ManagementScreen` compondo tudo.
+- [x] Removidos o payload JSON e o botão "Carregar exemplo".
+- [x] Validação automática: `npm run typecheck` + `npm test` (19 testes) + `npm run build` (OK).
+- [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
+- [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
 ## Checklist manual (PWA)
 
@@ -134,3 +145,4 @@ Decisões de design (validadas):
 | 2026-10-03 | 7 | Layout responsivo widescreen: container alarga para `max-w-7xl` (lg/xl/2xl); Prancheta em 2–3 colunas e Digitação em 2 colunas em telas grandes. |
 | 2026-10-03 | 8 | Rotas por endpoint: `react-router-dom` v7, `AppShell` + `TopNav` + `APP_SECTIONS`; `/orders` (tela de pedidos) e `/management` ("em construção"). |
 | 2026-10-03 | 9 | Cálculo de vendas/métricas em `/management`: service puro + DTOs + controller + UI + testes (Vitest). |
+| 2026-10-03 | 10 | Vendedores persistidos no banco + histórico de vendas/consolidações (migration `supabase/migrations/`). |

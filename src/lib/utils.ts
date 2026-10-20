@@ -35,11 +35,44 @@ export function parseNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-/** Converte texto em número aceitando vírgula decimal; `null` quando inválido/vazio. */
+/**
+ * Converte texto em número aceitando vírgula **ou** ponto decimal, separador de
+ * milhar ("3.289,49"), espaços e símbolos de moeda ("R$ 3.289,49").
+ * Retorna `null` quando o texto não representa um número.
+ */
 export function parseNumberOrNull(value: string): number | null {
-  const raw = value.trim().replace(',', '.')
-  if (raw === '') return null
-  const parsed = Number(raw)
+  const raw = value
+    .replace(/[\s\u00a0]/g, '')
+    .replace(/[r$€£]/gi, '')
+    .replace(/[^0-9,.\-]/g, '')
+  if (raw === '' || raw === '-') return null
+
+  const lastComma = raw.lastIndexOf(',')
+  const lastDot = raw.lastIndexOf('.')
+  let normalized: string
+
+  if (lastComma > -1 && lastDot > -1) {
+    const decimalAt = Math.max(lastComma, lastDot)
+    normalized = `${raw.slice(0, decimalAt).replace(/[.,]/g, '')}.${raw.slice(decimalAt + 1)}`
+  } else {
+    const sepAt = Math.max(lastComma, lastDot)
+    if (sepAt === -1) {
+      normalized = raw
+    } else {
+      const separator = raw[sepAt]
+      const head = raw.slice(0, sepAt)
+      const tail = raw.slice(sepAt + 1)
+      const occurrences = raw.split(separator).length - 1
+      const isThousands =
+        occurrences > 1 ||
+        (tail.length === 3 && /^\d{3}$/.test(tail) && head.replace(/\D/g, '').length <= 3)
+      normalized = isThousands
+        ? `${head.replace(/\D/g, '')}${tail.replace(/\D/g, '')}`
+        : `${head.replace(/[.,]/g, '')}.${tail.replace(/[.,]/g, '')}`
+    }
+  }
+
+  const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
 }
 

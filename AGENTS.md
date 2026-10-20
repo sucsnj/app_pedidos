@@ -40,10 +40,13 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/SectionPlaceholder.tsx` | Tela genérica "em construção" (ícone, descrição da seção, selo "em breve") |
 | `src/lib/sections.ts` | Registro das seções/endpoints (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) + `DEFAULT_SECTION_PATH` |
 | `src/lib/salesMetrics.ts` | Service puro do cálculo de vendas: `normalizeSalesPayload` (validação → 400), `buildSalesPayloadFromForm` (formulário → payload), `calculateSalesMetrics` (regras de negócio), `round2`, `processSalesPayload` |
+| `src/lib/salesStore.ts` | Persistência do módulo de Gestão: `fetchSellers`/`createSeller`/`deleteSeller`, `fetchHistory`, `recordSales` (snapshot + vendas) |
 | `src/types/sales.ts` | DTOs do módulo de vendas (`SalesPayload`, `SalesItemInput`, `SalesSummary`, `SalesReportItem`, `SalesMetricsResult`, `SalesValidationError`) |
-| `src/hooks/useSalesMetrics.ts` | Controller do módulo: estado do formulário (meta + linhas de vendedor), `addSeller`/`updateSeller`/`removeSeller`, `process`/`clear`/`loadExample` e erro de validação (`status` 400) |
-| `src/components/SalesMetricsPanel.tsx` | UI do cálculo: campo de meta, linhas de vendedor (adicionar/remover), botão Calcular, cards de resumo e detalhamento por vendedor |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho da seção + `SalesMetricsPanel`) |
+| `src/hooks/useSalesManagement.ts` | Controller do módulo: vendedores (do banco), valores do período, meta, data, histórico e **cálculo derivado** (`useMemo` — instantâneo); `addSeller`/`removeSeller`/`register` |
+| `src/components/SalesSellersCard.tsx` | Cadastro de vendedores (grava no banco) + valor vendido na mesma linha |
+| `src/components/SalesMetricsPanel.tsx` | UI do cálculo: data de referência, meta, cards de resumo, detalhamento por vendedor e botão "Registrar vendas" |
+| `src/components/SalesHistoryPanel.tsx` | Histórico de consolidações (do banco) para análise futura |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (cabeçalho + `SalesSellersCard`/`SalesMetricsPanel`/`SalesHistoryPanel` + toast) |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist |
@@ -86,7 +89,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | Header | `AppHeader` | Troca loja (`selectStore`, seletor só p/ `admin`, escolha lembrada em `localStorage`), escolhe pedido (`selectOrder`), nova contagem (`newCount`), indicador `saving` |
 | Navegação | `AppNav` | Tabs + botão "Concluir Pedido" à direita da aba "Contagem" (`handleFinishOrder` → `finishOrder` + `bumpReport`) se `canFinish` |
 | Navbar de seções | `TopNav` | Marca do app + links `NavLink` para as seções (`APP_SECTIONS`), nome do usuário (toque mostra o nome completo em popover ~2,5s), badge de cargo (ADMIN/GERENTE) e botão Sair (`signOut`) — visível em **todas** as rotas |
-| Rota `/management` | `ManagementScreen` + `SalesMetricsPanel` | Cálculo de vendas por **formulário** (campo de meta + linhas de vendedor com nome/valor) → resumo (`totalSold`, `effectiveBaseTotal`, `averageTicket`, `count`, `targetAchievementPercentage`, `topSale`) e `salesReport` com `percentage`. Dados inválidos → erro 400 na tela. Seção placeholder (`SectionPlaceholder`) continua como fallback para seções sem implementação |
+| Rota `/management` | `ManagementScreen` + `SalesSellersCard`/`SalesMetricsPanel`/`SalesHistoryPanel` | **Vendedores persistidos no banco** (`sellers`): cadastro/exclusão e valor vendido na mesma linha. Cálculo por formulário (data de referência + meta) → resumo (`totalSold`, `effectiveBaseTotal`, `averageTicket`, `count`, `targetAchievementPercentage`, `topSale`) e `salesReport` com `percentage`, em tempo real. "Registrar vendas" grava a consolidação (`sales_calculations`) e as vendas por vendedor (`sales_records`) — **histórico** para análise futura. Seção placeholder (`SectionPlaceholder`) continua como fallback para seções sem implementação |
 | Barra de status | `MobileStatusBar` | Resumo: loja, total contado, pedido corrente |
 | Toast | `FlashToast` | Notificações via `useFlash` (`notify`) |
 
@@ -125,7 +128,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 - **Schema/colunas**: `src/types/database.ts` — canônico (alimenta o generic do supabase-js). `docs/data-model.md` resume a semântica — se conflitar, vale o tipo.
 - **Regras de contagem/pedidos**: `src/lib/orders.ts` (funções puras, sem React).
-- **Regras de vendas/métricas**: `src/lib/salesMetrics.ts` (service puro, com testes em `salesMetrics.test.ts`) + DTOs em `src/types/sales.ts`.
+- **Regras de vendas/métricas**: `src/lib/salesMetrics.ts` (service puro, com testes em `salesMetrics.test.ts`) + DTOs em `src/types/sales.ts`; persistência em `src/lib/salesStore.ts` (tabelas `sellers`, `sales_calculations`, `sales_records` — DDL em `supabase/migrations/`).
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
 - **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `parseNumberOrNull`, `newId`, `emptyText`, `formatCurrency`, `formatPercentage`).
 - **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/lib/localCache.ts` (espelho de leitura) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).

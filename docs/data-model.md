@@ -116,6 +116,51 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 
 - Sugestões por loja, montadas em `SuggestionsMap` na carga (`itemKey` → `suggested_quantity`).
 
+### sellers (módulo de Gestão)
+| coluna | tipo |
+| --- | --- |
+| id | uuid pk |
+| name | text not null (único por `lower(name)`) |
+| is_active | boolean default true |
+| created_at | timestamptz default now() |
+
+- Cadastro de vendedores (tabela global, não por loja). Criado pela tela `/management`; remover o vendedor apaga em cascata os lançamentos dele (`sales_records.seller_id`).
+
+### sales_calculations (histórico de consolidações)
+| coluna | tipo |
+| --- | --- |
+| id | uuid pk |
+| store_id | uuid null → `stores.id` |
+| reference_date | date default current_date |
+| total_sold | numeric(14,2) |
+| effective_base_total | numeric(14,2) |
+| custom_total_base | numeric(14,2) null (meta informada) |
+| average_ticket | numeric(14,2) |
+| record_count | int |
+| target_achievement_percentage | numeric(7,2) null |
+| top_sale | jsonb null (`{ id, name, value }`) |
+| created_at | timestamptz default now() |
+| created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
+
+- **Snapshot** de cada cálculo registrado: base para análises futuras (tendência, meta atingida, ranking).
+
+### sales_records (vendas por vendedor)
+| coluna | tipo |
+| --- | --- |
+| id | uuid pk |
+| calculation_id | uuid null → `sales_calculations.id` (cascade) |
+| seller_id | uuid → `sellers.id` (cascade) |
+| seller_name | text not null (cópia do nome no momento do lançamento) |
+| amount | numeric(14,2) not null (check `>= 0`) |
+| percentage | numeric(7,2) default 0 |
+| reference_date | date default current_date |
+| created_at | timestamptz default now() |
+| created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
+
+- Uma linha por vendedor lançado em cada consolidação; `percentage` guarda a participação individual daquela consolidação.
+
+- **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`). O schema real vive no Supabase — aplicar a migration antes de usar a tela.
+
 ## Regras de domínio
 
 - **`itemKey`**: `` `${productId}::${variationId}` `` (`itemKey(productId, variationId)` em `types/app.ts`); campo `CountedItem.key`.
