@@ -68,7 +68,7 @@ Decisões de design (validadas):
 - [x] Integração: `useDraftPersistence.persistOrder` enfileira `persist-draft` quando offline (sem toast de erro repetido); `finishOrder` enfileira `finish-order` e navega; `newCount` enfileira `create-order` com id otimista (uuid do cliente).
 - [x] `refreshCurrentOrder` (novo na sessão) reconcilia pedido corrente após flush (via `commitSyncedOrder` → limpa o guard do realtime).
 - [x] `Dashboard` faz flush + reload na transição offline→online.
-- [ ] **Escopos conscientemente fora da fila (são exigem rede)**: escrita de catálogo (`CatalogBoard`) e toggle `isEnteredInLegacy` de pedido já "agendado p/ concluir" — documentado como limitação.
+- [x] **Escopos conscientemente fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`). A marcação de digitação (`isEnteredInLegacy`) de pedido já "agendado p/ concluir" **passou a ser enfileirada** (o rascunho não é mais descartado quando há `finish-order` pendente).
 
 ### Etapa 5 — UX offline + docs (Concluída)
 - [x] Textos pt-BR consistentes e toasts de "sincronizado" (banner + toasts).
@@ -85,7 +85,7 @@ Decisões de design (validadas):
 - [x] Sessão/login offline preservada: `App.tsx` cai para o perfil espelhado (role/loja) quando `profiles` falha.
 - [x] Detecção de offline robusta + timeout: `isOfflineError` reconhece falha de rede por mensagem (ex.: `PostgrestError` "Failed to fetch"/"fetch failed" e `AbortError`), além do `TypeError`/`navigator.onLine` — corrige toasts de erro e tela de erro ao cair a rede com sessão ativa ou no F5 offline. Cliente Supabase usa fetch com abort em 10s (`lib/supabase.ts`) para falhar rápido em "conectado sem internet".
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK; aviso de chunk ~560 kB não bloqueante).
-- [ ] Limitação documentada: catálogo continua dependente do cache NetworkFirst do SW (TTL 7d) — sem rede por mais de 7 dias, o catálogo exige reconexão; primeira abertura 100% offline sem espelho prévio mostra a tela de offline.
+- [x] Limitação documentada: o catálogo tem dupla proteção (cache NetworkFirst do SW com TTL 7d **e** espelho no IndexedDB, que funciona mesmo em dev sem SW); primeira abertura 100% offline sem espelho prévio mostra a tela de offline.
 
 ### Etapa 6c — Sync com feedback (Concluída)
 - [x] `subscribePending` (em `lib/offlineQueue.ts`): emite o contador real da fila a cada enqueue/flush — fonte de verdade independente do `navigator.onLine`.
@@ -116,7 +116,7 @@ Decisões de design (validadas):
 ### Etapa 10 — Vendedores no banco + histórico (Concluída)
 - [x] Migration `supabase/migrations/20261003000100_management_sales.sql`: tabelas `sellers`, `sales_calculations` (snapshot) e `sales_records` (vendas por vendedor), índices e RLS para `authenticated`.
 - [x] Tipos canônicos em `src/types/database.ts` (`Seller`, `SalesCalculation`, `SalesRecord` + `Insert`/`Update`, padrão `Recordish`).
-- [x] Persistência `src/lib/salesStore.ts`: `fetchSellers`/`createSeller`/`deleteSeller`/`fetchHistory`/`recordSales` (grava snapshot + vendas; rollback do snapshot se as vendas falharem).
+- [x] Persistência `src/lib/salesStore.ts`: `fetchSellers`/`createSeller`/`updateSeller`/`deactivateSeller` (soft delete)/`fetchHistory`/`fetchSalesRecords`/`deleteCalculation`/`recordSales` (grava snapshot + vendas; rollback do snapshot se as vendas falharem).
 - [x] Controller `src/hooks/useSalesManagement.ts`: vendedores do banco, valores do período, meta, data de referência, histórico e cálculo derivado (`useMemo`, instantâneo); `addSeller`/`removeSeller`/`register` com toasts.
 - [x] UI: `SalesMetricsPanel` (card 1 — data, meta, "Registrar vendas"), `SalesResultCard` (card 2 — indicadores + detalhamento), `SalesSellersCard` (card 3 — cadastro no banco + **edição inline do nome** + valor na mesma linha), `SalesHistoryPanel` (card 4 — histórico + total acumulado) e `ManagementScreen` compondo na ordem pedida.
 - [x] Removidos o payload JSON e o botão "Carregar exemplo".
@@ -135,9 +135,9 @@ Decisões de design (validadas):
 - [x] Histórico e vendedores **associados à loja selecionada**: migration `supabase/migrations/20261003000200_sellers_store.sql` (`sellers.store_id`, aplicada no Supabase); `sales_calculations.store_id` é gravado no registro, a listagem do histórico é filtrada pela loja (com os legados `store_id is null`) e mostra o nome da loja.
 - [x] Ao trocar de loja, a tela recarrega **os vendedores e o histórico da loja** (`fetchSellers`/`fetchHistory` com `store_id`); os vendedores sem loja (legados) aparecem com a etiqueta "sem loja" e a ação "Vincular a esta loja".
 - [x] Respiro no fim da página: `pb-12 lg:pb-16` no conteúdo do `/management` + rodapé de contexto (loja selecionada e nº de lançamentos do histórico) fechando a visualização.
-- [x] Botões contextuais no card de cálculo: **"Registrar vendas"** (aparece quando há valores; envia ao histórico **sem** limpar os campos) → vira **"Novas vendas"** (limpa os campos numéricos); qualquer nova digitação traz o "Registrar vendas" de volta.
+- [x] Ações do lançamento em **dois lugares** (novo `SalesActions.tsx`): "Registrar vendas" + "Novas vendas" lado a lado à direita do seletor de loja (barra vinho) e dentro de "Detalhamento por vendedor" (card branco); o registro fica **desabilitado** quando todos os vendedores estão vazios ou em 0,00.
 - [x] Validação automática: `npm run typecheck` + `npm test` (70 testes) + `npm run build` (OK).
-- [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
+- [x] Migrations aplicadas no Supabase: `20261003000100` (tabelas), `..._sellers_store` (`sellers.store_id`), `..._sellers_unique_per_store` (índice por loja/ativos), `..._management_rls` (RLS por loja + auditoria) e `..._persist_order_draft` (RPC transacional).
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
 ### Fase 1 (branch `ajustes`) — Perda de dados no fluxo de pedidos (Concluída)
@@ -147,14 +147,14 @@ Decisões de design (validadas):
 - [x] `flushDraft` (novo, em `useDraftPersistence`): grava o rascunho pendente sem toast no unmount do `Dashboard` (troca de seção cancelava o debounce de 700 ms).
 - [x] `selectStore` aguarda o `enqueuePersist()` da loja anterior antes de trocar.
 - [x] `persistOrder` offline enfileira direto (sem esperar o timeout de 10 s) e a remoção local do rascunho pendente não invalida uma gravação já concluída.
-- [x] Testes: `src/lib/offlineQueue.test.ts` (IndexedDB falso via `fake-indexeddb`) e `src/hooks/useDraftPersistence.test.tsx` — `npm test` (50 testes, OK).
+- [x] Testes: `tests/lib/offlineQueue.test.ts` (IndexedDB falso via `fake-indexeddb`) e `tests/hooks/useDraftPersistence.test.tsx` — `npm test` (50 testes, OK).
 
 ### Fase 2 (branch `ajustes`) — Carregamento offline do `/orders` (Concluída)
 - [x] **Causa raiz**: no `Dashboard`, o estado offline **forçava** a tela de erro (`effectiveError` era sempre preenchido offline) → o app nunca mostrava o conteúdo sem conexão, mesmo com o espelho carregado.
 - [x] Offline só é erro quando a carga falhou de verdade; caso contrário o app segue em uso com o banner "Sem conexão…".
 - [x] Catálogo espelhado no IndexedDB (`cacheCatalog`/`readCatalog`): o `useCatalog` cai para o espelho quando a rede falha — funciona **também em dev** (sem service worker).
 - [x] `/management`: banner "Sem conexão…" explicativo (vendedores/histórico/lançamento dependem do banco) e mensagem de erro amigável em vez de "Failed to fetch".
-- [x] Testes: `src/components/Dashboard.test.tsx` (offline sem erro → app visível; offline com erro → tela de erro; online com erro → erro real) e `src/hooks/useCatalog.test.tsx` (fallback do espelho) — `npm test` (56 testes, OK).
+- [x] Testes: `tests/components/Dashboard.test.tsx` (offline sem erro → app visível; offline com erro → tela de erro; online com erro → erro real) e `tests/hooks/useCatalog.test.tsx` (fallback do espelho) — `npm test` (56 testes, OK).
 
 ### Fase 2 (branch `ajustes`) — Escopo por loja e integridade no `/management` (Concluída)
 - [x] Trocar de loja **zera o formulário** (valores, meta, estado de registro, listas) — reset no render, antes de pintar a nova loja.
@@ -162,15 +162,15 @@ Decisões de design (validadas):
 - [x] **Soft delete** de vendedor: `deactivateSeller` (`is_active = false`) em vez de exclusão definitiva — o histórico e os lançamentos são preservados; `fetchSellers` traz só os ativos; a UI virou "Desativar" (ícone `UserX`, `confirm` explicando que o histórico é preservado).
 - [x] **Papel no escopo**: `admin` usa a preferência do navegador; `gerente` fica preso à loja do perfil e não grava a preferência — vale para `/orders` (`useStoreSession` ganhou `isAdmin`) e `/management` (`useStoreSelection`).
 - [x] Migration `supabase/migrations/20261003000300_sellers_unique_per_store.sql`: nome único **por loja** e só entre os ativos (destrava o bloqueio de nomes iguais em lojas diferentes).
-- [x] Testes: `src/hooks/useSalesManagement.test.tsx` (escopo por loja, reset do formulário, soft delete) e `src/hooks/useStoreSelection.test.tsx` (papel admin/gerente) — `npm test` (64 testes, OK).
-- [ ] **Aplicar a migration `20261003000300_sellers_unique_per_store.sql` no Supabase**.
+- [x] Testes: `tests/hooks/useSalesManagement.test.tsx` (escopo por loja, reset do formulário, soft delete) e `tests/hooks/useStoreSelection.test.tsx` (papel admin/gerente) — `npm test` (64 testes, OK).
+- [x] Migration `20261003000300_sellers_unique_per_store.sql` aplicada no Supabase (nome único por loja e entre os ativos).
 
 ### Fase 3 (branch `ajustes`) — Isolamento por loja (RLS) + auditoria (Concluída)
 - [x] Migration `supabase/migrations/20261003000400_management_rls.sql`: helpers `security definer` (`public.is_admin()`, `public.current_user_store_id()`, `public.can_access_calculation`) + políticas por loja em `sellers`, `sales_calculations` e `sales_records` — **admin** acessa todas as lojas, **gerente** só a loja do perfil (vendedores globais ficam legíveis; exclusão física só pelo admin).
 - [x] Auditoria em `sellers`: `created_by` (default `auth.uid()`), `updated_by` e `updated_at` via trigger `sellers_touch_audit`; tipos atualizados em `types/database.ts`.
 - [x] App: sem loja definida, **nenhuma consulta é feita** (o `useSalesManagement` só carrega com `storeId` + `ready`).
 - [x] Validação automática: `npm run typecheck` + `npm test` (64 testes) + `npm run build` (OK).
-- [ ] **Aplicar a migration `20261003000400_management_rls.sql` no Supabase** e conferir: como `admin` vê todas as lojas e como `gerente` só vê a própria.
+- [x] Migration `20261003000400_management_rls.sql` aplicada no Supabase (RLS por loja + auditoria em `sellers`).
 
 ### Fase 4 (branch `ajustes`) — Fila offline e realtime (Concluída)
 - [x] `flushQueue` distingue o tipo de falha: **rede/sessão (401)** preserva a fila e interrompe; **permanente** (pedido removido, política violada) descarta a ação e segue para as próximas (`FlushResult.discarded` + aviso na tela) — a fila não fica mais travada para sempre.
@@ -180,7 +180,7 @@ Decisões de design (validadas):
 - [x] `useRealtimeOrder` passa a depender de `currentOrder?.id` (o canal não é mais recriado a cada contagem).
 - [x] `isOffline()` detecta offline de forma explícita (`navigator.onLine === false`) — antes, `undefined` (fora do navegador) era tratado como offline.
 - [x] Testes: fila (descarte por erro permanente, preservação em erro de rede, `discardPending`) e persistência (RPC + fallback) — `npm test` (67 testes, OK).
-- [ ] **Aplicar a migration `20261003000500_persist_order_draft.sql` no Supabase** (até lá, o app usa o caminho legado automaticamente).
+- [x] Migration `20261003000500_persist_order_draft.sql` aplicada no Supabase (gravação transacional do rascunho; o app ainda cai para o caminho legado se a RPC faltar).
 
 ### Fase 5 (branch `ajustes`) — Qualidade e performance (Concluída)
 - [x] Espelho de pedidos: `updateOrderInStore` **mescla** (não sobrescreve) e cria a lista quando a loja ainda não foi espelhada — o `cacheOrders` da loja não é mais substituído por uma lista de 1 item ao criar pedido.
@@ -191,7 +191,7 @@ Decisões de design (validadas):
 - [x] `supabase.ts`: `combineSignals` com **fallback** para navegadores sem `AbortSignal.any` (iOS antigo).
 - [x] `offlineQueue`: regex de falha de rede restrita a padrões inequívocos (um erro do Postgres/Auth não vira "offline").
 - [x] Aba do `/orders` lembrada em `localStorage` (`pedidos:tab`) — trocar de seção não perde a posição; o catálogo em memória evita o refetch.
-- [x] Testes: `src/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (71 testes, OK).
+- [x] Testes: `tests/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (71 testes, OK).
 
 ### Fase 6 (branch `ajustes`) — Regras e documentação (Concluída)
 - [x] **Newline final** garantido em todos os arquivos de `src/` (24 sem o caracter).

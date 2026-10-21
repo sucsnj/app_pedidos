@@ -45,9 +45,9 @@ Obrigatório: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` �
 | Rota | Tela |
 | --- | --- |
 | `/orders` | Pedidos: contagem, digitação, cadastro de produtos e comparativo. |
-| `/management` | Gestão: vendedores (cadastro no banco), lançamento de vendas com cálculo em tempo real e histórico. |
+| `/management` | Gestão: vendedores (cadastro no banco, por loja), lançamento de vendas com cálculo em tempo real, meta e histórico. |
 
-A navbar (`TopNav`) navega entre as seções declaradas em `src/lib/sections.ts`.
+A navbar (`TopNav`) navega entre as seções declaradas em `src/lib/sections.ts`; dentro do `/management` há as abas **Vendas** e **Comparação** (em construção).
 
 ## Fluxo de uso
 
