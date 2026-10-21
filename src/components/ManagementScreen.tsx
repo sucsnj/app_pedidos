@@ -36,7 +36,11 @@ export function ManagementScreen({
   const [tab, setTab] = useState<ManagementTabId>('vendas')
   const { flash, notify } = useFlash()
   const selection = useStoreSelection({ userId, isAdmin, preferredStoreId })
-  const sales = useSalesManagement({ storeId: selection.storeId || null, notify })
+  const sales = useSalesManagement({
+    storeId: selection.storeId || null,
+    ready: selection.resolved,
+    notify,
+  })
 
   return (
     <>

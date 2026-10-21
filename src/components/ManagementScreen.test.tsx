@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementScreen } from './ManagementScreen'
-import { createSeller, deleteCalculation, deleteSeller, fetchHistory, fetchSalesRecords, fetchSellers, recordSales } from '../lib/salesStore'
+import { createSeller, deactivateSeller, deleteCalculation, fetchHistory, fetchSalesRecords, fetchSellers, recordSales } from '../lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -28,7 +28,7 @@ vi.mock('../lib/salesStore', () => ({
     }),
   ),
   updateSeller: vi.fn(),
-  deleteSeller: vi.fn(),
+  deactivateSeller: vi.fn(async () => undefined),
   recordSales: vi.fn(),
 }))
 
@@ -448,16 +448,16 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     const removeButton = container.querySelector<HTMLButtonElement>(
-      '[aria-label="Remover Ana Souza"]',
+      '[aria-label="Desativar Ana Souza"]',
     )
-    if (!removeButton) throw new Error('botão de remoção não encontrado')
+    if (!removeButton) throw new Error('botão de desativação não encontrado')
 
     await act(async () => {
       removeButton.click()
     })
 
     expect(confirmSpy).toHaveBeenCalled()
-    expect(deleteSeller).not.toHaveBeenCalled()
+    expect(deactivateSeller).not.toHaveBeenCalled()
     confirmSpy.mockRestore()
   })
 

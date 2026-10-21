@@ -125,7 +125,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | is_active | boolean default true |
 | created_at | timestamptz default now() |
 
-- Cadastro de vendedores **vinculado à loja** (`store_id`): o cadastro usa a loja selecionada na tela `/management`; a listagem mostra os vendedores da loja + os globais (`store_id is null`, os criados antes da migration). Remover o vendedor apaga em cascata os lançamentos dele (`sales_records.seller_id`).
+- Cadastro de vendedores **vinculado à loja** (`store_id`): o cadastro usa a loja selecionada na tela `/management`; a listagem mostra os vendedores da loja + os globais (`store_id is null`, os criados antes da migration). Nome único **por loja e entre os ativos** (`sellers_name_store_active_unique`); **desativar** (`is_active = false`) tira o vendedor da lista mas preserva o histórico e os lançamentos já registrados.
 
 ### sales_calculations (histórico de consolidações)
 | coluna | tipo |
@@ -160,7 +160,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 
 - Uma linha por vendedor lançado em cada consolidação; `percentage` guarda a participação individual daquela consolidação. `seller_name` é a **cópia** do nome no momento do lançamento — renomear o vendedor não altera o histórico.
 
-- **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`) e `supabase/migrations/20261003000200_sellers_store.sql` (`sellers.store_id`). O schema real vive no Supabase — aplicar as migrations antes de usar a tela.
+- **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`), `20261003000200_sellers_store.sql` (`sellers.store_id`) e `20261003000300_sellers_unique_per_store.sql` (índice único por loja/ativos). O schema real vive no Supabase — aplicar as migrations antes de usar a tela.
 
 ## Regras de domínio
 

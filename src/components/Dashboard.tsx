@@ -57,6 +57,7 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
     onNavigate: setTab,
     preferredStoreId: profile?.store_id ?? null,
     userId: currentUserId,
+    isAdmin,
   })
   const {
     activeStoreId,

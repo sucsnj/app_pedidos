@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Eraser, Link2, Pencil, Trash2, UserPlus, X } from 'lucide-react'
+import { Check, Eraser, Link2, Pencil, UserPlus, UserX, X } from 'lucide-react'
 import type { Seller } from '../types/database'
 import { formatCurrency, parseNumberOrNull } from '../lib/utils'
 import { inputClass } from './ui'
@@ -55,7 +55,7 @@ export function SalesSellersCard({
 
   const handleRemove = async (seller: Seller) => {
     const confirmed = window.confirm(
-      `Excluir o vendedor "${seller.name}"? Os lançamentos dele no histórico também serão removidos.`,
+      `Desativar o vendedor "${seller.name}"? Ele deixa de aparecer na lista, mas o histórico e os lançamentos já registrados são preservados.`,
     )
     if (!confirmed) return
     await onRemove(seller.id)
@@ -177,15 +177,16 @@ export function SalesSellersCard({
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleRemove(seller)}
-                            disabled={saving}
-                            aria-label={`Remover ${seller.name}`}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:opacity-30"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleRemove(seller)}
+                    disabled={saving}
+                    aria-label={`Desativar ${seller.name}`}
+                    title="Desativar vendedor (histórico preservado)"
+                    className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-lg text-gray-500 transition hover:bg-amber-50 hover:text-amber-700 active:scale-95 disabled:opacity-30"
+                  >
+                    <UserX className="h-4 w-4" />
+                  </button>
                         </div>
                       </>
                     )}

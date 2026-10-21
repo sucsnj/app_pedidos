@@ -45,6 +45,7 @@ export interface StoreSessionParams {
   onNavigate: (tab: TabId) => void
   preferredStoreId?: string | null
   userId?: string | null
+  isAdmin?: boolean
 }
 
 import { readStorePreference, writeStorePreference } from '../lib/storePreference'
@@ -54,6 +55,7 @@ export function useStoreSession({
   onNavigate,
   preferredStoreId = null,
   userId = null,
+  isAdmin = false,
 }: StoreSessionParams) {
   const [activeStoreId, setActiveStoreId] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -101,17 +103,23 @@ export function useStoreSession({
   useEffect(() => {
     if (activeStoreId || catalog.stores.length === 0) return
     const persistedStoreId = readStorePreference(userId)
-    const defaultStore =
-      (persistedStoreId
-        ? catalog.stores.find((store) => store.id === persistedStoreId)
-        : undefined) ??
-      (preferredStoreId
-        ? catalog.stores.find((store) => store.id === preferredStoreId)
-        : undefined) ??
-      catalog.stores.find((store) => store.is_active) ??
-      catalog.stores[0]
+    const defaultStore = isAdmin
+      ? (persistedStoreId
+          ? catalog.stores.find((store) => store.id === persistedStoreId)
+          : undefined) ??
+        (preferredStoreId
+          ? catalog.stores.find((store) => store.id === preferredStoreId)
+          : undefined) ??
+        catalog.stores.find((store) => store.is_active) ??
+        catalog.stores[0]
+      : // Gerente fica preso à loja do perfil (a preferência é do admin).
+        (preferredStoreId
+          ? catalog.stores.find((store) => store.id === preferredStoreId)
+          : undefined) ??
+        catalog.stores.find((store) => store.is_active) ??
+        catalog.stores[0]
     if (defaultStore) setActiveStoreId(defaultStore.id)
-  }, [catalog.stores, activeStoreId, preferredStoreId, userId])
+  }, [catalog.stores, activeStoreId, preferredStoreId, userId, isAdmin])
 
   /* --------------------- Carga do contexto da loja ------------------- */
 
@@ -453,6 +461,7 @@ export function useStoreSession({
 
   const selectStore = useCallback(
     (storeId: string): void => {
+      if (!isAdmin) return
       if (!storeId || storeId === activeStoreId) return
       clearDebounce()
       // Aguarda a gravação do rascunho da loja anterior antes de trocar: o
@@ -466,7 +475,7 @@ export function useStoreSession({
         setActiveStoreId(storeId)
       })()
     },
-    [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty, userId],
+    [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty, userId, isAdmin],
   )
 
   const selectOrder = useCallback(

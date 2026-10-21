@@ -156,6 +156,15 @@ Decisões de design (validadas):
 - [x] `/management`: banner "Sem conexão…" explicativo (vendedores/histórico/lançamento dependem do banco) e mensagem de erro amigável em vez de "Failed to fetch".
 - [x] Testes: `src/components/Dashboard.test.tsx` (offline sem erro → app visível; offline com erro → tela de erro; online com erro → erro real) e `src/hooks/useCatalog.test.tsx` (fallback do espelho) — `npm test` (56 testes, OK).
 
+### Fase 2 (branch `ajustes`) — Escopo por loja e integridade no `/management` (Concluída)
+- [x] Trocar de loja **zera o formulário** (valores, meta, estado de registro, listas) — reset no render, antes de pintar a nova loja.
+- [x] A carga só começa **após a resolução da loja** (`useStoreSelection.resolved`): não há mais busca sem filtro (que mostrava vendedores/histórico de todas as lojas por um instante).
+- [x] **Soft delete** de vendedor: `deactivateSeller` (`is_active = false`) em vez de exclusão definitiva — o histórico e os lançamentos são preservados; `fetchSellers` traz só os ativos; a UI virou "Desativar" (ícone `UserX`, `confirm` explicando que o histórico é preservado).
+- [x] **Papel no escopo**: `admin` usa a preferência do navegador; `gerente` fica preso à loja do perfil e não grava a preferência — vale para `/orders` (`useStoreSession` ganhou `isAdmin`) e `/management` (`useStoreSelection`).
+- [x] Migration `supabase/migrations/20261003000300_sellers_unique_per_store.sql`: nome único **por loja** e só entre os ativos (destrava o bloqueio de nomes iguais em lojas diferentes).
+- [x] Testes: `src/hooks/useSalesManagement.test.tsx` (escopo por loja, reset do formulário, soft delete) e `src/hooks/useStoreSelection.test.tsx` (papel admin/gerente) — `npm test` (64 testes, OK).
+- [ ] **Aplicar a migration `20261003000300_sellers_unique_per_store.sql` no Supabase**.
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.

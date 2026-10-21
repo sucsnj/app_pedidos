@@ -12,9 +12,9 @@ import type { SalesSummary } from '../types/sales'
 
 const DUPLICATE_NAME = '23505'
 
-/** Vendedores da loja (`store_id`) + os globais (`store_id is null`, legados). */
+/** Vendedores ativos da loja (`store_id`) + os globais (`store_id is null`, legados). */
 export async function fetchSellers(storeId?: string | null): Promise<Seller[]> {
-  let query = supabase.from('sellers').select('*').order('name')
+  let query = supabase.from('sellers').select('*').eq('is_active', true).order('name')
   if (storeId) {
     query = query.or(`store_id.eq.${storeId},store_id.is.null`)
   }
@@ -60,8 +60,12 @@ export async function updateSeller(
   return data
 }
 
-export async function deleteSeller(id: string): Promise<void> {
-  const { error } = await supabase.from('sellers').delete().eq('id', id)
+/**
+ * "Exclui" o vendedor de forma lógica (`is_active = false`): o histórico e os
+ * lançamentos já registrados continuam intactos.
+ */
+export async function deactivateSeller(id: string): Promise<void> {
+  const { error } = await supabase.from('sellers').update({ is_active: false }).eq('id', id)
   if (error) throw error
 }
 

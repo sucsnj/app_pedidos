@@ -54,26 +54,32 @@ export function useStoreSelection({
   useEffect(() => {
     if (storeId || stores.length === 0) return
     const persisted = readStorePreference(userId)
-    const defaultStore =
-      (persisted ? stores.find((store) => store.id === persisted) : undefined) ??
-      (preferredStoreId
-        ? stores.find((store) => store.id === preferredStoreId)
-        : undefined) ??
-      stores.find((store) => store.is_active) ??
-      stores[0]
+    const profileStore = preferredStoreId
+      ? stores.find((store) => store.id === preferredStoreId)
+      : undefined
+    // Admin pode escolher qualquer loja (a preferência vale); gerente fica
+    // preso à loja do perfil.
+    const defaultStore = isAdmin
+      ? (persisted ? stores.find((store) => store.id === persisted) : undefined) ??
+        profileStore ??
+        stores.find((store) => store.is_active) ??
+        stores[0]
+      : profileStore ?? stores.find((store) => store.is_active) ?? stores[0]
     if (defaultStore) setStoreId(defaultStore.id)
-  }, [stores, storeId, userId, preferredStoreId])
+  }, [stores, storeId, userId, preferredStoreId, isAdmin])
 
   const selectStore = useCallback(
     (nextStoreId: string): void => {
+      if (!isAdmin) return
       if (!nextStoreId || nextStoreId === storeId) return
       setStoreId(nextStoreId)
       writeStorePreference(userId, nextStoreId)
     },
-    [storeId, userId],
+    [storeId, userId, isAdmin],
   )
 
   const activeStore = stores.find((store) => store.id === storeId)
+  const resolved = !loading && (storeId !== '' || stores.length === 0)
 
-  return { stores, storeId, activeStore, selectStore, loading, error, isAdmin }
+  return { stores, storeId, activeStore, selectStore, loading, error, isAdmin, resolved }
 }

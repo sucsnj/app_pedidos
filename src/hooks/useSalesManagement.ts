@@ -4,7 +4,7 @@ import {
   calculateSalesMetrics,
   normalizeSalesPayload,
 } from '../lib/salesMetrics'
-import { createSeller, deleteCalculation, deleteSeller, fetchHistory, fetchSellers, fetchSalesRecords, recordSales, updateSeller } from '../lib/salesStore'
+import { createSeller, deactivateSeller, deleteCalculation, fetchHistory, fetchSellers, fetchSalesRecords, recordSales, updateSeller } from '../lib/salesStore'
 import { isOffline, isOfflineError } from '../lib/offlineQueue'
 import { getErrorMessage, parseNumberOrNull } from '../lib/utils'
 import type { Seller, SalesCalculation } from '../types/database'
@@ -13,6 +13,8 @@ import type { SalesMetricsResult } from '../types/sales'
 
 export interface SalesManagementParams {
   storeId?: string | null
+  /** A loja já foi resolvida? Enquanto não, nada é carregado (evita ler todas as lojas). */
+  ready?: boolean
   notify: (message: string, kind?: FlashKind) => void
 }
 
@@ -32,7 +34,11 @@ function formatAmountInput(value: number): string {
   return value.toFixed(2).replace('.', ',')
 }
 
-export function useSalesManagement({ storeId = null, notify }: SalesManagementParams) {
+export function useSalesManagement({
+  storeId = null,
+  ready = true,
+  notify,
+}: SalesManagementParams) {
   const [sellers, setSellers] = useState<Seller[]>([])
   const [values, setValues] = useState<Record<string, string>>({})
   const [meta, setMetaState] = useState('')
@@ -42,6 +48,19 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<ManagementError | null>(null)
   const [registered, setRegistered] = useState(false)
+  const [formStoreId, setFormStoreId] = useState(storeId)
+
+  // Trocar de loja zera o formulário: valores, meta e estado de registro
+  // pertencem à loja anterior (reset no render, antes de pintar a tela).
+  if (formStoreId !== storeId) {
+    setFormStoreId(storeId)
+    setSellers([])
+    setHistory([])
+    setValues({})
+    setMetaState('')
+    setRegistered(false)
+    setError(null)
+  }
 
   const load = useCallback(async (): Promise<void> => {
     const [sellersData, historyData] = await Promise.all([
@@ -53,6 +72,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
   }, [storeId])
 
   useEffect(() => {
+    if (!ready) return
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -73,7 +93,7 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     return () => {
       cancelled = true
     }
-  }, [load])
+  }, [load, ready])
 
   const addSeller = useCallback(
     async (name: string): Promise<boolean> => {
@@ -164,14 +184,14 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
       setSaving(true)
       setError(null)
       try {
-        await deleteSeller(id)
+        await deactivateSeller(id)
         setSellers((previous) => previous.filter((seller) => seller.id !== id))
         setValues((previous) => {
           const next = { ...previous }
           delete next[id]
           return next
         })
-        notify('Vendedor removido.', 'success')
+        notify('Vendedor desativado — o histórico foi preservado.', 'success')
       } catch (err) {
         const message = getErrorMessage(err)
         setError({ status: null, message, details: [] })
