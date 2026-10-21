@@ -155,9 +155,59 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     expect(screenText()).not.toContain('Erro 400')
-    // sem valores preenchidos o botão "Registrar vendas" nem aparece
-    expect(screenText()).not.toContain('Registrar vendas')
 
+    // valor inválido: o erro só aparece ao tentar registrar
+    await type(inputByLabel('Valor de Ana Souza'), 'abc')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    expect(screenText()).not.toContain('Erro 400')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    expect(screenText()).toContain('Erro 400')
+    expect(screenText()).toContain('informe um valor numérico')
+  })
+
+  it('pede confirmação ao registrar com vendedor em 0,00', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Meta de vendas'), '50000')
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+    // Bruno fica sem valor → assumido como 0,00
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    const messages = confirmSpy.mock.calls.map((call) => String(call[0]))
+    expect(messages.some((message) => message.includes('0,00'))).toBe(true)
+    expect(recordSales).toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('cancela o registro quando o usuário recusa a confirmação de 0,00', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Meta de vendas'), '50000')
     await type(inputByLabel('Valor de Ana Souza'), '3289,49')
 
     const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
@@ -169,8 +219,8 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
       registerButton.click()
     })
 
-    expect(screenText()).toContain('Erro 400')
-    expect(screenText()).toContain('informe um valor numérico')
+    expect(recordSales).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 
   it('troca "Registrar vendas" por "Novas vendas" após registrar e limpa os valores', async () => {

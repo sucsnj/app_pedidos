@@ -211,7 +211,9 @@ export function SalesSellersCard({
                     </p>
                   ) : parsed === 0 ? (
                     <p className="text-xs font-medium text-amber-600">
-                      R$ 0,00 — sem vendas no período (será registrado assim).
+                      {raw.trim() === ''
+                        ? 'Sem valor informado — assumido como R$ 0,00.'
+                        : 'R$ 0,00 — sem vendas no período.'}
                     </p>
                   ) : parsed !== null ? (
                     <p className="text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>

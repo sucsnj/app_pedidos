@@ -6,7 +6,8 @@ import {
 } from '../lib/salesMetrics'
 import { createSeller, deactivateSeller, deleteCalculation, fetchHistory, fetchSellers, fetchSalesRecords, recordSales, updateSeller } from '../lib/salesStore'
 import { isOffline, isOfflineError } from '../lib/offlineQueue'
-import { getErrorMessage, parseNumberOrNull } from '../lib/utils'
+import { parseAmountInput } from '../lib/salesMetrics'
+import { getErrorMessage } from '../lib/utils'
 import type { Seller, SalesCalculation } from '../types/database'
 import type { FlashKind } from '../types/app'
 import type { SalesMetricsResult } from '../types/sales'
@@ -314,7 +315,7 @@ export function useSalesManagement({
     if (!result) return false
 
     const filled = sellers
-      .map((seller) => ({ seller, amount: parseNumberOrNull(values[seller.id] ?? '') }))
+      .map((seller) => ({ seller, amount: parseAmountInput(values[seller.id] ?? '') }))
       .filter(
         (entry): entry is { seller: Seller; amount: number } =>
           entry.amount !== null && entry.amount >= 0,
@@ -335,6 +336,14 @@ export function useSalesManagement({
       if (!confirmed) return false
     }
 
+    const zeroed = filled.filter((entry) => entry.amount === 0)
+    if (zeroed.length > 0) {
+      const confirmed = window.confirm(
+        `${zeroed.length} vendedor(es) estão com R$ 0,00 e serão registrados como “sem vendas no período”. Registrar mesmo assim?`,
+      )
+      if (!confirmed) return false
+    }
+
     setSaving(true)
     setError(null)
     try {
@@ -351,7 +360,6 @@ export function useSalesManagement({
       })
       setRegistered(true)
       setHistory(await fetchHistory(20, storeId))
-      const zeroed = filled.filter((entry) => entry.amount === 0)
       if (zeroed.length > 0) {
         // Vendedor com 0,00 é permitido (registra "sem vendas" no período) —
         // mas o usuário é avisado para não confundir com esquecimento.
@@ -373,7 +381,11 @@ export function useSalesManagement({
     }
   }, [formError, result, sellers, values, storeId, referenceDate, notify])
 
-  const hasValues = Object.values(values).some((value) => value.trim() !== '')
+  // Com a regra "vazio = 0,00", basta haver um vendedor com valor válido
+  // (inclusive zero) para o lançamento poder ser registrado.
+  const hasValues = sellers.some(
+    (seller) => parseAmountInput(values[seller.id] ?? '') !== null,
+  )
 
   return {
     sellers,

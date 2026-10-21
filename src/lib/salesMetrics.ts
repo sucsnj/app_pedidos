@@ -173,6 +173,15 @@ export interface SalesFormResult {
 }
 
 /**
+ * Valor digitado no formulário: **vazio = 0,00** (o vendedor participou do
+ * período sem vendas); texto inválido = `null`; negativo é recusado na validação.
+ */
+export function parseAmountInput(raw: string): number | null {
+  if (raw.trim() === '') return 0
+  return parseNumberOrNull(raw)
+}
+
+/**
  * Converte o formulário (meta + linhas de vendedor) no payload do contrato.
  * O **payload** cobre apenas as linhas válidas (base do cálculo ao vivo);
  * o **erro** reúne todos os problemas (valor em branco, não numérico, negativo,
@@ -188,14 +197,10 @@ export function buildSalesPayloadFromForm(input: SalesFormInput): SalesFormResul
     if (name === '' && raw === '') return
 
     const label = `Vendedor ${index + 1}`
-    const value = parseNumberOrNull(row.value)
+    const value = parseAmountInput(row.value)
 
     if (name === '') {
       details.push(`${label}: informe o nome.`)
-    }
-    if (raw === '') {
-      details.push(`${label}: informe um valor numérico.`)
-      return
     }
     if (value === null) {
       details.push(`${label}: informe um valor numérico.`)

@@ -125,20 +125,20 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
                     <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                     <p className="font-mono text-[11px] text-gray-400">#{item.id}</p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold tabular-nums text-wine-700">
-                      {formatCurrency(item.value)}
-                    </p>
-                    <p className="text-xs tabular-nums text-gray-500">
-                      {formatPercentage(item.percentage)}
-                    </p>
-                  </div>
+                  <p className="shrink-0 text-sm font-bold tabular-nums text-wine-700">
+                    {formatCurrency(item.value)}
+                  </p>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-wine-600 to-gold-400 transition-all"
-                    style={{ width: `${Math.min(100, Math.max(0, item.percentage))}%` }}
-                  />
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-wine-600 to-gold-400 transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, item.percentage))}%` }}
+                    />
+                  </div>
+                  <span className="shrink-0 rounded-lg bg-wine-100 px-2 py-0.5 text-sm font-extrabold tabular-nums text-wine-700">
+                    {formatPercentage(item.percentage)}
+                  </span>
                 </div>
               </li>
             ))}

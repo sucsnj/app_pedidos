@@ -84,18 +84,30 @@ export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }
                       <p className="mt-1 text-xs text-gray-500">
                         Melhor: <span className="font-semibold text-wine-700">{top.name}</span> ·{' '}
                         {formatCurrency(top.value)}
-                        {topPercentage !== null ? ` (${formatPercentage(topPercentage)})` : ''}
+                        {topPercentage !== null ? (
+                          <span className="ml-1 rounded bg-wine-50 px-1.5 py-0.5 font-bold tabular-nums text-wine-700">
+                            {formatPercentage(topPercentage)}
+                          </span>
+                        ) : null}
                       </p>
                     ) : null}
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="flex shrink-0 flex-col items-end gap-1">
                     <p className="text-sm font-bold tabular-nums text-wine-700">
                       {formatCurrency(Number(entry.total_sold))}
                     </p>
                     {metaPercentage !== null ? (
-                      <p className="text-xs font-semibold tabular-nums text-gray-500">
+                      <span
+                        className={`rounded-lg px-2 py-0.5 text-xs font-extrabold tabular-nums ${
+                          metaPercentage >= 100
+                            ? 'bg-green-100 text-green-700'
+                            : metaPercentage >= 75
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {formatPercentage(metaPercentage)} da meta
-                      </p>
+                      </span>
                     ) : null}
                   </div>
                 </button>

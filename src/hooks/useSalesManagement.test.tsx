@@ -79,7 +79,7 @@ describe('useSalesManagement — escopo por loja', () => {
 
     await render('store-2')
 
-    expect(api?.hasValues).toBe(false)
+    expect(api?.values).toEqual({})
     expect(api?.meta).toBe('')
     expect(api?.registered).toBe(false)
     expect(api?.sellers.map((seller) => seller.id)).toEqual(['seller-2'])

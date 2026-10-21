@@ -221,7 +221,7 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
     expect(payload?.sales).toEqual([{ id: 1, name: 'Dani', value: 20 }])
   })
 
-  it('ignora linhas em branco e sinaliza valor não informado (fora do cálculo)', () => {
+  it('trata valor em branco como 0,00 (vendedor sem vendas no período)', () => {
     const { payload, error } = buildSalesPayloadFromForm({
       meta: '',
       rows: [
@@ -230,8 +230,24 @@ describe('salesMetrics — formulário (meta + vendedores)', () => {
         { name: 'Bruno', value: '100' },
       ],
     })
-    expect(error?.details).toContain('Vendedor 2: informe um valor numérico.')
-    expect(payload?.sales).toEqual([{ id: 1, name: 'Bruno', value: 100 }])
+    expect(error).toBeNull()
+    expect(payload?.sales).toEqual([
+      { id: 1, name: 'Ana', value: 0 },
+      { id: 2, name: 'Bruno', value: 100 },
+    ])
+  })
+
+  it('rejeita valor não numérico e negativo', () => {
+    const { payload, error } = buildSalesPayloadFromForm({
+      meta: '',
+      rows: [
+        { name: 'Ana', value: 'abc' },
+        { name: 'Bruno', value: '-5' },
+      ],
+    })
+    expect(error?.details).toContain('Vendedor 1: informe um valor numérico.')
+    expect(error?.details).toContain('Vendedor 2: o valor não pode ser negativo.')
+    expect(payload?.sales).toEqual([])
   })
 
   it('aceita vírgula, ponto, separador de milhar e moeda no valor', () => {
