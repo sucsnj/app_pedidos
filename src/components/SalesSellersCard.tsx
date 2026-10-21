@@ -67,6 +67,7 @@ export function SalesSellersCard({
       title="Vendedores"
       subtitle="Cadastrados no banco e vinculados à loja selecionada — informe o valor vendido no período."
       icon={<UserPlus className="h-5 w-5" />}
+      accent="sky"
       badge={
         <span className="text-xs text-gray-500">{sellers.length} cadastrado(s)</span>
       }
@@ -216,7 +217,9 @@ export function SalesSellersCard({
                         : 'R$ 0,00 — sem vendas no período.'}
                     </p>
                   ) : parsed !== null ? (
-                    <p className="text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
+                    <p className="text-xs font-medium text-wine-600">
+                      Valor lido: {formatCurrency(parsed)}
+                    </p>
                   ) : null}
 
                   {seller.store_id ? null : (

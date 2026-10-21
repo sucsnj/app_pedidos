@@ -4,6 +4,16 @@ import { ChevronDown } from 'lucide-react'
 
 const STORAGE_PREFIX = 'pedidos:card:'
 
+export type CardAccent = 'wine' | 'gold' | 'sky' | 'emerald' | 'neutral'
+
+const ACCENT_STYLES: Record<CardAccent, { bar: string; chip: string }> = {
+  wine: { bar: 'bg-wine-600', chip: 'bg-wine-100 text-wine-700' },
+  gold: { bar: 'bg-gold-400', chip: 'bg-gold-100 text-wine-800' },
+  sky: { bar: 'bg-sky-500', chip: 'bg-sky-100 text-sky-700' },
+  emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-100 text-emerald-700' },
+  neutral: { bar: 'bg-gray-300', chip: 'bg-gray-100 text-gray-600' },
+}
+
 export function readCardState(storageKey: string, fallback: boolean): boolean {
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + storageKey)
@@ -28,6 +38,7 @@ interface CollapsibleCardProps {
   subtitle?: string
   icon?: ReactNode
   badge?: ReactNode
+  accent?: CardAccent
   defaultOpen?: boolean
   children: ReactNode
 }
@@ -42,10 +53,12 @@ export function CollapsibleCard({
   subtitle,
   icon,
   badge,
+  accent = 'neutral',
   defaultOpen = true,
   children,
 }: CollapsibleCardProps) {
   const [open, setOpen] = useState(() => readCardState(storageKey, defaultOpen))
+  const styles = ACCENT_STYLES[accent]
 
   const toggle = useCallback(() => {
     const next = !open
@@ -55,6 +68,7 @@ export function CollapsibleCard({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className={`h-1 w-full ${styles.bar}`} />
       <button
         type="button"
         onClick={toggle}
@@ -62,7 +76,13 @@ export function CollapsibleCard({
         aria-label={`${open ? 'Recolher' : 'Expandir'} ${title}`}
         className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition hover:bg-gray-50 active:bg-gray-100"
       >
-        {icon ? <span className="shrink-0 text-wine-600">{icon}</span> : null}
+        {icon ? (
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${styles.chip}`}
+          >
+            {icon}
+          </span>
+        ) : null}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-gray-800">{title}</span>
           {subtitle ? <span className="block truncate text-xs text-gray-500">{subtitle}</span> : null}

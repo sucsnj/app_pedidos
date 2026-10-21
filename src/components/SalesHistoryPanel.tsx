@@ -36,6 +36,7 @@ export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }
       title="Histórico"
       subtitle="Clique em um lançamento para carregá-lo no formulário."
       icon={<History className="h-5 w-5" />}
+      accent="emerald"
       badge={
         history.length > 0 ? (
           <span className="text-xs text-gray-500">
@@ -78,14 +79,21 @@ export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }
                     </p>
                     <p className="text-xs text-gray-500">
                       {entry.record_count} vendedor(es) · base {formatCurrency(base)}
-                      {storeName ? ` · ${storeName}` : ''}
                     </p>
+                    {storeName ? (
+                      <span className="mt-1 inline-flex rounded-md bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-700">
+                        {storeName}
+                      </span>
+                    ) : null}
                     {top ? (
                       <p className="mt-1 text-xs text-gray-500">
-                        Melhor: <span className="font-semibold text-wine-700">{top.name}</span> ·{' '}
+                        Melhor:{' '}
+                        <span className="inline-flex rounded-md bg-gold-100 px-1.5 py-0.5 font-semibold text-wine-800">
+                          {top.name}
+                        </span>{' '}
                         {formatCurrency(top.value)}
                         {topPercentage !== null ? (
-                          <span className="ml-1 rounded bg-wine-50 px-1.5 py-0.5 font-bold tabular-nums text-wine-700">
+                          <span className="ml-1 rounded bg-wine-100 px-1.5 py-0.5 font-bold tabular-nums text-wine-700">
                             {formatPercentage(topPercentage)}
                           </span>
                         ) : null}

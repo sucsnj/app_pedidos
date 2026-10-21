@@ -19,25 +19,41 @@ interface SalesResultCardProps {
   actions?: ReactNode
 }
 
+type MetricTone = 'wine' | 'wine-soft' | 'gold' | 'sky' | 'gray' | 'emerald' | 'amber'
+
+const METRIC_TONES: Record<MetricTone, { box: string; icon: string }> = {
+  wine: { box: 'bg-wine-100', icon: 'text-wine-600' },
+  'wine-soft': { box: 'bg-wine-50', icon: 'text-wine-400' },
+  gold: { box: 'bg-gold-100', icon: 'text-gold-600' },
+  sky: { box: 'bg-sky-50', icon: 'text-sky-600' },
+  gray: { box: 'bg-gray-100', icon: 'text-gray-500' },
+  emerald: { box: 'bg-emerald-50', icon: 'text-emerald-600' },
+  amber: { box: 'bg-amber-50', icon: 'text-amber-600' },
+}
+
 function MetricTile({
   label,
   value,
   hint,
   icon,
+  tone = 'gray',
 }: {
   label: string
   value: string
   hint?: string
   icon: ReactNode
+  tone?: MetricTone
 }) {
+  const style = METRIC_TONES[tone]
+
   return (
-    <div className="min-w-0 rounded-xl border border-gray-100 bg-gray-50 p-3">
+    <div className={`min-w-0 rounded-xl border border-gray-100 p-3 ${style.box}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-        <span className="shrink-0 text-wine-500">{icon}</span>
+        <span className={`shrink-0 ${style.icon}`}>{icon}</span>
       </div>
       <p className="mt-1 text-xl font-extrabold tabular-nums text-wine-700">{value}</p>
-      {hint ? <p className="mt-0.5 text-[11px] text-gray-400">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-[11px] text-gray-500">{hint}</p> : null}
     </div>
   )
 }
@@ -51,6 +67,7 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
       title="Resultado do cálculo"
       subtitle="Indicadores consolidados e detalhamento por vendedor."
       icon={<BarChart3 className="h-5 w-5" />}
+      accent="gold"
       badge={
         <span className="text-xs text-gray-500">
           {summary ? `${salesReport.length} registro(s)` : 'sem dados'}
@@ -71,6 +88,7 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
           label="Total vendido"
           value={formatCurrency(summary.totalSold)}
           icon={<Banknote className="h-4 w-4" />}
+          tone="wine"
         />
         <MetricTile
           label="Base de cálculo"
@@ -81,27 +99,38 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
               : 'Fallback: soma das vendas'
           }
           icon={<ChartColumn className="h-4 w-4" />}
+          tone="wine-soft"
         />
         <MetricTile
           label="Meta informada"
           value={summary.customTotalBase !== null ? formatCurrency(summary.customTotalBase) : '—'}
           hint={summary.customTotalBase !== null ? 'Usada como base' : 'Não informada'}
           icon={<Target className="h-4 w-4" />}
+          tone="gold"
         />
         <MetricTile
           label="Ticket médio"
           value={formatCurrency(summary.averageTicket)}
           icon={<Receipt className="h-4 w-4" />}
+          tone="sky"
         />
         <MetricTile
           label="Registros"
           value={String(summary.count)}
           icon={<ListChecks className="h-4 w-4" />}
+          tone="gray"
         />
         <MetricTile
           label="Atingimento da meta"
           value={formatPercentage(summary.targetAchievementPercentage)}
           icon={<Gauge className="h-4 w-4" />}
+          tone={
+            summary.targetAchievementPercentage >= 100
+              ? 'emerald'
+              : summary.targetAchievementPercentage >= 75
+                ? 'amber'
+                : 'gray'
+          }
         />
         <MetricTile
           label="Maior venda"
@@ -114,6 +143,7 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
               : 'Sem registros'
           }
           icon={<Award className="h-4 w-4" />}
+          tone="wine-soft"
         />
       </div>
 
