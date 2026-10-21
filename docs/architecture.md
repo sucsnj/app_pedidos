@@ -31,7 +31,7 @@ Dashboard.tsx (conteúdo autenticado — rota /orders)
 - **Rotas** (`react-router-dom` v7): `BrowserRouter` fica em `main.tsx`; `App.tsx` continua sendo o gate de autenticação e, logado, monta `AppShell`. As seções/endpoints são **declarados** em `lib/sections.ts` (`APP_SECTIONS`: `path`, `label`, `icon`, `description`, `ready`) — a `TopNav` gera os links a partir dessa lista e o `AppShell` gera as rotas; a tela de cada seção é escolhida em `renderSection` (`/orders` → `Dashboard`; qualquer outra sem implementação → `SectionPlaceholder` "em construção"). Rota desconhecida → `Navigate` para `DEFAULT_SECTION_PATH`.
 - **Deep link/offline**: `_redirects` (`/* /index.html 200`) no Netlify e `navigateFallback: '/index.html'` do SW mantêm `/orders` e `/management` funcionando ao abrir direto (inclusive offline).
 
-- **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId })` retorna ~25 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, refreshCurrentOrder, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
+- **Contrato**: `useStoreSession({ catalog, notify, onNavigate, preferredStoreId, userId, isAdmin })` retorna ~25 campos (`activeStoreId, orders, currentOrder, items, suggestions, requesterName, notes, loading, error, saving, finishing, savedAt, setRequesterName, setNotes, adjust, setQuantity, toggleEntered, selectStore, selectOrder, newCount, finishOrder, saveNow, flushDraft, refreshCurrentOrder, clearError`). `Dashboard.tsx` destrutura tudo — não mude sem ajustar ambos. Sem testes. Validação: `npm run typecheck` e `npm run build` (strict + `noUnusedLocals`/`noUnusedParameters`).
 
 ## Autenticação (`useAuth` + `App.tsx`)
 
@@ -90,8 +90,8 @@ Dono **de todos os estados** da sessão:
 ## Ações
 
 - `adjust` / `setQuantity`: resolvem via `resolveItemForCount` (produto + variação sintética) e aplicam reducers puros `adjustCountedItems`/`setCountedQuantity`. `setQuantity` trunca e não cria item com `0`.
-- `toggleEntered`: alterna `isEnteredInLegacy` (mesmo `CountedItem`). **Limite consciente**: se o pedido tem `finish-order` na fila offline, o toggle não é enfileirado — a entrada no legado é conferida após o sync.
-- `finishOrder` → Promise\<boolean>: guarda `status === 'Rascunho'`; `clearDebounce` → `markDirty` → `enqueuePersist` (flush) → update `orders` para `Concluido` → `commitSyncedOrder(completed)` → notify + navega para `entry`; `App.tsx` faz `bumpReport()` se `true`. `finishing` é estado da sessão. **Offline**: enfileira `finish-order` na `offlineQueue`, dá notify, navega para `entry` e retorna `true` (o `bumpReport` ocorre; o status no servidor é aplicado no flush).
+- `toggleEntered`: alterna `isEnteredInLegacy` (mesmo `CountedItem`). O estado vai no rascunho (`persist-draft`): como o rascunho **não** é mais ignorado quando existe um `finish-order` pendente, a marcação de digitação chega ao servidor no flush.
+- `finishOrder` → Promise\<boolean>: guarda `status === 'Rascunho'`; `clearDebounce` → `markDirty` → `enqueuePersist` (flush) → update `orders` para `Concluido` → `commitSyncedOrder(completed)` → notify + navega para `entry`; o `Dashboard` chama `bumpReport()` se `true`. `finishing` é estado da sessão. **Offline**: enfileira `finish-order` na `offlineQueue`, dá notify, navega para `entry` e retorna `true` (o `bumpReport` ocorre; o status no servidor é aplicado no flush).
 - `newCount`: flush do rascunho se houver, insere novo `Rascunho`, limpa `items`/requester/notes/`savedAt`, navega para `count`. **Offline**: cria o pedido otimista com `newId()` (uuid do cliente) e enfileira `create-order` — só funciona quando a sessão já estava ativa; ir offline antes do primeiro login exige rede.
 - `selectStore` / `selectOrder`: flush + trocam contexto; `selectOrder` recarrega os `order_items`.
 - `saveNow`: flush manual imediato (mesmo debounce/chain).
@@ -99,7 +99,7 @@ Dono **de todos os estados** da sessão:
 
 ## PWA e offline
 
-- **Service Worker** (Workbox `generateSW`, `vite-plugin-pwa`): `registerType: 'prompt'`, precache JS/CSS/icons, `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` (SPA de rota única) com `navigateFallbackDenylist` para não servir HTML a requisitos de API.
+- **Service Worker** (Workbox `generateSW`, `vite-plugin-pwa`): `registerType: 'prompt'`, precache JS/CSS/icons, `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` (SPA de rotas) — o fallback só atende **navegações**; as chamadas à API do Supabase ficam de fora pela regra de allow-list do `runtimeCaching` (só o catálogo é cacheado).
 - **`runtimeCaching`**:
   - navegação → **NetworkFirst** (`navigation-cache`);
   - GETs cross-origin do Supabase **só de catálogo** (`stores|categories|products|product_variations`) → **NetworkFirst** + TTL 7d (`catalog-cache`);
@@ -119,7 +119,7 @@ Dono **de todos os estados** da sessão:
 - **Troca de loja**: `selectStore` **aguarda** o `enqueuePersist()` da loja anterior antes de trocar (`persistOrder` aborta se o pedido corrente já tiver sido limpo pela troca).
 - **Leitura offline (espelho)** (`lib/localCache.ts`, IndexedDB `pedidos-pwa` v2, store `mirror`): **catálogo**, pedidos por loja, itens por pedido (`{key, quantity, isEnteredInLegacy}`), sugestões, última contagem, relatório e perfil por usuário. Estratégia **servidor 1º, espelho fallback**: as leituras só caem para o espelho em falha offline (`isOffline`/`isOfflineError`) e re-espelham a cada sucesso. `updateOrderInStore`/`cacheCountedItems` gravam também nas escritas (online, offline/otimista e pós-flush) — abrir offline mostra o estado da última sincronização, inclusive ações ainda na fila.
 - **Offline não é erro**: no `Dashboard`, a tela de erro só aparece quando a carga **falhou** (`error`/`catalogError`); offline com o espelho carregado, o app segue em uso com o banner "Sem conexão…". O catálogo tem dupla proteção: cache do SW (NetworkFirst, produção) **e** espelho no IndexedDB (funciona em dev, sem SW).
-- **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`/`CollaboratorsBoard`) e `toggleEntered` de pedido com `finish-order` pendente.
+- **Fora da fila (exigem rede)**: escrita de catálogo (`CatalogBoard`/`CollaboratorsBoard`).
 
 ## `useStoreReports` — última contagem e relatório
 
@@ -173,6 +173,6 @@ Módulo **persistido no Supabase**: vendedores e histórico ficam no banco; o c�
 - Não trocar o debounce (700ms), o guard (`saving || dirty || <1500ms`) nem o delete+insert dos itens sem motivo — são decisões base de concorrência.
 - Ao mexer na fila offline, preserve: ordem `createdAt` no flush, replay com o cliente supabase vivo (evita 401 de JWT) e a reconciliação `refreshCurrentOrder`/`commitSyncedOrder` (limpa `dirty`/guard, senão a fila "prende" o realtime).
 - Ao mexer no espelho (`localCache`), preserve a estratégia **servidor 1º, espelho fallback**: re-espelhar só após sucesso e cair para o espelho apenas em falha offline — não mascarar erros reais com dados velhos.
-- Fora da fila (exigem rede) continua: escrita de catálogo e `toggleEntered` de pedido com `finish-order` pendente — não "consertar" sem autorização.
+- Fora da fila (exigem rede) continua: a escrita de catálogo — não "consertar" sem autorização.
 - Manter os callbacks estáveis que só leem refs (`shouldSkipSync`) e desestruturar handles estáveis do sub-hook nos deps das ações.
 - Sub-hooks novos devem receber estados/setters por parâmetro; o orquestrador segue dono dos estados.

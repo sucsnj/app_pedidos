@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import type { Profile, UserRole } from './types/database'
 import { useAuth } from './hooks/useAuth'
+import { isOffline, isOfflineError } from './lib/offlineQueue'
 import { cacheProfile, readProfile } from './lib/localCache'
 import { LoadingScreen } from './components/AppScreen'
 import { LoginScreen } from './components/LoginScreen'
@@ -28,13 +29,17 @@ export default function App() {
         .maybeSingle()
       if (cancelled) return
       if (error) {
-        const cached = await readProfile(user.id)
-        if (cancelled) return
-        if (cached) {
-          setProfile(cached)
-          setUserRole(cached.role)
-          if (!cached.is_active) void signOut()
-          return
+        // O espelho só é usado em falha de rede — um erro real do banco não
+        // pode ser mascarado por um perfil velho.
+        if (isOffline() || isOfflineError(error)) {
+          const cached = await readProfile(user.id)
+          if (cancelled) return
+          if (cached) {
+            setProfile(cached)
+            setUserRole(cached.role)
+            if (!cached.is_active) void signOut()
+            return
+          }
         }
         console.log('Dados do Perfil no Supabase:', profile, 'Erro:', error)
         setProfile(null)

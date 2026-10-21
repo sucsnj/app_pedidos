@@ -111,7 +111,7 @@ Decisões de design (validadas):
 - [x] Utils `formatCurrency`/`formatPercentage`/`parseNumberOrNull`/`newId` em `src/lib/utils.ts` (`newId` migrado de `offlineQueue.ts`, com re-export preservado).
 - [x] Testes unitários (Vitest): base customizada, fallback sem base, lista vazia, divisão por zero, empate no `topSale`, arredondamento, validação 400 e formulário → payload (com linhas em branco ignoradas) — `npm test` (19 testes, OK).
 - [x] Validação automática: `npm run typecheck` + `npm run build` (OK).
-- [ ] (não implementado, fora do escopo) persistência dos resultados no Supabase e API HTTP real — hoje o módulo é client-side na rota `/management`.
+- [x] (superado pela Etapa 10) o módulo passou a persistir no Supabase — vendedores, histórico de consolidações e vendas por vendedor.
 
 ### Etapa 10 — Vendedores no banco + histórico (Concluída)
 - [x] Migration `supabase/migrations/20261003000100_management_sales.sql`: tabelas `sellers`, `sales_calculations` (snapshot) e `sales_records` (vendas por vendedor), índices e RLS para `authenticated`.
@@ -136,7 +136,7 @@ Decisões de design (validadas):
 - [x] Ao trocar de loja, a tela recarrega **os vendedores e o histórico da loja** (`fetchSellers`/`fetchHistory` com `store_id`); os vendedores sem loja (legados) aparecem com a etiqueta "sem loja" e a ação "Vincular a esta loja".
 - [x] Respiro no fim da página: `pb-12 lg:pb-16` no conteúdo do `/management` + rodapé de contexto (loja selecionada e nº de lançamentos do histórico) fechando a visualização.
 - [x] Botões contextuais no card de cálculo: **"Registrar vendas"** (aparece quando há valores; envia ao histórico **sem** limpar os campos) → vira **"Novas vendas"** (limpa os campos numéricos); qualquer nova digitação traz o "Registrar vendas" de volta.
-- [x] Validação automática: `npm run typecheck` + `npm test` (44 testes) + `npm run build` (OK).
+- [x] Validação automática: `npm run typecheck` + `npm test` (70 testes) + `npm run build` (OK).
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
@@ -192,6 +192,13 @@ Decisões de design (validadas):
 - [x] `offlineQueue`: regex de falha de rede restrita a padrões inequívocos (um erro do Postgres/Auth não vira "offline").
 - [x] Aba do `/orders` lembrada em `localStorage` (`pedidos:tab`) — trocar de seção não perde a posição; o catálogo em memória evita o refetch.
 - [x] Testes: `src/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (70 testes, OK).
+
+### Fase 6 (branch `ajustes`) — Regras e documentação (Concluída)
+- [x] **Newline final** garantido em todos os arquivos de `src/` (24 sem o caracter).
+- [x] Exceções registradas no AGENTS: JSDoc em API pública é permitido (documenta o contrato) e `components/ui.tsx` concentra as primitivas compartilhadas.
+- [x] Código alinhado às regras: o rascunho pendente **não** é mais descartado quando há `finish-order` na fila (itens/marcações de digitação se perdiam); o `flushQueue` renova a sessão antes do replay ("cliente supabase vivo"); o fallback do perfil no `App.tsx` só acontece **em falha offline** (erro real do banco não é mascarado).
+- [x] Docs alinhados: AGENTS (visão geral do `App.tsx`/`useStoreSession`, rotas, "Estado do repo" → branch `ajustes`, migrations do módulo de Gestão, `navigateFallback` real, fontes de verdade), `architecture.md` (`bumpReport` é do `Dashboard`, limite do `toggleEntered`, contrato da sessão, allow-list do SW), `data-model.md` (view com `product_variation_id` anulável, variação sintética com `created_at`), `PROJECT_STATUS.md` (pendência superada, contagem de testes) e `README.md` (PWA/offline, estrutura, testes, rotas).
+- [x] Validação automática: `npm run typecheck` + `npm test` (70 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 

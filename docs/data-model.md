@@ -170,7 +170,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 ## Regras de domínio
 
 - **`itemKey`**: `` `${productId}::${variationId}` `` (`itemKey(productId, variationId)` em `types/app.ts`); campo `CountedItem.key`.
-- **Variação sintética**: produtos cadastrados sem variações usam `SYNTHETIC_VARIATION_ID = ''`; `defaultVariationForProduct(product)` gera `{ id: '', product_id, name: 'Unidade', weight_label: unit_type, sku_code: code, price: 0, is_available: true }`. Na persistência, `product_variation_id` vira `null` quando `variation.id` é `''`.
+- **Variação sintética**: produtos cadastrados sem variações usam `SYNTHETIC_VARIATION_ID = ''`; `defaultVariationForProduct(product)` gera `{ id: '', product_id, name: 'Unidade', weight_label: unit_type, sku_code: code, price: 0, is_available: true, created_at: '' }`. Na persistência, `product_variation_id` vira `null` quando `variation.id` é `''`.
 - **`CountedItem`** (sessão): `{ key, product, variation, quantity, isEnteredInLegacy }` — quantidade e flag são o estado de digitação; o restante é referência do catálogo (reconciliado quando o catálogo muda).
 - **Comparação de conteúdo**: `sameCountedList` compara `key`/`quantity`/`isEnteredInLegacy` (lista local vs. servidor no realtime). `orderDisplayEquals` compara `status`/`total_items`/`requester_name`/`notes` para mesclar pedidos preservando identidade e evitando re-render.
 - **Mescla de pedidos**: `mergeOrdersList` funde versão sincronizada na lista de pedidos da sessão, devolvendo o array original quando nada muda.

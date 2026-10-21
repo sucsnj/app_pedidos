@@ -20,14 +20,14 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Arquitetura (visão geral)
 
-`src/App.tsx` (176 linhas) é o orquestrador que **compõe hooks** e renderiza telas:
+`src/App.tsx` (~100 linhas) é o **gate de autenticação**; a composição de hooks e as telas ficam em `src/components/`:
 
-- Hooks: `useAuth` (sessão Supabase), `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente).
-- `App.tsx` é o **gate de autenticação**: `useAuth` decide entre `LoginScreen` (anônimo) e `AppShell` (logado). Após o login, o próprio `App.tsx` consulta `public.profiles` (`maybeSingle()` por `user.id`, falha de leitura não bloqueia), define `userRole` (`profile?.role || 'gerente'`) e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` para depuração.
-- **Rotas** (`react-router-dom` v7, `BrowserRouter` em `main.tsx`): `AppShell` monta a `TopNav` (navbar de seções) + `<Routes>`; as seções são declaradas em `lib/sections.ts` (`APP_SECTIONS`). `/orders` → `Dashboard` (tela atual de pedidos, com as abas internas); `/management` → `SectionPlaceholder` ("em construção"); rota desconhecida → redireciona para `DEFAULT_SECTION_PATH` (`/orders`).
-- `useStoreSession` (~394 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Contrato de retorno deve permanecer intacto — o orquestrador (`Dashboard`) destrutura tudo; adições são permitidas (ex.: `refreshCurrentOrder` para reconciliar o pedido corrente após o flush da fila offline).
-- Boards (`components/`): `CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard` — sem estado próprio de sessão, recebem props.
-- Camada pura: `lib/orders.ts` concentra regras de contagem/pedidos (sem dependência de React). Utils genéricos em `lib/utils.ts` (`getErrorMessage`).
+- Hooks: `useAuth` (sessão Supabase), `useCatalog` (catálogo + reload/refresh), `useFlash` (toast; `notify` é estável), `useStoreReports` (relatório/última contagem), `useStoreSession` (sessão da contagem corrente), `useStoreSelection` (loja fora da sessão de pedidos), `useSalesManagement` (módulo de Gestão), `usePendingSync` (pendências da fila).
+- `App.tsx` decide entre `LoginScreen` (anônimo) e `AppShell` (logado). Após o login, consulta `public.profiles` (`maybeSingle()` por `user.id`, falha de leitura não bloqueia), define `userRole` (`profile?.role || 'gerente'`) e faz `console.log("Dados do Perfil no Supabase:", profile, "Erro:", error)` para depuração. O espelho do perfil é usado **apenas em falha offline** (erro real do banco não é mascarado).
+- **Rotas** (`react-router-dom` v7, `BrowserRouter` em `main.tsx`): `AppShell` monta a `TopNav` (navbar de seções) + `<Routes>`; as seções são declaradas em `lib/sections.ts` (`APP_SECTIONS`). `/orders` → `Dashboard` (tela de pedidos, com as abas internas); `/management` → `ManagementScreen` (módulo de Gestão, com as abas "Vendas" e "Comparação"); rota desconhecida → redireciona para `DEFAULT_SECTION_PATH` (`/orders`).
+- `useStoreSession` (~550 linhas) **é dono dos estados** e compõe dois sub-hooks: `useDraftPersistence` (autosave/persistência) e `useRealtimeOrder` (subscription Supabase). Recebe `{ catalog, notify, onNavigate, preferredStoreId, userId, isAdmin }` e devolve ~25 campos; o contrato de retorno deve permanecer intacto — o orquestrador (`Dashboard`) destrutura tudo; adições são permitidas (ex.: `refreshCurrentOrder` para reconciliar o pedido corrente após o flush da fila offline).
+- Boards (`components/`): `CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`, `SalesMetricsPanel`, `SalesSellersCard`, `SalesResultCard`, `SalesHistoryPanel` — sem estado próprio de sessão, recebem props.
+- Camada pura: `lib/orders.ts` concentra regras de contagem/pedidos (sem dependência de React); `lib/salesMetrics.ts` as regras de vendas. Utils genéricos em `lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `parseNumberOrNull`, `newId`, `emptyText`, `formatCurrency`, `formatPercentage`).
 - Tipos: `types/app.ts` (domínio da UI/sessão) e `types/database.ts` (linhas do banco + `Database` para o supabase-js).
 
 ### Mapa de módulos
@@ -69,10 +69,10 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/OfflineBanner.tsx` | Banner "Sem conexão…" (mensagem configurável via prop — o `/management` avisa que vendedores/histórico exigem rede) |
 | `src/components/SyncBanner.tsx` | Banner "X alterações aguardando sincronização" + botão "Sincronizar" (auto-flush em 20s) |
 | `src/lib/orderText.ts` | Resumo do pedido em texto p/ colar (legado/WhatsApp) — `buildOrderSummary` + `copyTextToClipboard` |
-| `src/lib/utils.ts` | `getErrorMessage`, datas pt-BR (`formatDate`/`formatDateTime`), `parseNumber`, `emptyText` |
+| `src/lib/utils.ts` | `getErrorMessage`, datas pt-BR (`formatDate`/`formatDateTime`), `parseNumber`, `parseNumberOrNull`, `newId`, `emptyText`, `formatCurrency`, `formatPercentage` |
 | `src/types/app.ts` | `Catalog`, `CountedItem`, `ItemKey`, `SuggestionsMap`, `TabId`, flash/report, `compareByEntryCode`, `SYNTHETIC_VARIATION_ID`/`defaultVariationForProduct` |
 | `src/types/database.ts` | Tipos de tabelas + interface `Database` |
-| `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards |
+| `src/components/*` | Header, nav, telas (loading/error), toast, status bar, boards, `ui.tsx` (primitivas compartilhadas: `inputClass`, `contentClass`, `barClass`, `Field`, `Spinner`, `IconButton`, `EmptyState`) |
 | `src/components/Dashboard.tsx` | Conteúdo autenticado: compõe hooks de sessão/catálogo e renderiza telas; aplica RBAC por cargo |
 | `src/components/LoginScreen.tsx` | Tela de login (email/senha via `signInWithPassword`), erros visuais e indicador de carregamento |
 | `src/components/CollaboratorsBoard.tsx` | Gestão de usuários (visível só p/ `admin`): cadastra gerente (`auth.signUp` + `profiles`, restaurando a sessão do admin) e lista/edita loja, cargo e acesso. Cards colapsáveis com cabeçalho no mesmo estilo do `Section` do `CatalogBoard` |
@@ -126,7 +126,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## PWA e offline
 
-- **Service Worker**: Workbox `generateSW` via `vite-plugin-pwa` (`vite.config.ts`) com `registerType: 'prompt'`, precache automático (JS/CSS/icons), `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` e `navigateFallbackDenylist` para não servir HTML para requisitos de API.
+- **Service Worker**: Workbox `generateSW` via `vite-plugin-pwa` (`vite.config.ts`) com `registerType: 'prompt'`, precache automático (JS/CSS/icons), `cleanupOutdatedCaches`, `navigateFallback: '/index.html'` (só navegações; a API do Supabase fica de fora pela allow-list do `runtimeCaching`).
 - **Caching** (`runtimeCaching`): navegação **NetworkFirst** (`navigation-cache`); GETs cross-origin do Supabase **só de catálogo** (`stores|categories|products|product_variations`) em **NetworkFirst** + TTL 7d (`catalog-cache`). Dados sensíveis (`orders`, `order_items`, `profiles`, `vw_product_suggestions`, relatório) **nunca** entram em cache.
 - **Ciclo de vida**: `src/pwa.ts` registra via `virtual:pwa-register` (`onNeedRefresh`/`onOfflineReady`); `PwaUpdatePrompt` mostra "Nova versão disponível" (Atualizar/Depois) e "Pronto para uso offline".
 - **Fila de ações offline** (`lib/offlineQueue.ts`, IndexedDB `pedidos-pwa/queue`): `persist-draft` (update orders + delete+insert items, mesmo formato do persist online), `finish-order` (status `Concluido`), `create-order` (id otimista uuid do cliente). `flushQueue` replay com o cliente supabase vivo (sessão fresca → evita 401 de JWT expirado) em ordem de `createdAt`, parando em falha de rede. `isOffline`/`isOfflineError` detectam o cenário — a detecção casa falha de rede por mensagem além do `TypeError` (supabase-js v2 devolve `PostgrestError` "Failed to fetch"), e o cliente Supabase (`lib/supabase.ts`) aborta requisições após 10s para não travar em "conectado sem internet".
@@ -144,19 +144,26 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Regras de vendas/métricas**: `src/lib/salesMetrics.ts` (service puro, com testes em `salesMetrics.test.ts`) + DTOs em `src/types/sales.ts`; persistência em `src/lib/salesStore.ts` (tabelas `sellers`, `sales_calculations`, `sales_records` — DDL em `supabase/migrations/`).
 - **Resumo em texto / digitação**: `src/lib/orderText.ts` (formato ordenado por código) + `compareByEntryCode` em `types/app.ts`.
 - **Utils genéricos**: `src/lib/utils.ts` (`getErrorMessage`, datas, `parseNumber`, `parseNumberOrNull`, `newId`, `emptyText`, `formatCurrency`, `formatPercentage`).
-- **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/lib/localCache.ts` (espelho de leitura) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
+- **PWA/offline**: `src/lib/offlineQueue.ts` (fila de ações) + `src/lib/localCache.ts` (espelho de leitura) + `src/lib/orderDraft.ts` (gravação transacional do rascunho) + `src/pwa.ts` (ciclo de vida do SW) + `vite.config.ts` (estratégias de cache).
 - **Comportamento da sessão**: `src/hooks/useStoreSession.ts` + sub-hooks (`useDraftPersistence`, `useRealtimeOrder`); `docs/architecture.md` resume fluxos/invariantes.
 - **Autenticação/perfil**: `src/hooks/useAuth.ts` (sessão) + `src/App.tsx` (consulta `public.profiles`, `userRole`) + `src/types/database.ts`.
 - **Catálogo/notificações/relatório**: `src/hooks/useCatalog.ts`, `useFlash.ts`, `useStoreReports.ts`.
-- **Domínio da UI**: `src/types/app.ts` (`Catalog`, `CountedItem`, `SuggestionsMap`, `TabId`, flash/report).
-- **Banco efetivo**: não há migrations no repositório; o schema real vive no Supabase — `types/database.ts` é o contrato da aplicação.
+- **Domínio da UI**: `src/types/app.ts` (`Catalog`, `CountedItem`, `SuggestionsMap`, `TabId`, flash/report) e `src/types/sales.ts` (DTOs do módulo de vendas).
+- **Banco efetivo**: o schema vive no Supabase — `types/database.ts` é o contrato da aplicação. As DDLs do módulo de Gestão ficam em `supabase/migrations/` (aplicar no Supabase antes de usar a tela; o app cai para o caminho legado quando a RPC ainda não existe).
+  - `20261003000100_management_sales.sql` — tabelas `sellers`, `sales_calculations`, `sales_records` + RLS base;
+  - `20261003000200_sellers_store.sql` — `sellers.store_id`;
+  - `20261003000300_sellers_unique_per_store.sql` — nome único por loja/ativos;
+  - `20261003000400_management_rls.sql` — RLS por loja + auditoria;
+  - `20261003000500_persist_order_draft.sql` — RPC de gravação transacional do rascunho.
 
 ## Convenções do código
 
 - **Sem comentários** por padrão (exceto se solicitado); a regra pode ser sobrepujada quando regras do framework e/ou boas práticas de programação exigirem. Mensagens de UI em pt-BR.
+  - **Exceção registrada**: JSDoc em API pública (função/hook/componente exportado) é permitido e esperado — documenta o contrato; comentários internos, só quando agregam.
 - **Newline final** obrigatório em todo arquivo.
 - TypeScript `strict` com `noUnusedLocals` e `noUnusedParameters` — imports/símbolos não usados quebram o build.
 - Lógica pura vai em `lib/`; tipos de domínio em `types/`; um arquivo por hook/componente.
+  - **Exceção registrada**: `components/ui.tsx` concentra as primitivas compartilhadas (`inputClass`, `selectClass`, `Field`, `Spinner`, `IconButton`, `EmptyState`, `contentClass`, `barClass`).
 - **Sub-hooks recebem estado/setters por parâmetro**; o orquestrador segue dono dos estados. Nunca chamar hooks condicionalmente.
 - **Identidade de callbacks importa**: callbacks que só leem refs devem ser estáveis (`useCallback([])`, ex.: `shouldSkipSync`) — se variarem, o channel do realtime pode re-subscribe (efeito dependent).
 - Interfaces de `types/database.ts` precisam de `& Record<string, unknown>` para satisfazer o generic do supabase-js (padrão `Recordish`) — ao criar novos tipos `Insert`, siga esse padrão.
@@ -164,9 +171,9 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 
 ## Estado do repo
 
-- Branch: `pwa` — comporta a implementação PWA (manifest/SW, caches, ciclo de vida e fila de ações offline). Modularização concluída (`App.tsx` é o gate de auth; `Dashboard.tsx` ~conteúdo autenticado; `useStoreSession` ~460).
-- `HEAD` base: `987acf9` ("melhorias para contexto de agentes e readme adicionado"). Autenticação B2B implementada (`useAuth`, `LoginScreen`, RBAC por cargo, `CollaboratorsBoard` com `auth.signUp` + restauração de sessão do admin + revogação). Detalhes por etapa no `PROJECT_STATUS.md`.
-- Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado".
+- Branch de trabalho: `ajustes` (a partir da `main`, que já contém a série do endpoint `/management`). A `main` tem: PWA completo (manifest/SW, caches, ciclo de vida, fila de ações offline), rotas por endpoint (`/orders`, `/management`) e o módulo de Gestão (vendas/métricas com vendedores e histórico no banco).
+- `HEAD` base: `020f204` ("comportamento para novas vendas"). Autenticação B2B implementada (`useAuth`, `LoginScreen`, RBAC por cargo, `CollaboratorsBoard` com `auth.signUp` + restauração de sessão do admin + revogação). Detalhes por etapa no `PROJECT_STATUS.md`.
+- Histórico relevante: "primeira etapa … fase final da refatoração de App" → "refatoração de hooks" → "contexto e memória para agentes" → "melhorias para contexto de agentes e readme adicionado" → "separação para novo endpoint" → série do `/management` (vendas/métricas, RLS por loja, correções de perda de dados).
 
 ## Padrão de atuação do agente
 

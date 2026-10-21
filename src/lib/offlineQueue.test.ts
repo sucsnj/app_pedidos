@@ -16,6 +16,9 @@ const persistOrderDraftRpc = vi.fn(async (_args?: unknown) => ({ error: null }))
 
 vi.mock('./supabase', () => ({
   supabase: {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+    },
     from: (table: string) => {
       if (table === 'orders') {
         return { update: () => ({ eq: () => updateOrder() }) }

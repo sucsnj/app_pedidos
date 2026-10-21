@@ -114,11 +114,9 @@ async function enqueue(action: OfflineAction): Promise<void> {
     let previousId: string | null = null
 
     if (action.type === 'persist-draft') {
-      const finishing = current.some(
-        (entry) =>
-          entry.action.type === 'finish-order' && entry.action.orderId === action.orderId,
-      )
-      if (finishing) return
+      // Substitui o rascunho anterior do mesmo pedido (o mais novo vale).
+      // Não é ignorado quando existe um `finish-order` pendente: o rascunho
+      // carrega os itens e as marcações de digitação, que seriam perdidos.
       const existing = current.find(
         (entry) =>
           entry.action.type === 'persist-draft' && entry.action.orderId === action.orderId,
@@ -249,6 +247,11 @@ function isAuthError(err: unknown): boolean {
 export async function flushQueue(force = false): Promise<FlushResult> {
   if (!force && isOffline()) return { flushed: 0, remaining: 0, discarded: 0 }
   const entries = await listPending()
+  if (entries.length > 0) {
+    // Sessão renovada antes do replay: evita 401 por JWT expirado durante o
+    // tempo em que o app ficou offline.
+    await supabase.auth.getSession().catch(() => undefined)
+  }
   let flushed = 0
   let discarded = 0
   for (const entry of entries) {

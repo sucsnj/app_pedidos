@@ -152,7 +152,7 @@ export type ProfileUpdate = Partial<ProfileInsert>
 export interface ProductSuggestion {
   store_id: string
   product_id: string
-  product_variation_id: string
+  product_variation_id: string | null
   suggested_quantity: number
   last_ordered_at: string
 }
