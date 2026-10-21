@@ -5,6 +5,7 @@ import {
   normalizeSalesPayload,
 } from '../lib/salesMetrics'
 import { createSeller, deleteCalculation, deleteSeller, fetchHistory, fetchSellers, fetchSalesRecords, recordSales, updateSeller } from '../lib/salesStore'
+import { isOffline, isOfflineError } from '../lib/offlineQueue'
 import { getErrorMessage, parseNumberOrNull } from '../lib/utils'
 import type { Seller, SalesCalculation } from '../types/database'
 import type { FlashKind } from '../types/app'
@@ -57,7 +58,14 @@ export function useSalesManagement({ storeId = null, notify }: SalesManagementPa
     setError(null)
     load()
       .catch((err) => {
-        if (!cancelled) setError({ status: null, message: getErrorMessage(err), details: [] })
+        if (cancelled) return
+        setError({
+          status: null,
+          message: isOffline() || isOfflineError(err)
+            ? 'Sem conexão — não foi possível carregar vendedores e histórico do banco.'
+            : getErrorMessage(err),
+          details: [],
+        })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

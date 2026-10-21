@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { isOffline, isOfflineError } from '../lib/offlineQueue'
+import { cacheCatalog, readCatalog } from '../lib/localCache'
 import type { Catalog } from '../types/app'
 import { getErrorMessage } from '../lib/utils'
 
@@ -21,16 +23,18 @@ export function useCatalog() {
       supabase.from('products').select('*').order('display_order').order('name'),
       supabase.from('product_variations').select('*').order('name'),
     ])
-    if (storesResult.error) throw storesResult.error
-    if (categoriesResult.error) throw categoriesResult.error
-    if (productsResult.error) throw productsResult.error
-    if (variationsResult.error) throw variationsResult.error
-    setCatalog({
-      stores: storesResult.data,
-      categories: categoriesResult.data,
-      products: productsResult.data,
-      variations: variationsResult.data,
-    })
+    const failed = [storesResult, categoriesResult, productsResult, variationsResult].find(
+      (result) => result.error,
+    )
+    if (failed?.error) throw failed.error
+    const next: Catalog = {
+      stores: storesResult.data ?? [],
+      categories: categoriesResult.data ?? [],
+      products: productsResult.data ?? [],
+      variations: variationsResult.data ?? [],
+    }
+    setCatalog(next)
+    void cacheCatalog(next)
   }, [])
 
   useEffect(() => {
@@ -38,7 +42,18 @@ export function useCatalog() {
     setLoading(true)
     setError(null)
     loadCatalog()
-      .catch((err) => {
+      .catch(async (err) => {
+        if (cancelled) return
+        // Sem rede o catálogo vem do espelho local (o cache do SW cobre o
+        // ambiente de produção; o espelho cobre qualquer origem).
+        if (isOffline() || isOfflineError(err)) {
+          const cached = await readCatalog()
+          if (!cancelled && cached) {
+            setCatalog(cached)
+            setError(null)
+            return
+          }
+        }
         if (!cancelled) setError(getErrorMessage(err))
       })
       .finally(() => {
@@ -47,7 +62,6 @@ export function useCatalog() {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadKey])
 
   const reload = useCallback(() => setReloadKey((value) => value + 1), [])

@@ -82,6 +82,7 @@ export function useStoreSession({
     savedAt,
     enqueuePersist,
     saveNow,
+    flushDraft,
     clearDebounce,
     markDirty,
     commitSyncedOrder,
@@ -451,15 +452,19 @@ export function useStoreSession({
   ])
 
   const selectStore = useCallback(
-    (storeId: string) => {
+    (storeId: string): void => {
       if (!storeId || storeId === activeStoreId) return
       clearDebounce()
-      if (currentOrder && currentOrder.status === 'Rascunho') {
-        markDirty()
-        void enqueuePersist().catch(() => undefined)
-      }
-      writeStorePreference(userId, storeId)
-      setActiveStoreId(storeId)
+      // Aguarda a gravação do rascunho da loja anterior antes de trocar: o
+      // `persistOrder` aborta se o pedido corrente já tiver sido limpo.
+      void (async () => {
+        if (currentOrder && currentOrder.status === 'Rascunho') {
+          markDirty()
+          await enqueuePersist().catch(() => undefined)
+        }
+        writeStorePreference(userId, storeId)
+        setActiveStoreId(storeId)
+      })()
     },
     [activeStoreId, currentOrder, enqueuePersist, clearDebounce, markDirty, userId],
   )
@@ -540,6 +545,7 @@ export function useStoreSession({
     newCount,
     finishOrder,
     saveNow,
+    flushDraft,
     refreshCurrentOrder,
     clearError,
   }

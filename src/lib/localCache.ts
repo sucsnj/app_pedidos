@@ -90,6 +90,15 @@ const suggestionsKey = (storeId: string) => `suggestions:${storeId}`
 const lastOrderKey = (storeId: string) => `lastOrder:${storeId}`
 const reportKey = (storeId: string) => `report:${storeId}`
 const profileKey = (userId: string) => `profile:${userId}`
+const catalogKey = 'catalog'
+
+export function cacheCatalog(catalog: Catalog): Promise<void> {
+  return writeMirror(catalogKey, catalog)
+}
+
+export function readCatalog(): Promise<Catalog | null> {
+  return readMirror<Catalog>(catalogKey)
+}
 
 export function cacheOrders(storeId: string, orders: Order[]): Promise<void> {
   return writeMirror(ordersKey(storeId), orders)

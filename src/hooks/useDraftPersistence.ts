@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { CountedItem, FlashKind } from '../types/app'
 import type { Order } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
-import { enqueuePersistDraft, isOffline, isOfflineError } from '../lib/offlineQueue'
+import { enqueuePersistDraft, isOffline, isOfflineError, removeDraftForOrder } from '../lib/offlineQueue'
 import { cacheCountedItems, updateOrderInStore } from '../lib/localCache'
 import {
   mergeOrderRow,
@@ -89,7 +89,34 @@ export function useDraftPersistence({
       snapshot.requesterName,
       snapshot.notes || null,
     )
+    const enqueueDraft = async (): Promise<void> => {
+      await enqueuePersistDraft({
+        orderId: snapshot.order.id,
+        requesterName: snapshot.requesterName,
+        notes: snapshot.notes,
+        totalItems,
+        items: snapshot.items
+          .filter((item) => item.quantity > 0)
+          .map((item) => ({
+            product_id: item.product.id,
+            product_variation_id: item.variation.id || null,
+            product_code: item.product.code,
+            product_name: item.product.name,
+            variation_name: item.variation.name,
+            quantity: item.quantity,
+            is_entered_in_legacy: item.isEnteredInLegacy,
+          })),
+      })
+      void updateOrderInStore(synced)
+      void cacheCountedItems(snapshot.order.id, snapshot.items)
+    }
     try {
+      if (isOffline()) {
+        dirtyRef.current = true
+        await enqueueDraft()
+        return
+      }
+
       const { error: orderError } = await supabase
         .from('orders')
         .update({
@@ -115,28 +142,17 @@ export function useDraftPersistence({
       commitSyncedOrder(synced)
       void updateOrderInStore(synced)
       void cacheCountedItems(snapshot.order.id, snapshot.items)
+      // O rascunho gravado online é o estado mais novo: descarta o snapshot
+      // antigo que possa estar enfileirado para este pedido.
+      try {
+        await removeDraftForOrder(snapshot.order.id)
+      } catch {
+        // Falha local ao descartar o rascunho pendente — não invalida a gravação.
+      }
     } catch (err) {
       dirtyRef.current = true
       if (isOffline() || isOfflineError(err)) {
-        await enqueuePersistDraft({
-          orderId: snapshot.order.id,
-          requesterName: snapshot.requesterName,
-          notes: snapshot.notes,
-          totalItems,
-          items: snapshot.items
-            .filter((item) => item.quantity > 0)
-            .map((item) => ({
-              product_id: item.product.id,
-              product_variation_id: item.variation.id || null,
-              product_code: item.product.code,
-              product_name: item.product.name,
-              variation_name: item.variation.name,
-              quantity: item.quantity,
-              is_entered_in_legacy: item.isEnteredInLegacy,
-            })),
-        })
-        void updateOrderInStore(synced)
-        void cacheCountedItems(snapshot.order.id, snapshot.items)
+        await enqueueDraft()
         return
       }
       throw err
@@ -178,6 +194,19 @@ export function useDraftPersistence({
     void enqueuePersist().catch((err) => notify(getErrorMessage(err), 'error'))
   }, [enqueuePersist, notify])
 
+  /**
+   * Grava o rascunho pendente sem exibir toast — usado ao desmontar a tela
+   * (troca de seção), para não perder a última digitação.
+   */
+  const flushDraft = useCallback((): void => {
+    if (saveTimer.current) {
+      window.clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
+    dirtyRef.current = true
+    void enqueuePersist().catch(() => undefined)
+  }, [enqueuePersist])
+
   const clearDebounce = useCallback((): void => {
     if (saveTimer.current) {
       window.clearTimeout(saveTimer.current)
@@ -215,6 +244,7 @@ export function useDraftPersistence({
     savedAt,
     enqueuePersist,
     saveNow,
+    flushDraft,
     clearDebounce,
     markDirty,
     commitSyncedOrder,

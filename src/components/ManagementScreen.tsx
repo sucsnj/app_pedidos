@@ -5,6 +5,7 @@ import { useSalesManagement } from '../hooks/useSalesManagement'
 import { useStoreSelection } from '../hooks/useStoreSelection'
 import { barClass, contentClass } from './ui'
 import { FlashToast } from './FlashToast'
+import { OfflineBanner } from './OfflineBanner'
 import { SalesHistoryPanel } from './SalesHistoryPanel'
 import { SalesMetricsPanel } from './SalesMetricsPanel'
 import { SalesResultCard } from './SalesResultCard'
@@ -49,6 +50,8 @@ export function ManagementScreen({
           />
         </div>
       </header>
+
+      <OfflineBanner message="Sem conexão — o cadastro de vendedores, o histórico e o lançamento de vendas dependem do banco." />
 
       <TabsBar tabs={tabs} active={tab} onChange={setTab} />
 

@@ -140,6 +140,22 @@ Decisões de design (validadas):
 - [ ] **Aplicar a migration no Supabase** (SQL Editor ou `supabase db push`) — sem isso a tela `/management` falha ao ler/escrever.
 - [ ] (backlog) Análises futuras sobre `sales_records` (ranking de vendedores, evolução mensal, meta por período) e definição de RBAC da seção (hoje visível para qualquer usuário logado).
 
+### Fase 1 (branch `ajustes`) — Perda de dados no fluxo de pedidos (Concluída)
+- [x] `removeDraftForOrder(orderId)` em `lib/offlineQueue.ts`: o persist **online** bem-sucedido descarta o `persist-draft` enfileirado do mesmo pedido (o replay antigo sobrescrevia o estado novo do servidor).
+- [x] `flushQueue` reconfirma a presença da ação na fila (`isQueued`) antes de aplicá-la → não reaplica snapshot obsoleto.
+- [x] Flush de mount do `Dashboard` passa a esperar o fim da carga da sessão (antes capturava `refreshCurrentOrder` com `currentOrder === null` → no-op).
+- [x] `flushDraft` (novo, em `useDraftPersistence`): grava o rascunho pendente sem toast no unmount do `Dashboard` (troca de seção cancelava o debounce de 700 ms).
+- [x] `selectStore` aguarda o `enqueuePersist()` da loja anterior antes de trocar.
+- [x] `persistOrder` offline enfileira direto (sem esperar o timeout de 10 s) e a remoção local do rascunho pendente não invalida uma gravação já concluída.
+- [x] Testes: `src/lib/offlineQueue.test.ts` (IndexedDB falso via `fake-indexeddb`) e `src/hooks/useDraftPersistence.test.tsx` — `npm test` (50 testes, OK).
+
+### Fase 2 (branch `ajustes`) — Carregamento offline do `/orders` (Concluída)
+- [x] **Causa raiz**: no `Dashboard`, o estado offline **forçava** a tela de erro (`effectiveError` era sempre preenchido offline) → o app nunca mostrava o conteúdo sem conexão, mesmo com o espelho carregado.
+- [x] Offline só é erro quando a carga falhou de verdade; caso contrário o app segue em uso com o banner "Sem conexão…".
+- [x] Catálogo espelhado no IndexedDB (`cacheCatalog`/`readCatalog`): o `useCatalog` cai para o espelho quando a rede falha — funciona **também em dev** (sem service worker).
+- [x] `/management`: banner "Sem conexão…" explicativo (vendedores/histórico/lançamento dependem do banco) e mensagem de erro amigável em vez de "Failed to fetch".
+- [x] Testes: `src/components/Dashboard.test.tsx` (offline sem erro → app visível; offline com erro → tela de erro; online com erro → erro real) e `src/hooks/useCatalog.test.tsx` (fallback do espelho) — `npm test` (56 testes, OK).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.

@@ -81,6 +81,7 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
     newCount,
     finishOrder,
     saveNow,
+    flushDraft,
     refreshCurrentOrder,
     clearError,
   } = session
@@ -104,9 +105,13 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
   const errorMessage = error ?? catalogError
 
   const isOffline = !online
-  const effectiveError = isOffline
-    ? 'Você está offline. Verifique a conexão e tente novamente.'
-    : errorMessage
+  // Offline não é, por si só, um erro: o app segue funcionando com os dados
+  // espelhados. A mensagem de offline só substitui um erro real.
+  const effectiveError = errorMessage
+    ? isOffline
+      ? 'Sem conexão — os dados espelhados serão exibidos. Se esta loja ainda não foi espelhada neste dispositivo, conecte-se uma vez para carregar.'
+      : errorMessage
+    : null
 
   const syncingRef = useRef(false)
   const syncPending = useCallback(async (): Promise<void> => {
@@ -144,10 +149,12 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
   const didAttemptMountSync = useRef(false)
   useEffect(() => {
     if (didAttemptMountSync.current) return
+    // Aguarda o fim da carga da sessão: antes disso `currentOrder` é null e o
+    // `refreshCurrentOrder` capturado não reconciliaria o pedido.
+    if (loading || pending === 0) return
     didAttemptMountSync.current = true
     if (!isOffline) void syncPending()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loading, pending, isOffline, syncPending])
 
   useEffect(() => {
     if (!online || pending === 0) return
@@ -156,6 +163,12 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
     }, 20000)
     return () => window.clearInterval(timer)
   }, [online, pending, syncPending])
+
+  useEffect(() => {
+    return () => {
+      flushDraft()
+    }
+  }, [flushDraft])
 
   if (isLoading) {
     return <LoadingScreen />

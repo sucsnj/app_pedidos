@@ -151,6 +151,28 @@ export function enqueueCreateOrder(order: Order): Promise<void> {
   return enqueue({ type: 'create-order', order })
 }
 
+/**
+ * Remove o `persist-draft` pendente de um pedido — usado quando o rascunho foi
+ * gravado online (o snapshot enfileirado ficou antigo e não pode sobrescrever
+ * o estado mais novo do servidor).
+ */
+export async function removeDraftForOrder(orderId: string): Promise<void> {
+  await withDB(async (db) => {
+    const current = await readAll(db)
+    const drafts = current.filter(
+      (entry) => entry.action.type === 'persist-draft' && entry.action.orderId === orderId,
+    )
+    if (drafts.length === 0) return
+    for (const draft of drafts) await remove(db, draft.id)
+    emitPending()
+  })
+}
+
+async function isQueued(entryId: string): Promise<boolean> {
+  const entries = await listPending()
+  return entries.some((entry) => entry.id === entryId)
+}
+
 export function listPending(): Promise<QueuedAction[]> {
   return withDB(async (db) => {
     const entries = await readAll(db)
@@ -224,6 +246,10 @@ export async function flushQueue(force = false): Promise<FlushResult> {
   let flushed = 0
   for (const entry of entries) {
     try {
+      // A entrada pode ter sido removida enquanto o flush corria (ex.: rascunho
+      // gravado online) — nesse caso o snapshot já está no servidor e não deve
+      // ser reaplicado, sob pena de sobrescrever um estado mais novo.
+      if (!(await isQueued(entry.id))) continue
       await processAction(entry.action)
       await withDB((db) => remove(db, entry.id))
       flushed += 1
