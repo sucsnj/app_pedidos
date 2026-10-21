@@ -214,7 +214,8 @@ Decisões de design (validadas):
 - [x] CI em `.github/workflows/ci.yml`: `typecheck` → `test` → `build` em push/PR (branches `main`, `ajustes`, `endpoint`).
 - [x] O cálculo só existe com **pelo menos um vendedor acima de zero** (campo vazio = 0,00): enquanto não houver, o card de Resultado mostra "Informe o valor de ao menos um vendedor para ver o cálculo." (mantendo as ações) e "Registrar vendas" fica desabilitado.
 - [x] Paleta do `/management` reaproveitada com distribuição por significado: acento por card (**wine** = Cálculo/valores, **gold** = Resultado/meta, **sky** = Vendedores/cadastro, **emerald** = Histórico/registros) e indicadores coloridos por papel (total/base/maior venda em wine, meta em gold, ticket médio em sky, registros em gray, **atingimento dinâmico** emerald/amber/gray).
-- [x] Validação automática: `npm run typecheck` + `npm test` (111 testes) + `npm run build` (OK).
+- [x] Navegação por scroll suave: "Registrar vendas" revela o card de **Histórico** (abre se estiver colapsado + `scrollIntoView` suave) e "Novas vendas" revela o card de **Vendedores** (`revealSignal` no `CollapsibleCard` + `scroll-mt-16` para não ficar sob a barra de abas fixa).
+- [x] Validação automática: `npm run typecheck` + `npm test` (112 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 

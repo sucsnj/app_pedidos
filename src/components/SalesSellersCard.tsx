@@ -9,6 +9,7 @@ interface SalesSellersCardProps {
   sellers: Seller[]
   values: Record<string, string>
   saving: boolean
+  revealSignal?: number
   onAdd: (name: string) => Promise<boolean>
   onRename: (id: string, name: string) => Promise<boolean>
   onBind: (id: string) => Promise<boolean>
@@ -21,6 +22,7 @@ export function SalesSellersCard({
   sellers,
   values,
   saving,
+  revealSignal,
   onAdd,
   onRename,
   onBind,
@@ -68,6 +70,7 @@ export function SalesSellersCard({
       subtitle="Cadastrados no banco e vinculados à loja selecionada — informe o valor vendido no período."
       icon={<UserPlus className="h-5 w-5" />}
       accent="sky"
+      revealSignal={revealSignal}
       badge={
         <span className="text-xs text-gray-500">{sellers.length} cadastrado(s)</span>
       }

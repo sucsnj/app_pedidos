@@ -8,6 +8,7 @@ interface SalesHistoryPanelProps {
   history: SalesCalculation[]
   stores: Store[]
   loading: boolean
+  revealSignal?: number
   onLoad: (entry: SalesCalculation) => Promise<boolean>
   onDelete: (id: string) => Promise<void>
 }
@@ -27,7 +28,14 @@ function topSaleInfo(entry: SalesCalculation): TopSaleInfo | null {
   return { name, value }
 }
 
-export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }: SalesHistoryPanelProps) {
+export function SalesHistoryPanel({
+  history,
+  stores,
+  loading,
+  revealSignal,
+  onLoad,
+  onDelete,
+}: SalesHistoryPanelProps) {
   const total = history.reduce((sum, entry) => sum + Number(entry.total_sold), 0)
 
   return (
@@ -37,6 +45,7 @@ export function SalesHistoryPanel({ history, stores, loading, onLoad, onDelete }
       subtitle="Clique em um lançamento para carregá-lo no formulário."
       icon={<History className="h-5 w-5" />}
       accent="emerald"
+      revealSignal={revealSignal}
       badge={
         history.length > 0 ? (
           <span className="text-xs text-gray-500">

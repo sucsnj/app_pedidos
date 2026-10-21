@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
@@ -39,6 +39,8 @@ interface CollapsibleCardProps {
   icon?: ReactNode
   badge?: ReactNode
   accent?: CardAccent
+  /** Ao mudar, o card abre e rola suavemente até ele. */
+  revealSignal?: number
   defaultOpen?: boolean
   children: ReactNode
 }
@@ -54,11 +56,13 @@ export function CollapsibleCard({
   icon,
   badge,
   accent = 'neutral',
+  revealSignal,
   defaultOpen = true,
   children,
 }: CollapsibleCardProps) {
   const [open, setOpen] = useState(() => readCardState(storageKey, defaultOpen))
   const styles = ACCENT_STYLES[accent]
+  const lastSignal = useRef(revealSignal)
 
   const toggle = useCallback(() => {
     const next = !open
@@ -66,8 +70,26 @@ export function CollapsibleCard({
     writeCardState(storageKey, next)
   }, [open, storageKey])
 
+  const reveal = useCallback(() => {
+    setOpen(true)
+    writeCardState(storageKey, true)
+    const element = document.getElementById(storageKey)
+    if (element && typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [storageKey])
+
+  useEffect(() => {
+    if (revealSignal === undefined || revealSignal === lastSignal.current) return
+    lastSignal.current = revealSignal
+    reveal()
+  }, [revealSignal, reveal])
+
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <section
+      id={storageKey}
+      className="scroll-mt-16 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+    >
       <div className={`h-1 w-full ${styles.bar}`} />
       <button
         type="button"

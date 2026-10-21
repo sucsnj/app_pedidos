@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { BarChart3, Banknote } from 'lucide-react'
 import { useFlash } from '../hooks/useFlash'
 import { useSalesManagement } from '../hooks/useSalesManagement'
@@ -35,6 +35,7 @@ export function ManagementScreen({
   preferredStoreId = null,
 }: ManagementScreenProps) {
   const [tab, setTab] = useState<ManagementTabId>('vendas')
+  const [reveal, setReveal] = useState({ history: 0, sellers: 0 })
   const { flash, notify } = useFlash()
   const selection = useStoreSelection({ userId, isAdmin, preferredStoreId })
   const sales = useSalesManagement({
@@ -42,6 +43,18 @@ export function ManagementScreen({
     ready: selection.resolved,
     notify,
   })
+
+  const handleRegister = useCallback(async () => {
+    const ok = await sales.register()
+    if (ok) {
+      setReveal((previous) => ({ ...previous, history: previous.history + 1 }))
+    }
+  }, [sales])
+
+  const handleClearValues = useCallback(() => {
+    sales.clearValues()
+    setReveal((previous) => ({ ...previous, sellers: previous.sellers + 1 }))
+  }, [sales])
 
   return (
     <>
@@ -59,8 +72,8 @@ export function ManagementScreen({
             canRegister={sales.canRegister}
             hasAnyValue={sales.hasAnyValue}
             saving={sales.saving}
-            onRegister={() => void sales.register()}
-            onClear={sales.clearValues}
+            onRegister={handleRegister}
+            onClear={handleClearValues}
           />
         </div>
       </header>
@@ -99,6 +112,7 @@ export function ManagementScreen({
                 sellers={sales.sellers}
                 values={sales.values}
                 saving={sales.saving}
+                revealSignal={reveal.sellers}
                 onAdd={sales.addSeller}
                 onRename={sales.renameSeller}
                 onBind={sales.bindSeller}
@@ -117,8 +131,8 @@ export function ManagementScreen({
                     canRegister={sales.canRegister}
                     hasAnyValue={sales.hasAnyValue}
                     saving={sales.saving}
-                    onRegister={() => void sales.register()}
-                    onClear={sales.clearValues}
+                    onRegister={handleRegister}
+                    onClear={handleClearValues}
                   />
                 }
               />
@@ -129,6 +143,7 @@ export function ManagementScreen({
                 history={sales.history}
                 stores={selection.stores}
                 loading={sales.loading}
+                revealSignal={reveal.history}
                 onLoad={sales.loadHistory}
                 onDelete={sales.removeHistory}
               />

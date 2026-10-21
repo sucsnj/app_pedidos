@@ -288,6 +288,51 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     confirmSpy.mockRestore()
   })
 
+  it('revela o card de histórico ao registrar e o de vendedores ao limpar', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const scrolled: string[] = []
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {
+      scrolled.push(this.id)
+    }
+
+    try {
+      await act(async () => {
+        root.render(<ManagementScreen />)
+      })
+
+      await type(inputByLabel('Meta de vendas'), '50000')
+      await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+      await type(inputByLabel('Valor de Bruno Lima'), '12750')
+
+      const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+        button.textContent?.includes('Registrar vendas'),
+      )
+      if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+      await act(async () => {
+        registerButton.click()
+      })
+
+      expect(scrolled).toContain('management-historico')
+
+      const newSalesButton = Array.from(container.querySelectorAll('button')).find((button) =>
+        button.textContent?.includes('Novas vendas'),
+      )
+      if (!newSalesButton) throw new Error('botão Novas vendas não encontrado')
+
+      await act(async () => {
+        newSalesButton.click()
+      })
+
+      expect(scrolled).toContain('management-vendedores')
+      expect(inputByLabel('Valor de Ana Souza').value).toBe('')
+    } finally {
+      Element.prototype.scrollIntoView = original
+      confirmSpy.mockRestore()
+    }
+  })
+
   it('desabilita "Registrar vendas" quando todos os vendedores estão vazios ou em 0', async () => {
     await act(async () => {
       root.render(<ManagementScreen />)
