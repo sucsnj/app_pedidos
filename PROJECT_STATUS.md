@@ -212,7 +212,8 @@ Decisões de design (validadas):
 - [x] `vitest.config.ts` aponta para `tests/**/*.test.ts(x)`; `tsconfig.app.json` inclui `tests` (os testes entram no `npm run typecheck`).
 - [x] Novos testes do `/orders` e do módulo de Gestão: `tests/lib/orders.test.ts` (mapeamento, contagem, merges, rótulo), `tests/lib/orderText.test.ts` (resumo para colagem), `tests/lib/salesStore.test.ts` (filtro por loja, nome duplicado, soft delete, gravação), `tests/hooks/useStoreSession.test.tsx` (loja preferida × loja do perfil, carga online, **fallback offline pelo espelho**, erro sem espelho) e `tests/components/CollapsibleCard.test.tsx` (colapso + persistência).
 - [x] CI em `.github/workflows/ci.yml`: `typecheck` → `test` → `build` em push/PR (branches `main`, `ajustes`, `endpoint`).
-- [x] Validação automática: `npm run typecheck` + `npm test` (110 testes, 15 arquivos) + `npm run build` (OK).
+- [x] O cálculo só existe com **pelo menos um vendedor acima de zero** (campo vazio = 0,00): enquanto não houver, o card de Resultado mostra "Informe o valor de ao menos um vendedor para ver o cálculo." (mantendo as ações) e "Registrar vendas" fica desabilitado.
+- [x] Validação automática: `npm run typecheck` + `npm test` (111 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 

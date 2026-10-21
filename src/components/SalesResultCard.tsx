@@ -45,8 +45,6 @@ function MetricTile({
 export function SalesResultCard({ result, actions }: SalesResultCardProps) {
   const summary = result?.summary
   const salesReport = result?.salesReport ?? []
-  if (!summary) return null
-
   return (
     <CollapsibleCard
       storageKey="management-resultado"
@@ -55,10 +53,19 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
       icon={<BarChart3 className="h-5 w-5" />}
       badge={
         <span className="text-xs text-gray-500">
-          {salesReport.length} registro(s)
+          {summary ? `${salesReport.length} registro(s)` : 'sem dados'}
         </span>
       }
     >
+      {!summary ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-gray-500">
+            Informe o valor de ao menos um vendedor para ver o cálculo.
+          </p>
+          {actions}
+        </div>
+      ) : (
+        <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         <MetricTile
           label="Total vendido"
@@ -160,6 +167,8 @@ export function SalesResultCard({ result, actions }: SalesResultCardProps) {
             Nenhum vendedor com valor informado. Preencha os valores no card de vendedores.
           </p>
         </div>
+      )}
+        </>
       )}
     </CollapsibleCard>
   )

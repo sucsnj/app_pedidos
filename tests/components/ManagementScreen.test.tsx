@@ -301,12 +301,17 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(disabled.length).toBeGreaterThanOrEqual(2)
     expect(disabled.every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
 
+    // sem cálculo enquanto ninguém tiver valor acima de zero
+    expect(screenText()).toContain('Informe o valor de ao menos um vendedor para ver o cálculo.')
+    expect(screenText()).not.toContain('Total vendido')
+
     // com um valor acima de zero o botão volta a ficar habilitado
     await type(inputByLabel('Valor de Bruno Lima'), '10')
     const enabled = Array.from(container.querySelectorAll('button')).filter((button) =>
       button.textContent?.includes('Registrar vendas'),
     )
     expect(enabled.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
+    expect(screenText()).toContain('Total vendido')
   })
 
   it('carrega o lançamento do histórico no formulário ao clicar nele', async () => {

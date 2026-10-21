@@ -283,6 +283,20 @@ export function useSalesManagement({
     [notify],
   )
 
+  // "Registrar vendas" só habilita com algo **maior que zero** — se todos
+  // estiverem vazios (assumidos 0,00) não há lançamento a fazer. Com valor
+  // inválido o botão fica ativo (o clique mostra o erro 400 da validação).
+  const hasValues = sellers.some(
+    (seller) => (parseAmountInput(values[seller.id] ?? '') ?? 0) > 0,
+  )
+  const hasInvalidValue = sellers.some((seller) => {
+    const amount = parseAmountInput(values[seller.id] ?? '')
+    return amount === null || amount < 0
+  })
+  const canRegister = hasValues || hasInvalidValue
+  // "Novas vendas" habilita quando há algum valor digitado para limpar.
+  const hasAnyValue = Object.values(values).some((value) => value.trim() !== '')
+
   const { payload, error: formError } = useMemo(
     () =>
       buildSalesPayloadFromForm({
@@ -292,14 +306,16 @@ export function useSalesManagement({
     [meta, sellers, values],
   )
 
+  // O cálculo só existe com pelo menos um vendedor acima de zero — sem isso a
+  // tela mostraria indicadores zerados sem informação.
   const result = useMemo<SalesMetricsResult | null>(() => {
-    if (!payload) return null
+    if (!payload || !hasValues) return null
     try {
       return calculateSalesMetrics(normalizeSalesPayload(payload))
     } catch {
       return null
     }
-  }, [payload])
+  }, [payload, hasValues])
 
   const register = useCallback(async (): Promise<boolean> => {
     if (formError) {
@@ -380,20 +396,6 @@ export function useSalesManagement({
       setSaving(false)
     }
   }, [formError, result, sellers, values, storeId, referenceDate, notify])
-
-  // "Registrar vendas" só habilita com algo **maior que zero** — se todos
-  // estiverem vazios (assumidos 0,00) não há lançamento a fazer. Com valor
-  // inválido o botão fica ativo (o clique mostra o erro 400 da validação).
-  const hasValues = sellers.some(
-    (seller) => (parseAmountInput(values[seller.id] ?? '') ?? 0) > 0,
-  )
-  const hasInvalidValue = sellers.some((seller) => {
-    const amount = parseAmountInput(values[seller.id] ?? '')
-    return amount === null || amount < 0
-  })
-  const canRegister = hasValues || hasInvalidValue
-  // "Novas vendas" habilita quando há algum valor digitado para limpar.
-  const hasAnyValue = Object.values(values).some((value) => value.trim() !== '')
 
   return {
     sellers,

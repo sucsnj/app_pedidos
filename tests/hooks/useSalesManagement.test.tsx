@@ -95,4 +95,24 @@ describe('useSalesManagement — escopo por loja', () => {
     expect(deactivateSeller).toHaveBeenCalledWith('seller-1')
     expect(api?.sellers).toHaveLength(0)
   })
+
+  it('não calcula enquanto nenhum vendedor tiver valor acima de zero', async () => {
+    await render('store-1')
+
+    // valores vazios (assumidos 0,00) → sem cálculo
+    act(() => api?.setValue('seller-1', ''))
+    expect(api?.hasValues).toBe(false)
+    expect(api?.result).toBeNull()
+
+    // apenas 0,00 → ainda sem cálculo
+    act(() => api?.setValue('seller-1', '0,00'))
+    expect(api?.hasValues).toBe(false)
+    expect(api?.result).toBeNull()
+
+    // um valor acima de zero → o cálculo aparece
+    act(() => api?.setValue('seller-1', '10'))
+    expect(api?.hasValues).toBe(true)
+    expect(api?.result).not.toBeNull()
+    expect(api?.result?.summary.totalSold).toBe(10)
+  })
 })
