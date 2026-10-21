@@ -163,6 +163,9 @@ export interface Seller {
   name: string
   store_id: string | null
   is_active: boolean
+  created_by: string | null
+  updated_by: string | null
+  updated_at: string
   created_at: string
 }
 export interface SellerInsert {
@@ -170,6 +173,9 @@ export interface SellerInsert {
   name: string
   store_id?: string | null
   is_active?: boolean
+  created_by?: string | null
+  updated_by?: string | null
+  updated_at?: string
 }
 export type SellerUpdate = Partial<SellerInsert>
 

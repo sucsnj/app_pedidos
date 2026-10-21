@@ -73,6 +73,12 @@ export function useSalesManagement({
 
   useEffect(() => {
     if (!ready) return
+    if (!storeId) {
+      // Sem loja definida (ainda não resolvida ou usuário sem loja) nada é
+      // buscado — nenhuma consulta sem filtro escopo.
+      setLoading(false)
+      return
+    }
     let cancelled = false
     setLoading(true)
     setError(null)

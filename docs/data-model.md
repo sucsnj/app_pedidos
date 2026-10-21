@@ -120,12 +120,16 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | coluna | tipo |
 | --- | --- |
 | id | uuid pk |
-| name | text not null (único por `lower(name)`) |
+| name | text not null (único por loja e entre os ativos) |
 | store_id | uuid null → `stores.id` (loja selecionada; `null` = global/legado) |
-| is_active | boolean default true |
+| is_active | boolean default true (false = desativado, histórico preservado) |
+| created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
+| updated_by | uuid null → `auth.users.id` (trigger `sellers_touch_audit`) |
+| updated_at | timestamptz default now() (trigger) |
 | created_at | timestamptz default now() |
 
 - Cadastro de vendedores **vinculado à loja** (`store_id`): o cadastro usa a loja selecionada na tela `/management`; a listagem mostra os vendedores da loja + os globais (`store_id is null`, os criados antes da migration). Nome único **por loja e entre os ativos** (`sellers_name_store_active_unique`); **desativar** (`is_active = false`) tira o vendedor da lista mas preserva o histórico e os lançamentos já registrados.
+- **RLS**: `admin` acessa todas as lojas; `gerente` só a loja do seu perfil (`store_id = public.current_user_store_id()`), além dos vendedores globais (leitura). Exclusão física é só do `admin`.
 
 ### sales_calculations (histórico de consolidações)
 | coluna | tipo |
@@ -144,6 +148,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 | created_by | uuid null → `auth.users.id` (default `auth.uid()`) |
 
 - **Snapshot** de cada cálculo registrado: base para análises futuras (tendência, meta atingida, ranking). `store_id` guarda a loja selecionada no registro; a listagem do histórico filtra pela loja atual (inclui os lançamentos legados com `store_id is null`). Excluir a consolidação remove em cascata as vendas vinculadas (`sales_records.calculation_id`).
+- **RLS**: `admin` acessa todas as consolidações; `gerente` só as da loja do perfil. As vendas por vendedor (`sales_records`) herdam o escopo da consolidação (`public.can_access_calculation`).
 
 ### sales_records (vendas por vendedor)
 | coluna | tipo |
@@ -160,7 +165,7 @@ Schema e regras de domínio. Fontes: `src/types/database.ts` (tipos) e o banco P
 
 - Uma linha por vendedor lançado em cada consolidação; `percentage` guarda a participação individual daquela consolidação. `seller_name` é a **cópia** do nome no momento do lançamento — renomear o vendedor não altera o histórico.
 
-- **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`), `20261003000200_sellers_store.sql` (`sellers.store_id`) e `20261003000300_sellers_unique_per_store.sql` (índice único por loja/ativos). O schema real vive no Supabase — aplicar as migrations antes de usar a tela.
+- **DDL**: `supabase/migrations/20261003000100_management_sales.sql` (tabelas + índices + RLS liberado para `authenticated`), `20261003000200_sellers_store.sql` (`sellers.store_id`), `20261003000300_sellers_unique_per_store.sql` (índice único por loja/ativos) e `20261003000400_management_rls.sql` (RLS por loja + auditoria). O schema real vive no Supabase — aplicar as migrations antes de usar a tela.
 
 ## Regras de domínio
 

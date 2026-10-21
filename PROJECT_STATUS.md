@@ -165,6 +165,13 @@ Decisões de design (validadas):
 - [x] Testes: `src/hooks/useSalesManagement.test.tsx` (escopo por loja, reset do formulário, soft delete) e `src/hooks/useStoreSelection.test.tsx` (papel admin/gerente) — `npm test` (64 testes, OK).
 - [ ] **Aplicar a migration `20261003000300_sellers_unique_per_store.sql` no Supabase**.
 
+### Fase 3 (branch `ajustes`) — Isolamento por loja (RLS) + auditoria (Concluída)
+- [x] Migration `supabase/migrations/20261003000400_management_rls.sql`: helpers `security definer` (`public.is_admin()`, `public.current_user_store_id()`, `public.can_access_calculation`) + políticas por loja em `sellers`, `sales_calculations` e `sales_records` — **admin** acessa todas as lojas, **gerente** só a loja do perfil (vendedores globais ficam legíveis; exclusão física só pelo admin).
+- [x] Auditoria em `sellers`: `created_by` (default `auth.uid()`), `updated_by` e `updated_at` via trigger `sellers_touch_audit`; tipos atualizados em `types/database.ts`.
+- [x] App: sem loja definida, **nenhuma consulta é feita** (o `useSalesManagement` só carrega com `storeId` + `ready`).
+- [x] Validação automática: `npm run typecheck` + `npm test` (64 testes) + `npm run build` (OK).
+- [ ] **Aplicar a migration `20261003000400_management_rls.sql` no Supabase** e conferir: como `admin` vê todas as lojas e como `gerente` só vê a própria.
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
