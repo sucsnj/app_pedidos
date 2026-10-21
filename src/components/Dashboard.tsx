@@ -7,7 +7,8 @@ import { useOnline } from '../hooks/useOnline'
 import { usePendingSync } from '../hooks/usePendingSync'
 import { useStoreReports } from '../hooks/useStoreReports'
 import { useStoreSession } from '../hooks/useStoreSession'
-import { flushQueue } from '../lib/offlineQueue'
+import { discardPending, flushQueue } from '../lib/offlineQueue'
+import { getErrorMessage } from '../lib/utils'
 import { AppHeader } from './AppHeader'
 import { AppNav } from './AppNav'
 import { FlashToast } from './FlashToast'
@@ -120,17 +121,38 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
     syncingRef.current = true
     setSyncing(true)
     try {
-      const { flushed, remaining } = await flushQueue(true)
+      const { flushed, remaining, discarded } = await flushQueue(true)
       if (flushed > 0) {
         notify('Alterações sincronizadas.', 'success')
         await refreshCurrentOrder()
       }
+      if (discarded > 0) {
+        notify(
+          `${discarded} alteração(ões) não puderam ser sincronizadas e foram descartadas.`,
+          'error',
+        )
+      }
       if (remaining === 0) void refresh()
+    } catch (err) {
+      notify(getErrorMessage(err), 'error')
     } finally {
       syncingRef.current = false
       setSyncing(false)
     }
   }, [notify, refreshCurrentOrder, refresh])
+
+  const discardPendingChanges = useCallback((): void => {
+    const confirmed = window.confirm(
+      'Descartar as alterações pendentes? Elas serão perdidas e não chegarão ao servidor.',
+    )
+    if (!confirmed) return
+    void discardPending()
+      .then((count) => {
+        if (count > 0) notify('Alterações pendentes descartadas.', 'success')
+        void refresh()
+      })
+      .catch((err) => notify(getErrorMessage(err), 'error'))
+  }, [notify, refresh])
 
   const wasOfflineRef = useRef(false)
   useEffect(() => {
@@ -190,7 +212,12 @@ export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
   return (
     <div className="pb-24">
       <OfflineBanner />
-      <SyncBanner pending={pending} syncing={syncing} onSync={() => void syncPending()} />
+      <SyncBanner
+        pending={pending}
+        syncing={syncing}
+        onSync={() => void syncPending()}
+        onDiscard={discardPendingChanges}
+      />
       <AppHeader
         stores={catalog.stores}
         orders={orders}

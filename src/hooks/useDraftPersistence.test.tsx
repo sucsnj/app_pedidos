@@ -9,6 +9,7 @@ import { useDraftPersistence } from './useDraftPersistence'
 const updateOrder = vi.fn(async () => ({ error: null }))
 const deleteItems = vi.fn(async () => ({ error: null }))
 const insertItems = vi.fn(async () => ({ error: null }))
+const persistOrderDraftRpc = vi.fn(async (_args?: unknown) => ({ error: null }))
 const enqueuePersistDraft = vi.fn(async () => undefined)
 const removeDraftForOrder = vi.fn(async () => undefined)
 const state = vi.hoisted(() => ({ offline: false }))
@@ -26,6 +27,10 @@ vi.mock('../lib/supabase', () => ({
         }
       }
       throw new Error(`tabela inesperada: ${table}`)
+    },
+    rpc: (name: string, args: unknown) => {
+      if (name !== 'persist_order_draft') throw new Error(`rpc inesperada: ${name}`)
+      return persistOrderDraftRpc(args)
     },
   },
 }))
@@ -150,7 +155,7 @@ describe('useDraftPersistence — rascunho pendente x persist online', () => {
       hook.saveNow()
     })
 
-    expect(updateOrder).toHaveBeenCalled()
+    expect(persistOrderDraftRpc).toHaveBeenCalled()
     expect(removeDraftForOrder).toHaveBeenCalledWith('order-1')
   })
 
@@ -161,13 +166,11 @@ describe('useDraftPersistence — rascunho pendente x persist online', () => {
       hook.flushDraft()
     })
 
-    expect(updateOrder).toHaveBeenCalled()
-    expect(insertItems).toHaveBeenCalled()
+    expect(persistOrderDraftRpc).toHaveBeenCalled()
     expect(enqueuePersistDraft).not.toHaveBeenCalled()
   })
 
-  it('offline: enfileira o rascunho sem tentar o servidor', async () => {
-    const hook = await mount()
+  it('offline: enfileira o rascunho sem tentar o servidor', async () => {    const hook = await mount()
     state.offline = true
 
     await act(async () => {
@@ -175,7 +178,24 @@ describe('useDraftPersistence — rascunho pendente x persist online', () => {
     })
 
     expect(enqueuePersistDraft).toHaveBeenCalled()
-    expect(updateOrder).not.toHaveBeenCalled()
+    expect(persistOrderDraftRpc).not.toHaveBeenCalled()
     expect(removeDraftForOrder).not.toHaveBeenCalled()
+  })
+
+  it('usa o caminho legado quando a RPC ainda não existe no banco', async () => {
+    persistOrderDraftRpc.mockRejectedValueOnce(
+      Object.assign(new Error('function persist_order_draft does not exist'), {
+        code: '42883',
+      }),
+    )
+    const hook = await mount()
+
+    await act(async () => {
+      hook.saveNow()
+    })
+
+    expect(persistOrderDraftRpc).toHaveBeenCalled()
+    expect(updateOrder).toHaveBeenCalled()
+    expect(insertItems).toHaveBeenCalled()
   })
 })

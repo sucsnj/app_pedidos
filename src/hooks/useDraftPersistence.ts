@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { supabase } from '../lib/supabase'
 import type { CountedItem, FlashKind } from '../types/app'
 import type { Order } from '../types/database'
 import { getErrorMessage } from '../lib/utils'
 import { enqueuePersistDraft, isOffline, isOfflineError, removeDraftForOrder } from '../lib/offlineQueue'
 import { cacheCountedItems, updateOrderInStore } from '../lib/localCache'
+import { persistOrderDraft } from '../lib/orderDraft'
 import {
   mergeOrderRow,
   mergeOrdersList,
@@ -117,27 +117,21 @@ export function useDraftPersistence({
         return
       }
 
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({
-          requester_name: snapshot.requesterName,
-          notes: snapshot.notes || null,
-          total_items: totalItems,
-        })
-        .eq('id', snapshot.order.id)
-      if (orderError) throw orderError
-
-      const { error: deleteError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', snapshot.order.id)
-      if (deleteError) throw deleteError
-
-      const rows = toOrderItemRows(snapshot.items, snapshot.order.id)
-      if (rows.length > 0) {
-        const { error: insertError } = await supabase.from('order_items').insert(rows)
-        if (insertError) throw insertError
-      }
+      await persistOrderDraft({
+        orderId: snapshot.order.id,
+        requesterName: snapshot.requesterName,
+        notes: snapshot.notes,
+        totalItems,
+        rows: toOrderItemRows(snapshot.items, snapshot.order.id).map((row) => ({
+          product_id: row.product_id,
+          product_variation_id: row.product_variation_id,
+          product_code: row.product_code,
+          product_name: row.product_name,
+          variation_name: row.variation_name,
+          quantity: row.quantity,
+          is_entered_in_legacy: row.is_entered_in_legacy,
+        })),
+      })
 
       commitSyncedOrder(synced)
       void updateOrderInStore(synced)

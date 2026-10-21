@@ -172,6 +172,16 @@ Decisões de design (validadas):
 - [x] Validação automática: `npm run typecheck` + `npm test` (64 testes) + `npm run build` (OK).
 - [ ] **Aplicar a migration `20261003000400_management_rls.sql` no Supabase** e conferir: como `admin` vê todas as lojas e como `gerente` só vê a própria.
 
+### Fase 4 (branch `ajustes`) — Fila offline e realtime (Concluída)
+- [x] `flushQueue` distingue o tipo de falha: **rede/sessão (401)** preserva a fila e interrompe; **permanente** (pedido removido, política violada) descarta a ação e segue para as próximas (`FlushResult.discarded` + aviso na tela) — a fila não fica mais travada para sempre.
+- [x] Botão **"Descartar"** no `SyncBanner` (`discardPending`, com confirmação) para limpar pendências que não devem ser enviadas.
+- [x] `syncPending` com `catch` (sem unhandled rejection) e toast de erro.
+- [x] Gravação **atômica** do rascunho: nova RPC `persist_order_draft` (`supabase/migrations/20261003000500_persist_order_draft.sql`) grava update+delete+insert numa transação — elimina a janela "pedido sem itens"; `lib/orderDraft.ts` cai para o caminho legado quando a RPC ainda não existe no banco.
+- [x] `useRealtimeOrder` passa a depender de `currentOrder?.id` (o canal não é mais recriado a cada contagem).
+- [x] `isOffline()` detecta offline de forma explícita (`navigator.onLine === false`) — antes, `undefined` (fora do navegador) era tratado como offline.
+- [x] Testes: fila (descarte por erro permanente, preservação em erro de rede, `discardPending`) e persistência (RPC + fallback) — `npm test` (67 testes, OK).
+- [ ] **Aplicar a migration `20261003000500_persist_order_draft.sql` no Supabase** (até lá, o app usa o caminho legado automaticamente).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.

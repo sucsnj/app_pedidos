@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { withDB } from './localCache'
+import { persistOrderDraft } from './orderDraft'
 import { newId } from './utils'
 import type { Order } from '../types/database'
 
@@ -36,7 +37,9 @@ interface QueuedAction {
 const STORE_NAME = 'queue'
 
 export function isOffline(): boolean {
-  return typeof navigator !== 'undefined' && !navigator.onLine
+  // `=== false` (e não `!navigator.onLine`): fora do navegador o `onLine` é
+  // `undefined` e não significa "offline".
+  return typeof navigator !== 'undefined' && navigator.onLine === false
 }
 
 const NETWORK_FAILURE_PATTERN =
@@ -189,29 +192,21 @@ export function pendingCount(): Promise<number> {
 async function processAction(action: OfflineAction): Promise<void> {
   if (action.type === 'persist-draft') {
     const { orderId, requesterName, notes, totalItems, items } = action
-    const { error: orderError } = await supabase
-      .from('orders')
-      .update({
-        requester_name: requesterName,
-        notes: notes || null,
-        total_items: totalItems,
-      })
-      .eq('id', orderId)
-    if (orderError) throw orderError
-
-    const { error: deleteError } = await supabase
-      .from('order_items')
-      .delete()
-      .eq('order_id', orderId)
-    if (deleteError) throw deleteError
-
-    if (items.length > 0) {
-      const rows = items.map((row) => ({ ...row, order_id: orderId }))
-      const { error: insertError } = await supabase
-        .from('order_items')
-        .insert(rows)
-      if (insertError) throw insertError
-    }
+    await persistOrderDraft({
+      orderId,
+      requesterName,
+      notes,
+      totalItems,
+      rows: items.map((item) => ({
+        product_id: item.product_id,
+        product_variation_id: item.product_variation_id,
+        product_code: item.product_code,
+        product_name: item.product_name,
+        variation_name: item.variation_name,
+        quantity: item.quantity,
+        is_entered_in_legacy: item.is_entered_in_legacy,
+      })),
+    })
     return
   }
 
@@ -238,12 +233,22 @@ async function processAction(action: OfflineAction): Promise<void> {
 export interface FlushResult {
   flushed: number
   remaining: number
+  /** Ações removidas por erro permanente (ex.: pedido já excluído). */
+  discarded: number
+}
+
+/** Erro de sessão (401/JWT) — a ação é válida, só não dá para aplicar agora. */
+function isAuthError(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null)?.status
+  const code = (err as { code?: unknown } | null)?.code
+  return status === 401 || code === 'PGRST301'
 }
 
 export async function flushQueue(force = false): Promise<FlushResult> {
-  if (!force && isOffline()) return { flushed: 0, remaining: 0 }
+  if (!force && isOffline()) return { flushed: 0, remaining: 0, discarded: 0 }
   const entries = await listPending()
   let flushed = 0
+  let discarded = 0
   for (const entry of entries) {
     try {
       // A entrada pode ter sido removida enquanto o flush corria (ex.: rascunho
@@ -253,11 +258,27 @@ export async function flushQueue(force = false): Promise<FlushResult> {
       await processAction(entry.action)
       await withDB((db) => remove(db, entry.id))
       flushed += 1
-    } catch {
-      break
+    } catch (err) {
+      if (isOfflineError(err) || isAuthError(err)) break
+      // Erro permanente (pedido removido, política violada…): a ação não pode
+      // ser aplicada nunca — descarta e segue para as próximas.
+      await withDB((db) => remove(db, entry.id)).catch(() => undefined)
+      discarded += 1
     }
   }
   const remaining = await pendingCount()
   emitPending()
-  return { flushed, remaining }
+  return { flushed, remaining, discarded }
+}
+
+/** Limpa a fila (descarta tudo) — usado pelo botão "Descartar pendências". */
+export async function discardPending(): Promise<number> {
+  const entries = await listPending()
+  await withDB(async (db) => {
+    for (const entry of entries) {
+      await remove(db, entry.id)
+    }
+  })
+  emitPending()
+  return entries.length
 }

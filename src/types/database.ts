@@ -312,6 +312,17 @@ export interface Database {
         Relationships: []
       }
     }
-    Functions: {}
+    Functions: {
+      persist_order_draft: {
+        Args: {
+          p_order_id: string
+          p_requester_name: string
+          p_notes: string | null
+          p_total_items: number
+          p_items: Json
+        }
+        Returns: undefined
+      }
+    }
   }
 }

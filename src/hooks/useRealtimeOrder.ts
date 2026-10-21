@@ -51,9 +51,10 @@ export function useRealtimeOrder({
     [fetchOrderItems, shouldSkipSync],
   )
 
+  const orderId = currentOrder?.id ?? null
+
   useEffect(() => {
-    if (!currentOrder) return
-    const orderId = currentOrder.id
+    if (!orderId) return
     const channel = supabase
       .channel('order:' + orderId)
       .on(
@@ -81,5 +82,5 @@ export function useRealtimeOrder({
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [currentOrder, reloadFromServer])
+  }, [orderId, reloadFromServer])
 }

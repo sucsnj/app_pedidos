@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { withDB } from './localCache'
 import {
+  discardPending,
   enqueuePersistDraft,
   flushQueue,
   listPending,
@@ -11,6 +12,7 @@ import {
 const updateOrder = vi.fn(async () => ({ error: null }))
 const deleteItems = vi.fn(async () => ({ error: null }))
 const insertItems = vi.fn(async () => ({ error: null }))
+const persistOrderDraftRpc = vi.fn(async (_args?: unknown) => ({ error: null }))
 
 vi.mock('./supabase', () => ({
   supabase: {
@@ -25,6 +27,10 @@ vi.mock('./supabase', () => ({
         }
       }
       throw new Error(`tabela inesperada: ${table}`)
+    },
+    rpc: (name: string, args: unknown) => {
+      if (name !== 'persist_order_draft') throw new Error(`rpc inesperada: ${name}`)
+      return persistOrderDraftRpc(args)
     },
   },
 }))
@@ -51,6 +57,7 @@ beforeEach(async () => {
   updateOrder.mockClear()
   deleteItems.mockClear()
   insertItems.mockClear()
+  persistOrderDraftRpc.mockClear()
   await withDB(async (db) => {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('queue', 'readwrite')
@@ -90,19 +97,44 @@ describe('offlineQueue — rascunho pendente x persist online', () => {
 
     expect(result.flushed).toBe(0)
     expect(result.remaining).toBe(0)
+    expect(persistOrderDraftRpc).not.toHaveBeenCalled()
     expect(updateOrder).not.toHaveBeenCalled()
     expect(deleteItems).not.toHaveBeenCalled()
     expect(insertItems).not.toHaveBeenCalled()
   })
 
-  it('flushQueue aplica o rascunho ainda enfileirado', async () => {
+  it('descarta a ação com erro permanente e segue para as próximas', async () => {
     await enqueuePersistDraft(draft)
+    await enqueuePersistDraft({ ...draft, orderId: 'order-2' })
+    persistOrderDraftRpc.mockRejectedValueOnce(
+      Object.assign(new Error('violates row-level security policy'), { code: '42501' }),
+    )
 
     const result = await flushQueue(true)
 
+    expect(result.discarded).toBe(1)
     expect(result.flushed).toBe(1)
     expect(result.remaining).toBe(0)
-    expect(updateOrder).toHaveBeenCalled()
-    expect(insertItems).toHaveBeenCalled()
+  })
+
+  it('preserva a fila quando a falha é de rede', async () => {
+    await enqueuePersistDraft(draft)
+    persistOrderDraftRpc.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    const result = await flushQueue(true)
+
+    expect(result.flushed).toBe(0)
+    expect(result.discarded).toBe(0)
+    expect(result.remaining).toBe(1)
+  })
+
+  it('discardPending limpa a fila', async () => {
+    await enqueuePersistDraft(draft)
+    await enqueuePersistDraft({ ...draft, orderId: 'order-2' })
+
+    const discarded = await discardPending()
+
+    expect(discarded).toBe(2)
+    expect((await listPending()).length).toBe(0)
   })
 })
