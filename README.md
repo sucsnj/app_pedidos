@@ -29,7 +29,9 @@ Obrigatório: `.env.local` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` �
 - `src/components/` — shell/rotas (`AppShell`, `TopNav`, `SectionPlaceholder`, `TabsBar`, `StoreSelect`, `CollapsibleCard`), header, nav, telas de loading/erro, toast, status bar e boards (`CountingBoard`, `DataEntryBoard`, `CatalogBoard`, `ComparisonBoard`, `SalesMetricsPanel`, `SalesSellersCard`, `SalesResultCard`, `SalesHistoryPanel`).
 - `src/lib/` — lógica pura de pedidos (`orders.ts`), métricas de vendas (`salesMetrics.ts`), persistência de vendas (`salesStore.ts`), gravação do rascunho (`orderDraft.ts`), fila offline (`offlineQueue.ts`), espelho local (`localCache.ts`), resumo em texto (`orderText.ts`), seções/endpoints (`sections.ts`), utilitários e cliente Supabase.
 - `src/types/` — domínio da UI (`app.ts`), DTOs de vendas (`sales.ts`) e tipos do banco (`database.ts`).
+- `tests/` — testes unitários (Vitest), espelhando a estrutura de `src/`: `tests/lib`, `tests/hooks`, `tests/components`.
 - `supabase/migrations/` — DDL do módulo de Gestão (`sellers`, `sales_calculations`, `sales_records`), RLS por loja, índice único por loja e RPC `persist_order_draft`.
+- `.github/workflows/` — CI (`typecheck` → `test` → `build`).
 
 ## PWA e uso offline
 

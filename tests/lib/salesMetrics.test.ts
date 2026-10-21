@@ -7,7 +7,7 @@ import {
   processSalesPayload,
   round2,
   SalesPayloadError,
-} from './salesMetrics'
+} from '../../src/lib/salesMetrics'
 
 describe('salesMetrics — normalização do payload', () => {
   it('rejeita payload que não é objeto', () => {

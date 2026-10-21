@@ -2,7 +2,7 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useSalesManagement } from './useSalesManagement'
+import { useSalesManagement } from '../../src/hooks/useSalesManagement'
 
 const sellersByStore: Record<string, { id: string; name: string; store_id: string }[]> = {
   'store-1': [{ id: 'seller-1', name: 'Ana Souza', store_id: 'store-1' }],
@@ -15,7 +15,7 @@ const fetchSellers = vi.fn(async (storeId?: string | null) =>
 const fetchHistory = vi.fn(async () => [])
 const deactivateSeller = vi.fn(async () => undefined)
 
-vi.mock('../lib/salesStore', () => ({
+vi.mock('../../src/lib/salesStore', () => ({
   fetchSellers: (...args: unknown[]) => fetchSellers(...(args as [])),
   fetchHistory: (...args: unknown[]) => fetchHistory(...(args as [])),
   fetchSalesRecords: vi.fn(async () => []),

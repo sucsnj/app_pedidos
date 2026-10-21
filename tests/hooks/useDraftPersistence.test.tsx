@@ -2,9 +2,9 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Order } from '../types/database'
-import type { CountedItem } from '../types/app'
-import { useDraftPersistence } from './useDraftPersistence'
+import type { Order } from '../../src/types/database'
+import type { CountedItem } from '../../src/types/app'
+import { useDraftPersistence } from '../../src/hooks/useDraftPersistence'
 
 const updateOrder = vi.fn(async () => ({ error: null }))
 const deleteItems = vi.fn(async () => ({ error: null }))
@@ -14,7 +14,7 @@ const enqueuePersistDraft = vi.fn(async () => undefined)
 const removeDraftForOrder = vi.fn(async () => undefined)
 const state = vi.hoisted(() => ({ offline: false }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: (table: string) => {
       if (table === 'orders') {
@@ -35,14 +35,14 @@ vi.mock('../lib/supabase', () => ({
   },
 }))
 
-vi.mock('../lib/offlineQueue', () => ({
+vi.mock('../../src/lib/offlineQueue', () => ({
   enqueuePersistDraft: (...args: unknown[]) => enqueuePersistDraft(...(args as [])),
   removeDraftForOrder: (...args: unknown[]) => removeDraftForOrder(...(args as [])),
   isOffline: () => state.offline,
   isOfflineError: () => false,
 }))
 
-vi.mock('../lib/localCache', () => ({
+vi.mock('../../src/lib/localCache', () => ({
   updateOrderInStore: vi.fn(async () => undefined),
   cacheCountedItems: vi.fn(async () => undefined),
 }))

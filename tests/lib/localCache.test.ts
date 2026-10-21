@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { withDB } from './localCache'
-import { cacheOrders, readOrders, updateOrderInStore } from './localCache'
-import type { Order } from '../types/database'
+import { withDB } from '../../src/lib/localCache'
+import { cacheOrders, readOrders, updateOrderInStore } from '../../src/lib/localCache'
+import type { Order } from '../../src/types/database'
 
 function makeOrder(id: string, name: string, updatedAt: string): Order {
   return {

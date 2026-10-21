@@ -2,8 +2,8 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Catalog } from '../types/app'
-import { useCatalog } from './useCatalog'
+import type { Catalog } from '../../src/types/app'
+import { useCatalog } from '../../src/hooks/useCatalog'
 
 const cachedCatalog: Catalog = {
   stores: [
@@ -23,7 +23,7 @@ const cachedCatalog: Catalog = {
 const readCatalog = vi.fn(async (): Promise<Catalog | null> => cachedCatalog)
 const cacheCatalog = vi.fn(async () => undefined)
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: () => {
       // query encadeável (`.select().order().order()`) que sempre falha como rede
@@ -43,7 +43,7 @@ vi.mock('../lib/supabase', () => ({
   },
 }))
 
-vi.mock('../lib/localCache', () => ({
+vi.mock('../../src/lib/localCache', () => ({
   readCatalog: (...args: unknown[]) => readCatalog(...(args as [])),
   cacheCatalog: (...args: unknown[]) => cacheCatalog(...(args as [])),
 }))

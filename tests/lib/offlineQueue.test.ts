@@ -1,20 +1,20 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { withDB } from './localCache'
+import { withDB } from '../../src/lib/localCache'
 import {
   discardPending,
   enqueuePersistDraft,
   flushQueue,
   listPending,
   removeDraftForOrder,
-} from './offlineQueue'
+} from '../../src/lib/offlineQueue'
 
 const updateOrder = vi.fn(async () => ({ error: null }))
 const deleteItems = vi.fn(async () => ({ error: null }))
 const insertItems = vi.fn(async () => ({ error: null }))
 const persistOrderDraftRpc = vi.fn(async (_args?: unknown) => ({ error: null }))
 
-vi.mock('./supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),

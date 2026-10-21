@@ -9,7 +9,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 ## Stack e scripts
 
 - React 19, TypeScript 5.6, Vite 6, Tailwind 4 (`@tailwindcss/vite`), `@supabase/supabase-js` (com generic tipado), `@supabase/ssr`, `lucide-react`, `react-router-dom` v7 (rotas da SPA), Vitest 5 (testes unitários). PWA via `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` (ícones a partir de `pwa-assets/icon.svg`).
-- Testes: `npm test` (`vitest run`), arquivos `src/**/*.test.ts(x)`, config em `vitest.config.ts` (ambiente `node` por padrão; `jsdom` por arquivo via `@vitest-environment`; `fake-indexeddb` para a fila offline).
+- Testes: `npm test` (`vitest run`), em **`tests/`** (fora de `src/`), com subpastas espelhando a estrutura de `src/` (`tests/lib`, `tests/hooks`, `tests/components`); config em `vitest.config.ts` (ambiente `node` por padrão; `jsdom` por arquivo via `@vitest-environment`; `fake-indexeddb` para a fila offline). Os imports apontam para `../../src/...`.
+- CI: `.github/workflows/ci.yml` — `typecheck` → `test` → `build` em push/PR.
 - Sem config de ESLint (há `// eslint-disable` apenas de legado).
 - Scripts (`npm run`):
   - `dev` — Vite dev server.
@@ -164,6 +165,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - TypeScript `strict` com `noUnusedLocals` e `noUnusedParameters` — imports/símbolos não usados quebram o build.
 - Lógica pura vai em `lib/`; tipos de domínio em `types/`; um arquivo por hook/componente.
   - **Exceção registrada**: `components/ui.tsx` concentra as primitivas compartilhadas (`inputClass`, `selectClass`, `Field`, `Spinner`, `IconButton`, `EmptyState`, `contentClass`, `barClass`).
+  - **Testes fora de `src/`**: moram em `tests/`, espelhando a estrutura de `src/` (`tests/lib/…`, `tests/hooks/…`, `tests/components/…`).
 - **Sub-hooks recebem estado/setters por parâmetro**; o orquestrador segue dono dos estados. Nunca chamar hooks condicionalmente.
 - **Identidade de callbacks importa**: callbacks que só leem refs devem ser estáveis (`useCallback([])`, ex.: `shouldSkipSync`) — se variarem, o channel do realtime pode re-subscribe (efeito dependent).
 - Interfaces de `types/database.ts` precisam de `& Record<string, unknown>` para satisfazer o generic do supabase-js (padrão `Recordish`) — ao criar novos tipos `Insert`, siga esse padrão.

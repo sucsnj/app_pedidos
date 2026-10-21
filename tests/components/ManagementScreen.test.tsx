@@ -2,15 +2,15 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ManagementScreen } from './ManagementScreen'
-import { createSeller, deactivateSeller, deleteCalculation, fetchHistory, fetchSalesRecords, fetchSellers, recordSales } from '../lib/salesStore'
+import { ManagementScreen } from '../../src/components/ManagementScreen'
+import { createSeller, deactivateSeller, deleteCalculation, fetchHistory, fetchSalesRecords, fetchSellers, recordSales } from '../../src/lib/salesStore'
 
 declare global {
   // eslint-disable-next-line no-var
   var IS_REACT_ACT_ENVIRONMENT: boolean
 }
 
-vi.mock('../lib/salesStore', () => ({
+vi.mock('../../src/lib/salesStore', () => ({
   fetchSellers: vi.fn(async () => [
     { id: 'seller-1', name: 'Ana Souza', store_id: 'store-1', is_active: true, created_at: '2026-01-01' },
     { id: 'seller-2', name: 'Bruno Lima', store_id: 'store-1', is_active: true, created_at: '2026-01-01' },
@@ -32,7 +32,7 @@ vi.mock('../lib/salesStore', () => ({
   recordSales: vi.fn(),
 }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: () => ({
       select: () => ({

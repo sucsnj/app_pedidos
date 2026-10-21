@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseNumberOrNull } from './utils'
+import { parseNumberOrNull } from '../../src/lib/utils'
 
 describe('utils — parseNumberOrNull', () => {
   it('aceita vírgula e ponto decimal', () => {

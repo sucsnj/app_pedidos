@@ -2,8 +2,8 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Catalog } from '../types/app'
-import { Dashboard } from './Dashboard'
+import type { Catalog } from '../../src/types/app'
+import { Dashboard } from '../../src/components/Dashboard'
 
 const catalog: Catalog = {
   stores: [
@@ -26,11 +26,11 @@ const sessionState = vi.hoisted(() => ({
   catalogError: null as string | null,
 }))
 
-vi.mock('../hooks/useOnline', () => ({
+vi.mock('../../src/hooks/useOnline', () => ({
   useOnline: () => !sessionState.offline,
 }))
 
-vi.mock('../hooks/useCatalog', () => ({
+vi.mock('../../src/hooks/useCatalog', () => ({
   useCatalog: () => ({
     catalog,
     loading: false,
@@ -40,19 +40,19 @@ vi.mock('../hooks/useCatalog', () => ({
   }),
 }))
 
-vi.mock('../hooks/useFlash', () => ({
+vi.mock('../../src/hooks/useFlash', () => ({
   useFlash: () => ({ flash: null, notify: vi.fn() }),
 }))
 
-vi.mock('../hooks/usePendingSync', () => ({
+vi.mock('../../src/hooks/usePendingSync', () => ({
   usePendingSync: () => ({ pending: 0, refresh: vi.fn() }),
 }))
 
-vi.mock('../hooks/useStoreReports', () => ({
+vi.mock('../../src/hooks/useStoreReports', () => ({
   useStoreReports: () => ({ lastOrder: null, report: null, bumpReport: vi.fn() }),
 }))
 
-vi.mock('../hooks/useStoreSession', () => ({
+vi.mock('../../src/hooks/useStoreSession', () => ({
   useStoreSession: () => ({
     activeStoreId: 'store-1',
     orders: [],
@@ -82,7 +82,7 @@ vi.mock('../hooks/useStoreSession', () => ({
   }),
 }))
 
-vi.mock('../lib/offlineQueue', () => ({
+vi.mock('../../src/lib/offlineQueue', () => ({
   flushQueue: vi.fn(async () => ({ flushed: 0, remaining: 0 })),
 }))
 

@@ -2,11 +2,11 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStoreSelection } from './useStoreSelection'
+import { useStoreSelection } from '../../src/hooks/useStoreSelection'
 
 const state = vi.hoisted(() => ({ stores: [] as unknown[] }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: () => {
       const query: Record<string, unknown> = {}
@@ -24,7 +24,7 @@ vi.mock('../lib/supabase', () => ({
 const readStorePreference = vi.fn(() => 'store-persisted')
 const writeStorePreference = vi.fn()
 
-vi.mock('../lib/storePreference', () => ({
+vi.mock('../../src/lib/storePreference', () => ({
   readStorePreference: (...args: unknown[]) => readStorePreference(...(args as [])),
   writeStorePreference: (...args: unknown[]) => writeStorePreference(...(args as [])),
 }))

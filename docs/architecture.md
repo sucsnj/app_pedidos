@@ -158,7 +158,7 @@ Módulo **persistido no Supabase**: vendedores e histórico ficam no banco; o c�
 - **Cards expansíveis**: todos os cards do `/management` usam o componente genérico `CollapsibleCard` (`components/CollapsibleCard.tsx`) — cabeçalho clicável com chevron e estado (aberto/fechado) **persistido no navegador** (`localStorage`, chave `pedidos:card:<storageKey>`; chaves: `management-calculo`, `management-resultado`, `management-vendedores`, `management-historico`). O mesmo componente pode ser reutilizado nas demais telas.
 - **Rota**: `/management` → `ManagementScreen` (compõe os três painéis + `FlashToast`). Seções ainda sem implementação continuam caindo no `SectionPlaceholder` ("em construção").
 - **Limite consciente**: escritas em `/management` **exigem rede** (fora da fila offline) — leitura/escrita direta no Supabase.
-- **Testes** (`lib/salesMetrics.test.ts`, Vitest): base customizada, fallback sem base, lista vazia, divisão por zero, empate no `topSale`, arredondamento, validação 400 e conversão do formulário (meta + vendedores → payload).
+- **Testes** (`tests/`, espelhando `src/`, Vitest): `tests/lib/` (regras de pedidos, texto do pedido, métricas de vendas, fila offline, espelho local, persistência de vendas), `tests/hooks/` (persistência/autosave, sessão de pedidos, catálogo, loja, módulo de Gestão) e `tests/components/` (Dashboard offline, tela de Gestão, card colapsável).
 
 ## Telas — comportamentos notáveis
 

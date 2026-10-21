@@ -207,6 +207,13 @@ Decisões de design (validadas):
 - [x] Solução: badge **desativada no painel do projeto** (Project configuration > General > Powered by Netlify badge) — vale na próxima requisição, sem redeploy.
 - [x] `vite.config.ts` mantém `navigateFallback: '/index.html'` (offline-first): qualquer navegação — inclusive link profundo nunca visitado — abre o shell do precache, instantâneo e 100% offline, com HTML e assets da mesma versão.
 
+### Fase 7 (branch `ajustes`) — Testes fora de `src/` + CI (Concluída)
+- [x] Testes movidos para **`tests/`**, com subpastas espelhando `src/`: `tests/lib/`, `tests/hooks/`, `tests/components/` (imports `../../src/...`).
+- [x] `vitest.config.ts` aponta para `tests/**/*.test.ts(x)`; `tsconfig.app.json` inclui `tests` (os testes entram no `npm run typecheck`).
+- [x] Novos testes do `/orders` e do módulo de Gestão: `tests/lib/orders.test.ts` (mapeamento, contagem, merges, rótulo), `tests/lib/orderText.test.ts` (resumo para colagem), `tests/lib/salesStore.test.ts` (filtro por loja, nome duplicado, soft delete, gravação), `tests/hooks/useStoreSession.test.tsx` (loja preferida × loja do perfil, carga online, **fallback offline pelo espelho**, erro sem espelho) e `tests/components/CollapsibleCard.test.tsx` (colapso + persistência).
+- [x] CI em `.github/workflows/ci.yml`: `typecheck` → `test` → `build` em push/PR (branches `main`, `ajustes`, `endpoint`).
+- [x] Validação automática: `npm run typecheck` + `npm test` (110 testes, 15 arquivos) + `npm run build` (OK).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
