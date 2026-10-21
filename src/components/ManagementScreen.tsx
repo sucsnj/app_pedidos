@@ -11,6 +11,7 @@ import { SalesMetricsPanel } from './SalesMetricsPanel'
 import { SalesResultCard } from './SalesResultCard'
 import { SalesSellersCard } from './SalesSellersCard'
 import { SectionPlaceholder } from './SectionPlaceholder'
+import { SalesActions } from './SalesActions'
 import { StoreSelect } from './StoreSelect'
 import { TabsBar } from './TabsBar'
 import type { TabItem } from './TabsBar'
@@ -52,6 +53,15 @@ export function ManagementScreen({
             showStoreSelector={selection.isAdmin}
             onSelectStore={selection.selectStore}
           />
+          <SalesActions
+            tone="dark"
+            className="sm:ml-auto"
+            canRegister={sales.canRegister}
+            hasAnyValue={sales.hasAnyValue}
+            saving={sales.saving}
+            onRegister={() => void sales.register()}
+            onClear={sales.clearValues}
+          />
         </div>
       </header>
 
@@ -75,16 +85,12 @@ export function ManagementScreen({
                 meta={sales.meta}
                 referenceDate={sales.referenceDate}
                 error={sales.error}
-                saving={sales.saving}
-                hasValues={sales.hasValues}
                 registered={sales.registered}
                 zeroedCount={
                   sales.result?.salesReport.filter((item) => item.value === 0).length ?? 0
                 }
                 onMetaChange={sales.setMeta}
                 onReferenceDateChange={sales.setReferenceDate}
-                onRegister={sales.register}
-                onClearValues={sales.clearValues}
               />
             </div>
 
@@ -103,7 +109,19 @@ export function ManagementScreen({
             </div>
 
             <div className="min-w-0 xl:col-span-2">
-              <SalesResultCard result={sales.result} />
+              <SalesResultCard
+                result={sales.result}
+                actions={
+                  <SalesActions
+                    tone="light"
+                    canRegister={sales.canRegister}
+                    hasAnyValue={sales.hasAnyValue}
+                    saving={sales.saving}
+                    onRegister={() => void sales.register()}
+                    onClear={sales.clearValues}
+                  />
+                }
+              />
             </div>
 
             <div className="min-w-0 xl:col-span-2">

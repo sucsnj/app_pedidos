@@ -381,11 +381,19 @@ export function useSalesManagement({
     }
   }, [formError, result, sellers, values, storeId, referenceDate, notify])
 
-  // Com a regra "vazio = 0,00", basta haver um vendedor com valor válido
-  // (inclusive zero) para o lançamento poder ser registrado.
+  // "Registrar vendas" só habilita com algo **maior que zero** — se todos
+  // estiverem vazios (assumidos 0,00) não há lançamento a fazer. Com valor
+  // inválido o botão fica ativo (o clique mostra o erro 400 da validação).
   const hasValues = sellers.some(
-    (seller) => parseAmountInput(values[seller.id] ?? '') !== null,
+    (seller) => (parseAmountInput(values[seller.id] ?? '') ?? 0) > 0,
   )
+  const hasInvalidValue = sellers.some((seller) => {
+    const amount = parseAmountInput(values[seller.id] ?? '')
+    return amount === null || amount < 0
+  })
+  const canRegister = hasValues || hasInvalidValue
+  // "Novas vendas" habilita quando há algum valor digitado para limpar.
+  const hasAnyValue = Object.values(values).some((value) => value.trim() !== '')
 
   return {
     sellers,
@@ -393,6 +401,8 @@ export function useSalesManagement({
     setValue,
     clearValues,
     hasValues,
+    hasAnyValue,
+    canRegister,
     registered,
     meta,
     setMeta,

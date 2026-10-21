@@ -16,6 +16,7 @@ import type { SalesMetricsResult } from '../types/sales'
 
 interface SalesResultCardProps {
   result: SalesMetricsResult | null
+  actions?: ReactNode
 }
 
 function MetricTile({
@@ -41,7 +42,7 @@ function MetricTile({
   )
 }
 
-export function SalesResultCard({ result }: SalesResultCardProps) {
+export function SalesResultCard({ result, actions }: SalesResultCardProps) {
   const summary = result?.summary
   const salesReport = result?.salesReport ?? []
   if (!summary) return null
@@ -111,9 +112,12 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
 
       {salesReport.length > 0 ? (
         <div className="mt-4 border-t border-gray-100 pt-3">
-          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-            Detalhamento por vendedor
-          </h3>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Detalhamento por vendedor
+            </h3>
+            {actions}
+          </div>
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {salesReport.map((item) => (
               <li
@@ -144,7 +148,19 @@ export function SalesResultCard({ result }: SalesResultCardProps) {
             ))}
           </ul>
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Detalhamento por vendedor
+            </h3>
+            {actions}
+          </div>
+          <p className="text-sm text-gray-400">
+            Nenhum vendedor com valor informado. Preencha os valores no card de vendedores.
+          </p>
+        </div>
+      )}
     </CollapsibleCard>
   )
 }

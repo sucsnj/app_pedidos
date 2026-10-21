@@ -1,4 +1,4 @@
-import { AlertTriangle, Calculator, Eraser, Save } from 'lucide-react'
+import { AlertTriangle, Calculator } from 'lucide-react'
 import { inputClass } from './ui'
 import { CollapsibleCard } from './CollapsibleCard'
 import type { ManagementError } from '../hooks/useSalesManagement'
@@ -7,28 +7,20 @@ interface SalesMetricsPanelProps {
   meta: string
   referenceDate: string
   error: ManagementError | null
-  saving: boolean
-  hasValues: boolean
   registered: boolean
   zeroedCount: number
   onMetaChange: (value: string) => void
   onReferenceDateChange: (value: string) => void
-  onRegister: () => Promise<boolean>
-  onClearValues: () => void
 }
 
 export function SalesMetricsPanel({
   meta,
   referenceDate,
   error,
-  saving,
-  hasValues,
   registered,
   zeroedCount,
   onMetaChange,
   onReferenceDateChange,
-  onRegister,
-  onClearValues,
 }: SalesMetricsPanelProps) {
   return (
     <CollapsibleCard
@@ -87,25 +79,6 @@ export function SalesMetricsPanel({
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        {registered ? (
-          <button
-            type="button"
-            onClick={onClearValues}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-95 disabled:opacity-40"
-          >
-            <Eraser className="h-4 w-4" /> Novas vendas
-          </button>
-        ) : hasValues ? (
-          <button
-            type="button"
-            onClick={() => void onRegister()}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-wine-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-wine-600 active:scale-95 disabled:opacity-40"
-          >
-            <Save className="h-4 w-4" /> Registrar vendas
-          </button>
-        ) : null}
         <span className="text-xs text-gray-400">
           {registered
             ? 'Vendas enviadas ao histórico — use “Novas vendas” para limpar os valores e começar outro lançamento.'

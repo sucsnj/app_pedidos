@@ -243,8 +243,9 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     })
 
     expect(inputByLabel('Valor de Ana Souza').value).toBe('3289,49')
-    expect(screenText()).toContain('Novas vendas')
-    expect(screenText()).not.toContain('Registrar vendas')
+    // os dois botões coexistem, lado a lado, nos dois lugares da tela
+    expect(screenText().match(/Registrar vendas/g)?.length).toBeGreaterThanOrEqual(2)
+    expect(screenText().match(/Novas vendas/g)?.length).toBeGreaterThanOrEqual(2)
 
     const newSalesButton = Array.from(container.querySelectorAll('button')).find((button) =>
       button.textContent?.includes('Novas vendas'),
@@ -257,11 +258,10 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
 
     expect(inputByLabel('Valor de Ana Souza').value).toBe('')
     expect(inputByLabel('Valor de Bruno Lima').value).toBe('')
-    expect(screenText()).not.toContain('Novas vendas')
     confirmSpy.mockRestore()
   })
 
-  it('volta para "Registrar vendas" ao digitar após o registro', async () => {
+  it('mantém "Registrar vendas" habilitado depois do registro', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     await act(async () => {
@@ -279,13 +279,34 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     await act(async () => {
       registerButton.click()
     })
-    expect(screenText()).toContain('Novas vendas')
 
-    await type(inputByLabel('Valor de Ana Souza'), '3500')
-
-    expect(screenText()).toContain('Registrar vendas')
-    expect(screenText()).not.toContain('Novas vendas')
+    const buttons = Array.from(container.querySelectorAll('button')).filter((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    expect(buttons.length).toBeGreaterThanOrEqual(2)
+    expect(buttons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
     confirmSpy.mockRestore()
+  })
+
+  it('desabilita "Registrar vendas" quando todos os vendedores estão vazios ou em 0', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '0,00')
+
+    const disabled = Array.from(container.querySelectorAll('button')).filter((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    expect(disabled.length).toBeGreaterThanOrEqual(2)
+    expect(disabled.every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+
+    // com um valor acima de zero o botão volta a ficar habilitado
+    await type(inputByLabel('Valor de Bruno Lima'), '10')
+    const enabled = Array.from(container.querySelectorAll('button')).filter((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    expect(enabled.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
   })
 
   it('carrega o lançamento do histórico no formulário ao clicar nele', async () => {
