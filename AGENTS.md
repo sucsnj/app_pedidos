@@ -52,7 +52,8 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/components/SalesResultCard.tsx` | Card 2 da tela: indicadores do cálculo (total, base, meta, ticket médio, registros, atingimento, maior venda) + detalhamento por vendedor (percentual em **chip destacado** ao lado da barra); sem cálculo (todos em 0/vazios) mostra o aviso e mantém as ações |
 | `src/hooks/useStoreSelection.ts` | Seleção de loja para telas fora da sessão de pedidos (busca `stores`; **admin** usa a preferência do navegador, **gerente** fica preso à loja do perfil); `storeId`/`selectStore`/`resolved` (a carga só começa após a resolução — evita ler todas as lojas) |
 | `src/lib/storePreference.ts` | Preferência de loja por usuário (`localStorage`, `pedidos:selectedStore:<userId>`) — compartilhada por `/orders` e `/management` |
-| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (barra vinho com o **mesmo seletor de loja** do `/orders` + abas próprias `TabsBar`: **Vendas** e **Comparação** — esta última "em construção"); `main` com `pb-12 lg:pb-16` e rodapé de contexto (loja + nº de lançamentos); `reveal` (contadores) leva a tela ao Histórico após registrar e aos Vendedores após "Novas vendas" |
+| `src/components/ManagementStatusBar.tsx` | Rodapé fixo do `/management` (como o `MobileStatusBar` do `/orders`): loja, total vendido e nº de vendedores — aparece em **todas** as abas, só no mobile |
+| `src/components/ManagementScreen.tsx` | Tela da rota `/management` (barra vinho com o **mesmo seletor de loja** do `/orders` + abas próprias `TabsBar`: **Vendas** e **Comparação** — esta última "em construção"); `main` com `pb-24 sm:pb-6` (espaço do rodapé fixo) e `reveal` (contadores) leva a tela ao Histórico após registrar e aos Vendedores após "Novas vendas" |
 | `src/hooks/useAuth.ts` | Sessão Supabase (`getSession` + `onAuthStateChange`), `signIn`/`signOut` |
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist, `flushDraft` (grava sem toast, usado no unmount da tela) |
@@ -61,7 +62,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/hooks/useFlash.ts`, `useStoreReports.ts` | Suporte: notificações, relatório |
 | `src/components/AppScreen.tsx` | Telas de loading (`LoadingScreen`) e erro (`ErrorScreen`) |
 | `src/components/FlashToast.tsx` | Toast das notificações (`useFlash`) |
-| `src/components/MobileStatusBar.tsx` | Barra fixa de status (loja, total contado, pedido corrente) — só no mobile |
+| `src/components/MobileStatusBar.tsx` | Barra fixa de status do `/orders` (loja, total contado, pedido corrente) — só no mobile, em todas as abas |
 | `src/components/DataEntryBoard.tsx` | Tela de Digitação: lista por PLU/SKU, progresso e marcação de digitado |
 | `src/components/ComparisonBoard.tsx` | Tela de Comparativo: KPIs do relatório e tabela atual × anterior |
 | `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos, `orderLabel` |

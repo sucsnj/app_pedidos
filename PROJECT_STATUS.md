@@ -215,7 +215,8 @@ Decisões de design (validadas):
 - [x] O cálculo só existe com **pelo menos um vendedor acima de zero** (campo vazio = 0,00): enquanto não houver, o card de Resultado mostra "Informe o valor de ao menos um vendedor para ver o cálculo." (mantendo as ações) e "Registrar vendas" fica desabilitado.
 - [x] Paleta do `/management` reaproveitada com distribuição por significado: acento por card (**wine** = Cálculo/valores, **gold** = Resultado/meta, **sky** = Vendedores/cadastro, **emerald** = Histórico/registros) e indicadores coloridos por papel (total/base/maior venda em wine, meta em gold, ticket médio em sky, registros em gray, **atingimento dinâmico** emerald/amber/gray).
 - [x] Navegação por scroll suave: "Registrar vendas" revela o card de **Histórico** (abre se estiver colapsado + `scrollIntoView` suave) e "Novas vendas" revela o card de **Vendedores** (`revealSignal` no `CollapsibleCard` + `scroll-mt-16` para não ficar sob a barra de abas fixa).
-- [x] Validação automática: `npm run typecheck` + `npm test` (112 testes) + `npm run build` (OK).
+- [x] Rodapé fixo no `/management` (como o `MobileStatusBar` do `/orders`): loja, total vendido e nº de vendedores em **todas** as abas (só no mobile); o rodapé inline e o `pb-12 lg:pb-16` da aba "Vendas" foram removidos (o conteúdo agora usa `pb-24 sm:pb-6`, reservado ao rodapé fixo).
+- [x] Validação automática: `npm run typecheck` + `npm test` (113 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 

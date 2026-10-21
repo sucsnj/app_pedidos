@@ -333,6 +333,30 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     }
   })
 
+  it('mantém o rodapé fixo com loja e total em todas as abas', async () => {
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '3289,49')
+
+    // rodapé fixo: loja, total vendido e qtde de vendedores
+    expect(screenText()).toContain('vendedor(es)')
+    expect(screenText()).toContain('R$ 3.289,49')
+
+    const comparacao = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Comparação'),
+    )
+    if (!comparacao) throw new Error('aba Comparação não encontrada')
+
+    await act(async () => {
+      comparacao.click()
+    })
+
+    expect(screenText()).toContain('vendedor(es)')
+    expect(screenText()).toContain('R$ 3.289,49')
+  })
+
   it('desabilita "Registrar vendas" quando todos os vendedores estão vazios ou em 0', async () => {
     await act(async () => {
       root.render(<ManagementScreen />)

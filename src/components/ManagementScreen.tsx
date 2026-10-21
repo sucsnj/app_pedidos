@@ -10,6 +10,7 @@ import { SalesHistoryPanel } from './SalesHistoryPanel'
 import { SalesMetricsPanel } from './SalesMetricsPanel'
 import { SalesResultCard } from './SalesResultCard'
 import { SalesSellersCard } from './SalesSellersCard'
+import { ManagementStatusBar } from './ManagementStatusBar'
 import { SectionPlaceholder } from './SectionPlaceholder'
 import { SalesActions } from './SalesActions'
 import { StoreSelect } from './StoreSelect'
@@ -82,7 +83,7 @@ export function ManagementScreen({
 
       <TabsBar tabs={tabs} active={tab} onChange={setTab} />
 
-      <main className={`${contentClass} pb-12 lg:pb-16`}>
+      <main className={`${contentClass} pb-24 sm:pb-6`}>
         {tab === 'comparacao' ? (
           <div className="pt-4">
             <SectionPlaceholder
@@ -150,12 +151,13 @@ export function ManagementScreen({
             </div>
           </div>
         )}
-
-        <footer className="mt-8 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-          {selection.activeStore?.name ?? 'Sem loja'} · {sales.history.length} lançamento(s) no
-          histórico
-        </footer>
       </main>
+
+      <ManagementStatusBar
+        storeName={selection.activeStore?.name ?? null}
+        totalSold={sales.result?.summary.totalSold ?? null}
+        sellerCount={sales.sellers.length}
+      />
 
       <FlashToast flash={flash} />
     </>
