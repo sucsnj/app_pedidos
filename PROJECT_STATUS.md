@@ -202,9 +202,9 @@ Decisões de design (validadas):
 - [x] Validação automática: `npm run typecheck` + `npm test` (71 testes) + `npm run build` (OK).
 
 ### Ajuste — Badge da Netlify / "hide this badge" (Concluída)
-- [x] `vite.config.ts`: `navigateFallback: undefined` (desliga o `NavigationRoute` padrão do `vite-plugin-pwa`, que era registrado **antes** das regras de runtimeCaching → as navegações iam para o precache e nunca chegavam ao edge da Netlify, onde o opt-out "hide this badge" é resolvido).
-- [x] As navegações agora passam pela regra **NetworkFirst** (`navigation-cache`): o edge é consultado (badge funciona normalmente) e, offline, o app abre pelo HTML da última visita online.
-- [x] Verificado no `dist/sw.js`: `NavigationRoute` = 0 ocorrências, `navigation-cache` (NetworkFirst) = 1, `index.html` mantido no precache.
+- [x] Diagnóstico: a badge "Powered by Netlify" é injetada no **edge** da Netlify e o opt-out "hide this badge" (guardado no `localStorage` do domínio) **não é oferecido** quando um service worker controla a página — o script trata a página como *web app*. Nenhuma mudança de código restaura a opção.
+- [x] Solução: badge **desativada no painel do projeto** (Project configuration > General > Powered by Netlify badge) — vale na próxima requisição, sem redeploy.
+- [x] `vite.config.ts` mantém `navigateFallback: '/index.html'` (offline-first): qualquer navegação — inclusive link profundo nunca visitado — abre o shell do precache, instantâneo e 100% offline, com HTML e assets da mesma versão.
 
 ## Checklist manual (PWA)
 

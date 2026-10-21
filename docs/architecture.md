@@ -99,7 +99,7 @@ Dono **de todos os estados** da sessão:
 
 ## PWA e offline
 
-- **Service Worker** (Workbox `generateSW`, `vite-plugin-pwa`): `registerType: 'prompt'`, precache JS/CSS/icons, `cleanupOutdatedCaches` e **sem `navigateFallback`** — o `NavigationRoute` padrão do plugin é registrado antes das regras de runtimeCaching e, com ele, as navegações eram servidas do precache (nunca chegavam ao edge da Netlify, quebrando o opt-out "hide this badge" da badge). As navegações passam pela regra **NetworkFirst** (`navigation-cache`); offline, o app abre pelo HTML da última visita online.
+- **Service Worker** (Workbox `generateSW`, `vite-plugin-pwa`): `registerType: 'prompt'`, precache JS/CSS/icons, `cleanupOutdatedCaches` e `navigateFallback: '/index.html'` — o `NavigationRoute` do precache serve o shell em qualquer navegação (inclusive link profundo nunca visitado), então o app sobe instantâneo e funciona 100% offline; HTML e assets vêm sempre do **mesmo** precache (versão coerente). A badge "Powered by Netlify" (injetada no edge) é desativada no painel do projeto — com um service worker controlando a página, o opt-out "hide this badge" não é oferecido (o script trata a página como web app).
 - **`runtimeCaching`**:
   - navegação → **NetworkFirst** (`navigation-cache`);
   - GETs cross-origin do Supabase **só de catálogo** (`stores|categories|products|product_variations`) → **NetworkFirst** + TTL 7d (`catalog-cache`);

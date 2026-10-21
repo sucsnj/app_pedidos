@@ -43,13 +43,11 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-        // `navigateFallback: undefined` desliga o `NavigationRoute` padrão do
-        // plugin (que é registrado antes das regras de runtimeCaching e, com
-        // ele, as navegações nunca chegavam ao edge — a badge da Netlify e o
-        // opt-out "hide this badge" são resolvidos no edge). As navegações
-        // passam pela regra NetworkFirst abaixo (rede → cache) e o app segue
-        // abrindo offline pelo `navigation-cache`.
-        navigateFallback: undefined,
+        // Fallback SPA: qualquer navegação (inclusive link profundo nunca
+        // visitado) abre o `/index.html` do precache — o app sobe instantâneo e
+        // funciona 100% offline. A badge "Powered by Netlify" é desativada no
+        // painel do projeto (Project configuration > General).
+        navigateFallback: 'index.html',
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
