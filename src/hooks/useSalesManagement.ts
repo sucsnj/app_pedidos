@@ -351,7 +351,17 @@ export function useSalesManagement({
       })
       setRegistered(true)
       setHistory(await fetchHistory(20, storeId))
-      notify('Vendas registradas — histórico atualizado.', 'success')
+      const zeroed = filled.filter((entry) => entry.amount === 0)
+      if (zeroed.length > 0) {
+        // Vendedor com 0,00 é permitido (registra "sem vendas" no período) —
+        // mas o usuário é avisado para não confundir com esquecimento.
+        notify(
+          `Vendas registradas — ${zeroed.length} vendedor(es) sem vendas no período (0,00).`,
+          'info',
+        )
+      } else {
+        notify('Vendas registradas — histórico atualizado.', 'success')
+      }
       return true
     } catch (err) {
       const message = getErrorMessage(err)

@@ -204,13 +204,17 @@ export function SalesSellersCard({
                     }`}
                   />
                   {invalid ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
+                    <p className="text-xs font-medium text-red-600">
                       {parsed === null
                         ? 'Valor inválido — use números (ex.: 3289,49).'
                         : 'O valor não pode ser negativo.'}
                     </p>
+                  ) : parsed === 0 ? (
+                    <p className="text-xs font-medium text-amber-600">
+                      R$ 0,00 — sem vendas no período (será registrado assim).
+                    </p>
                   ) : parsed !== null ? (
-                    <p className="mt-1 text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
+                    <p className="text-xs text-gray-500">Valor lido: {formatCurrency(parsed)}</p>
                   ) : null}
 
                   {seller.store_id ? null : (

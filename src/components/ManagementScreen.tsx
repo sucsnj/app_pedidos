@@ -78,6 +78,9 @@ export function ManagementScreen({
                 saving={sales.saving}
                 hasValues={sales.hasValues}
                 registered={sales.registered}
+                zeroedCount={
+                  sales.result?.salesReport.filter((item) => item.value === 0).length ?? 0
+                }
                 onMetaChange={sales.setMeta}
                 onReferenceDateChange={sales.setReferenceDate}
                 onRegister={sales.register}

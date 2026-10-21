@@ -191,14 +191,15 @@ Decisões de design (validadas):
 - [x] `supabase.ts`: `combineSignals` com **fallback** para navegadores sem `AbortSignal.any` (iOS antigo).
 - [x] `offlineQueue`: regex de falha de rede restrita a padrões inequívocos (um erro do Postgres/Auth não vira "offline").
 - [x] Aba do `/orders` lembrada em `localStorage` (`pedidos:tab`) — trocar de seção não perde a posição; o catálogo em memória evita o refetch.
-- [x] Testes: `src/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (70 testes, OK).
+- [x] Testes: `src/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (71 testes, OK).
 
 ### Fase 6 (branch `ajustes`) — Regras e documentação (Concluída)
 - [x] **Newline final** garantido em todos os arquivos de `src/` (24 sem o caracter).
 - [x] Exceções registradas no AGENTS: JSDoc em API pública é permitido (documenta o contrato) e `components/ui.tsx` concentra as primitivas compartilhadas.
 - [x] Código alinhado às regras: o rascunho pendente **não** é mais descartado quando há `finish-order` na fila (itens/marcações de digitação se perdiam); o `flushQueue` renova a sessão antes do replay ("cliente supabase vivo"); o fallback do perfil no `App.tsx` só acontece **em falha offline** (erro real do banco não é mascarado).
 - [x] Docs alinhados: AGENTS (visão geral do `App.tsx`/`useStoreSession`, rotas, "Estado do repo" → branch `ajustes`, migrations do módulo de Gestão, `navigateFallback` real, fontes de verdade), `architecture.md` (`bumpReport` é do `Dashboard`, limite do `toggleEntered`, contrato da sessão, allow-list do SW), `data-model.md` (view com `product_variation_id` anulável, variação sintética com `created_at`), `PROJECT_STATUS.md` (pendência superada, contagem de testes) e `README.md` (PWA/offline, estrutura, testes, rotas).
-- [x] Validação automática: `npm run typecheck` + `npm test` (70 testes) + `npm run build` (OK).
+- [x] Ajuste no `/management`: vendedor com **0,00** é permitido (registra "sem vendas no período") e a tela **avisa** — na linha do vendedor, no card de cálculo e no toast pós-registro.
+- [x] Validação automática: `npm run typecheck` + `npm test` (71 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 

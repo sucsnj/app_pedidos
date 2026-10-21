@@ -316,6 +316,38 @@ describe('ManagementScreen — digitação do valor do vendedor', () => {
     expect(screenText()).toContain('Loja Central')
   })
 
+  it('permite vendedor com 0,00 e avisa o usuário', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await act(async () => {
+      root.render(<ManagementScreen />)
+    })
+
+    await type(inputByLabel('Valor de Ana Souza'), '0,00')
+    await type(inputByLabel('Valor de Bruno Lima'), '100')
+
+    // aviso na linha do vendedor
+    expect(screenText()).toContain('sem vendas no período')
+    // aviso no card de cálculo
+    expect(screenText()).toContain('1 vendedor(es) com R$ 0,00')
+
+    const registerButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Registrar vendas'),
+    )
+    if (!registerButton) throw new Error('botão Registrar vendas não encontrado')
+
+    await act(async () => {
+      registerButton.click()
+    })
+
+    // 0,00 é gravado como venda do período (sem bloqueio)
+    expect(recordSales).toHaveBeenCalled()
+    const items = vi.mocked(recordSales).mock.calls[0][0].items
+    expect(items).toHaveLength(2)
+    expect(items.find((item) => item.sellerName === 'Ana Souza')?.amount).toBe(0)
+    confirmSpy.mockRestore()
+  })
+
   it('possui as abas Vendas e Comparação, com a Comparação em construção', async () => {
     await act(async () => {
       root.render(<ManagementScreen />)

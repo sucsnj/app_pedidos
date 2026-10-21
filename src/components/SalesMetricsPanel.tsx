@@ -10,6 +10,7 @@ interface SalesMetricsPanelProps {
   saving: boolean
   hasValues: boolean
   registered: boolean
+  zeroedCount: number
   onMetaChange: (value: string) => void
   onReferenceDateChange: (value: string) => void
   onRegister: () => Promise<boolean>
@@ -23,6 +24,7 @@ export function SalesMetricsPanel({
   saving,
   hasValues,
   registered,
+  zeroedCount,
   onMetaChange,
   onReferenceDateChange,
   onRegister,
@@ -110,6 +112,11 @@ export function SalesMetricsPanel({
             : 'O registro grava a consolidação e as vendas no banco (histórico). Sem meta informada, o app pede confirmação antes de registrar.'}
         </span>
       </div>
+      {zeroedCount > 0 ? (
+        <p className="mt-2 text-xs font-medium text-amber-600">
+          {zeroedCount} vendedor(es) com R$ 0,00 — serão registrados como “sem vendas no período”.
+        </p>
+      ) : null}
     </CollapsibleCard>
   )
 }
