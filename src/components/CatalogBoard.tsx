@@ -9,6 +9,7 @@ import type {
 } from '../types/database'
 import type { Catalog, FlashKind } from '../types/app'
 import { emptyText, getErrorMessage, parseNumber } from '../lib/utils'
+import { readCardState, writeCardState } from '../lib/cardState'
 import { Field, IconButton, inputClass, selectClass } from './ui'
 
 export type { FlashKind }
@@ -26,20 +27,28 @@ function Section({
   title,
   subtitle,
   count,
+  storageKey,
   children,
 }: {
   icon: React.ReactNode
   title: string
   subtitle?: string
   count: number
+  storageKey: string
   children: React.ReactNode
 }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [open, setOpen] = useState(() => readCardState(storageKey, true))
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    writeCardState(storageKey, next)
+  }
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <button
         type="button"
-        onClick={() => setCollapsed((previous) => !previous)}
+        onClick={toggle}
+        aria-expanded={open}
         className="mb-3 flex w-full items-center gap-2.5 text-left"
       >
         {icon}
@@ -52,11 +61,11 @@ function Section({
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
-            collapsed ? '-rotate-90' : ''
+            open ? '' : '-rotate-90'
           }`}
         />
       </button>
-      {collapsed ? null : children}
+      {open ? children : null}
     </section>
   )
 }
@@ -259,9 +268,10 @@ function StoresManager({ catalog, onRefresh, onFlash }: Loadable) {
   return (
     <Section
       icon={<Store className="h-5 w-5 text-wine-600" />}
-      title="Lojas / Filiais"
-      subtitle="Locais que fazem pedidos"
-      count={catalog.stores.length}
+          title="Lojas / Filiais"
+          subtitle="Locais que fazem pedidos"
+          count={catalog.stores.length}
+          storageKey="catalogo-lojas"
     >
       {open ? (
         <div className="mb-3 grid gap-2 rounded-xl border border-wine-200 bg-wine-100/40 p-3 sm:grid-cols-[1fr_120px_auto]">
@@ -419,9 +429,10 @@ function CategoriesManager({ catalog, onRefresh, onFlash }: Loadable) {
   return (
     <Section
       icon={<FolderTree className="h-5 w-5 text-wine-600" />}
-      title="Categorias"
-      subtitle="Ordem de exibição na prancheta"
-      count={catalog.categories.length}
+          title="Categorias"
+          subtitle="Ordem de exibição na prancheta"
+          count={catalog.categories.length}
+          storageKey="catalogo-categorias"
     >
       {open ? (
         <div className="mb-3 grid gap-2 rounded-xl border border-wine-200 bg-wine-100/40 p-3 sm:grid-cols-[1fr_120px_auto]">
@@ -729,9 +740,10 @@ function ProductsManager({ catalog, onRefresh, onFlash }: Loadable) {
   return (
     <Section
       icon={<Package className="h-5 w-5 text-wine-600" />}
-      title="Produtos"
-      subtitle="PLU/SKU e unidade de venda"
-      count={catalog.products.length}
+          title="Produtos"
+          subtitle="PLU/SKU e unidade de venda"
+          count={catalog.products.length}
+          storageKey="catalogo-produtos"
     >
       {open ? (
         <div className="mb-3 space-y-2 rounded-xl border border-wine-200 bg-wine-100/40 p-3">
@@ -1093,9 +1105,10 @@ function VariationsManager({ catalog, onRefresh, onFlash }: Loadable) {
   return (
     <Section
       icon={<Shapes className="h-5 w-5 text-wine-600" />}
-      title="Variações / Pesos"
-      subtitle="Combinações de cada produto"
-      count={catalog.variations.length}
+          title="Variações / Pesos"
+          subtitle="Combinações de cada produto"
+          count={catalog.variations.length}
+          storageKey="catalogo-variacoes"
     >
       {open ? (
         <div className="mb-3 space-y-2 rounded-xl border border-wine-200 bg-wine-100/40 p-3">

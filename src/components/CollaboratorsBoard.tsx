@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import type { Profile, ProfileUpdate, Store as StoreRow, UserRole } from '../types/database'
 import type { FlashKind } from '../types/app'
 import { getErrorMessage, emptyText } from '../lib/utils'
+import { readCardState, writeCardState } from '../lib/cardState'
 import { Field, Spinner, inputClass, selectClass } from './ui'
 
 interface CollaboratorsBoardProps {
@@ -26,8 +27,20 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
   const [storeId, setStoreId] = useState(() => stores[0]?.id ?? '')
   const [role, setRole] = useState<UserRole>('gerente')
   const [submitting, setSubmitting] = useState(false)
-  const [formCollapsed, setFormCollapsed] = useState(false)
-  const [listCollapsed, setListCollapsed] = useState(false)
+  const [formOpen, setFormOpen] = useState(() => readCardState('colaboradores-form', true))
+  const [listOpen, setListOpen] = useState(() => readCardState('colaboradores-lista', true))
+
+  const toggleForm = () => {
+    const next = !formOpen
+    setFormOpen(next)
+    writeCardState('colaboradores-form', next)
+  }
+
+  const toggleList = () => {
+    const next = !listOpen
+    setListOpen(next)
+    writeCardState('colaboradores-lista', next)
+  }
 
   const [users, setUsers] = useState<Profile[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
@@ -137,7 +150,8 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
         <button
           type="button"
-          onClick={() => setFormCollapsed((previous) => !previous)}
+          onClick={toggleForm}
+          aria-expanded={formOpen}
           className="mb-3 flex w-full items-center gap-2.5 text-left"
         >
           <UserPlus className="h-5 w-5 shrink-0 text-wine-600" />
@@ -149,12 +163,12 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
           </span>
           <ChevronDown
             className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
-              formCollapsed ? '-rotate-90' : ''
+              formOpen ? '' : '-rotate-90'
             }`}
           />
         </button>
 
-        {formCollapsed ? null : (
+        {formOpen ? (
         <form onSubmit={handleCreate} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nome Completo">
@@ -251,14 +265,15 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
             Cadastrar Usuário
           </button>
         </form>
-        )}
+      ) : null}
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setListCollapsed((previous) => !previous)}
+            onClick={toggleList}
+            aria-expanded={listOpen}
             className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           >
             <Users className="h-5 w-5 shrink-0 text-wine-600" />
@@ -273,7 +288,7 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
             </span>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${
-                listCollapsed ? '-rotate-90' : ''
+                listOpen ? '' : '-rotate-90'
               }`}
             />
           </button>
@@ -287,7 +302,7 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
           </button>
         </div>
 
-        {listCollapsed ? null : usersLoading ? (
+        {listOpen ? usersLoading ? (
           <div className="flex items-center justify-center gap-2 py-6 text-wine-700">
             <Spinner className="h-5 w-5" />
             <span className="text-sm font-semibold">Carregando usuários...</span>
@@ -365,7 +380,7 @@ export function CollaboratorsBoard({ stores, currentUserId, onFlash }: Collabora
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </div>
     </section>
   )

@@ -4,6 +4,7 @@ import type { Category, OrderStatus, Product, ProductVariation } from '../types/
 import type { CountedItem, ItemKey, LastOrderData, SuggestionsMap } from '../types/app'
 import { itemKey, defaultVariationForProduct } from '../types/app'
 import { formatDateTime } from '../lib/utils'
+import { readCardIdSet, writeCardIdSet } from '../lib/cardState'
 import { Spinner, inputClass } from './ui'
 
 interface CountingBoardProps {
@@ -46,7 +47,9 @@ export function CountingBoard({
   onSaveNow,
 }: CountingBoardProps) {
   const locked = orderStatus !== null && orderStatus !== 'Rascunho'
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => new Set())
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    () => new Set(readCardIdSet('contagem-categorias')),
+  )
   const [search, setSearch] = useState('')
 
   const normalizedSearch = search.trim().toLowerCase()
@@ -66,6 +69,7 @@ export function CountingBoard({
       } else {
         next.add(categoryId)
       }
+      writeCardIdSet('contagem-categorias', [...next])
       return next
     })
   }
@@ -181,6 +185,7 @@ export function CountingBoard({
             <button
               type="button"
               onClick={() => toggleCategory(category.id)}
+              aria-expanded={!collapsedCategories.has(category.id)}
               className="flex w-full items-center gap-2 bg-wine-700 px-4 py-2.5 text-left text-sm font-bold uppercase tracking-wide text-white transition hover:bg-wine-800 active:scale-[0.99]"
             >
               <span className="min-w-0 flex-1 truncate">{category.name}</span>

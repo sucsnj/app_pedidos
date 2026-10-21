@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
-
-const STORAGE_PREFIX = 'pedidos:card:'
+import { readCardState, writeCardState } from '../lib/cardState'
 
 export type CardAccent = 'wine' | 'gold' | 'sky' | 'emerald' | 'neutral'
 
@@ -12,24 +11,6 @@ const ACCENT_STYLES: Record<CardAccent, { bar: string; chip: string }> = {
   sky: { bar: 'bg-sky-500', chip: 'bg-sky-100 text-sky-700' },
   emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-100 text-emerald-700' },
   neutral: { bar: 'bg-gray-300', chip: 'bg-gray-100 text-gray-600' },
-}
-
-export function readCardState(storageKey: string, fallback: boolean): boolean {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + storageKey)
-    if (raw === null) return fallback
-    return raw === '1'
-  } catch {
-    return fallback
-  }
-}
-
-function writeCardState(storageKey: string, open: boolean): void {
-  try {
-    window.localStorage.setItem(STORAGE_PREFIX + storageKey, open ? '1' : '0')
-  } catch {
-    // Sem storage disponível (modo privado) — segue sem persistir.
-  }
 }
 
 interface CollapsibleCardProps {

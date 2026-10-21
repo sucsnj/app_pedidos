@@ -216,7 +216,8 @@ Decisões de design (validadas):
 - [x] Paleta do `/management` reaproveitada com distribuição por significado: acento por card (**wine** = Cálculo/valores, **gold** = Resultado/meta, **sky** = Vendedores/cadastro, **emerald** = Histórico/registros) e indicadores coloridos por papel (total/base/maior venda em wine, meta em gold, ticket médio em sky, registros em gray, **atingimento dinâmico** emerald/amber/gray).
 - [x] Navegação por scroll suave: "Registrar vendas" revela o card de **Histórico** (abre se estiver colapsado + `scrollIntoView` suave) e "Novas vendas" revela o card de **Vendedores** (`revealSignal` no `CollapsibleCard` + `scroll-mt-16` para não ficar sob a barra de abas fixa).
 - [x] Rodapé fixo no `/management` (como o `MobileStatusBar` do `/orders`): loja, total vendido e nº de vendedores em **todas** as abas (só no mobile); o rodapé inline e o `pb-12 lg:pb-16` da aba "Vendas" foram removidos (o conteúdo agora usa `pb-24 sm:pb-6`, reservado ao rodapé fixo).
-- [x] Validação automática: `npm run typecheck` + `npm test` (113 testes) + `npm run build` (OK).
+- [x] Estado de colapso **persistido no navegador** em todos os cards expansíveis: utility compartilhada `src/lib/cardState.ts` (`pedidos:card:`) aplicada ao `/management`, às seções do Catálogo, aos cards de Colaboradores e às categorias da Prancheta (conjunto de ids) — **semântica única** (`true` = aberto) e `aria-expanded` nos cabeçalhos.
+- [x] Validação automática: `npm run typecheck` + `npm test` (123 testes) + `npm run build` (OK).
 
 ## Checklist manual (PWA)
 
