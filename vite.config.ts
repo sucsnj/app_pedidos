@@ -43,7 +43,13 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-        navigateFallback: '/index.html',
+        // `navigateFallback: undefined` desliga o `NavigationRoute` padrão do
+        // plugin (que é registrado antes das regras de runtimeCaching e, com
+        // ele, as navegações nunca chegavam ao edge — a badge da Netlify e o
+        // opt-out "hide this badge" são resolvidos no edge). As navegações
+        // passam pela regra NetworkFirst abaixo (rede → cache) e o app segue
+        // abrindo offline pelo `navigation-cache`.
+        navigateFallback: undefined,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',

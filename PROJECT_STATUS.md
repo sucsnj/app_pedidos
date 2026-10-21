@@ -201,6 +201,11 @@ Decisões de design (validadas):
 - [x] Ajuste no `/management`: vendedor com **0,00** é permitido (registra "sem vendas no período") e a tela **avisa** — na linha do vendedor, no card de cálculo e no toast pós-registro.
 - [x] Validação automática: `npm run typecheck` + `npm test` (71 testes) + `npm run build` (OK).
 
+### Ajuste — Badge da Netlify / "hide this badge" (Concluída)
+- [x] `vite.config.ts`: `navigateFallback: undefined` (desliga o `NavigationRoute` padrão do `vite-plugin-pwa`, que era registrado **antes** das regras de runtimeCaching → as navegações iam para o precache e nunca chegavam ao edge da Netlify, onde o opt-out "hide this badge" é resolvido).
+- [x] As navegações agora passam pela regra **NetworkFirst** (`navigation-cache`): o edge é consultado (badge funciona normalmente) e, offline, o app abre pelo HTML da última visita online.
+- [x] Verificado no `dist/sw.js`: `NavigationRoute` = 0 ocorrências, `navigation-cache` (NetworkFirst) = 1, `index.html` mantido no precache.
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.
