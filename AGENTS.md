@@ -55,13 +55,13 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 | `src/hooks/useStoreSession.ts` | Orquestrador: estados do pedido corrente, carga da loja, ações |
 | `src/hooks/useDraftPersistence.ts` | Persistência/autosave: refs espelhadas, debounce 700ms, chain de persist, `flushDraft` (grava sem toast, usado no unmount da tela) |
 | `src/hooks/useRealtimeOrder.ts` | Subscription Supabase por pedido + reload no guard |
-| `src/hooks/useCatalog.ts` | Catálogo (stores, categories, products, variations) + `reload`/`refresh`; espelha no `localCache` e, sem rede, cai para o espelho (`readCatalog`) |
+| `src/hooks/useCatalog.ts` | Catálogo (stores, categories, products, variations) + `reload`/`refresh`; espelha no `localCache` e, sem rede, cai para o espelho (`readCatalog`); cache em memória evita refetch a cada remontagem |
 | `src/hooks/useFlash.ts`, `useStoreReports.ts` | Suporte: notificações, relatório |
 | `src/lib/orders.ts` | Regras puras: mapear itens, contar, mesclar pedidos, `orderLabel` |
 | `src/lib/offlineQueue.ts` | Fila de ações offline (IndexedDB `pedidos-pwa/queue`): `enqueuePersistDraft`, `enqueueFinishOrder`, `enqueueCreateOrder`, `removeDraftForOrder` (descarta o rascunho enfileirado após o persist online), `flushQueue(force?)` (erro de rede/sessão **preserva** a fila; erro permanente **descarta** a ação e segue), `discardPending` (limpa a fila), `listPending`/`pendingCount`, `subscribePending` (contador em tempo real), `isOffline`/`isOfflineError` (detecção por `navigator.onLine` + mensagem de rede: `PostgrestError` "Failed to fetch"/"fetch failed", `AbortError`, `TypeError`) |
 | `src/lib/orderDraft.ts` | Gravação do rascunho do pedido: `persistOrderDraft` usa a RPC `persist_order_draft` (transação única) e cai para o caminho update+delete+insert quando a RPC ainda não existe no banco |
 | `src/lib/localCache.ts` | Espelho local p/ leitura offline (IndexedDB `pedidos-pwa/mirror`, DB v2): **catálogo**, pedidos por loja, itens por pedido (`{key, quantity, isEnteredInLegacy}`), sugestões, última contagem, relatório, perfil; `openDB`/`withDB` compartilhados com a fila |
-| `src/lib/supabase.ts` | Cliente Supabase tipado com fetch + timeout de 10s (falha rápido em "conectado sem internet") |
+| `src/lib/supabase.ts` | Cliente Supabase tipado com fetch + timeout de 10s (falha rápido em "conectado sem internet"); `combineSignals` com fallback para navegadores sem `AbortSignal.any` |
 | `src/pwa.ts` | Registro do SW (`setupPWA`), estado de atualização/offline-ready e `applyUpdate` (bridges via `subscribePWA`) |
 | `src/hooks/useOnline.ts` | Hook de conectividade (`navigator.onLine` + eventos online/offline) |
 | `src/hooks/usePendingSync.ts` | Hook do contador de ações pendentes na fila (assina `subscribePending`) |
@@ -118,6 +118,7 @@ Contexto imediato para agentes que trabalham neste repositório. Leia este arqui
 - **Variações do produto (Cadastro)**: o formulário de produto usa **chips** com nomes globais únicos de `product_variations` (busca no load + merge com `catalog.variations`). Salvar sincroniza vínculos do produto: cria variação faltante (`price: 0`, `is_available: true`), reativa (`is_available = true`) e **desmarcar só desativa** (`is_available = false`) — nunca deleta. Exclusão manual apenas na seção "Variações / Pesos" (lixeira, com `confirm`).
 - **Persistência**: a cada save, atualiza o `orders` e reescreve os `order_items` (delete + insert) com `is_entered_in_legacy`.
 - **Preferência de loja**: a troca manual de loja (`selectStore`, seletor só p/ `admin`) grava em `localStorage` (`pedidos:selectedStore:<userId>`) e a carga a respeita (validada contra o catálogo). `gerente` não grava e fica **preso à `store_id` do perfil** (vale para `/orders` e `/management`) — a preferência gravada por um admin não pode deslocar o gerente para outra loja.
+- **Preferência de aba**: a aba ativa do `/orders` é lembrada em `localStorage` (`pedidos:tab`) — trocar de seção e voltar não perde a posição.
 - **Sugestões**: vêm da view `vw_product_suggestions` por loja; `fetchSuggestions` recarrega ao trocar de loja e ao "nova contagem" (`newCount`) — sem precisar de F5; exibidas quando o item ainda não tem quantidade.
 - **Ordenação da digitação**: `compareByEntryCode` — por código PLU/SKU (numérico) e depois nome da variação.
 - **Resumo em texto**: `buildOrderSummary` (`lib/orderText.ts`) gera o pedido para colagem (WhatsApp/legado), com ordem PLU/SKU; `copyTextToClipboard` tem fallback via `document.execCommand`.

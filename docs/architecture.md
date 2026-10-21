@@ -65,6 +65,7 @@ Dono **de todos os estados** da sessão:
 ### Reconciliar catálogo
 
 - Efeito em `catalog.products`/`catalog.variations` remapeia os `items` para as referências atualizadas (nome/preço/etc.) sem perder quantidade.
+- **Espelho de pedidos**: `updateOrderInStore` **mescla** o pedido na lista da loja (nunca sobrescreve) e cria a lista quando a loja ainda não foi espelhada; `mergeOrderRow` atualiza `updated_at`, mantendo o rótulo do header e o do dropdown alinhados.
 
 ## `useDraftPersistence` — persistência
 

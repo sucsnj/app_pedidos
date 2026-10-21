@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Copy, ListChecks, MonitorCheck } from 'lucide-react'
 import type { Order, Store } from '../types/database'
 import type { CountedItem, ItemKey } from '../types/app'
@@ -22,6 +22,13 @@ export function DataEntryBoard({
   onToggleEntered,
 }: DataEntryBoardProps) {
   const [copied, setCopied] = useState(false)
+  const copiedTimer = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) window.clearTimeout(copiedTimer.current)
+    }
+  }, [])
 
   const pending = useMemo(
     () => items.filter((item) => item.quantity > 0).sort(compareByEntryCode),
@@ -39,7 +46,8 @@ export function DataEntryBoard({
     })
     await copyTextToClipboard(text)
     setCopied(true)
-    window.setTimeout(() => setCopied(false), 2000)
+    if (copiedTimer.current) window.clearTimeout(copiedTimer.current)
+    copiedTimer.current = window.setTimeout(() => setCopied(false), 2000)
   }
 
   return (

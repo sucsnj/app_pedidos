@@ -29,8 +29,27 @@ interface DashboardProps {
   currentUserId: string
 }
 
+const TAB_STORAGE_KEY = 'pedidos:tab'
+
+function readStoredTab(): TabId {
+  try {
+    const raw = window.localStorage.getItem(TAB_STORAGE_KEY)
+    return raw === 'entry' || raw === 'catalog' || raw === 'comparativo' ? raw : 'count'
+  } catch {
+    return 'count'
+  }
+}
+
 export function Dashboard({ profile, isAdmin, currentUserId }: DashboardProps) {
-  const [tab, setTab] = useState<TabId>('count')
+  const [tab, setTabState] = useState<TabId>(readStoredTab)
+  const setTab = useCallback((next: TabId) => {
+    setTabState(next)
+    try {
+      window.localStorage.setItem(TAB_STORAGE_KEY, next)
+    } catch {
+      // Sem storage — a aba apenas não é lembrada.
+    }
+  }, [])
   const canManageCatalog = isAdmin
   const canSeeComparativo = isAdmin
 

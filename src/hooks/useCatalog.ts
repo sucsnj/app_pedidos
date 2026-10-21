@@ -5,18 +5,23 @@ import { cacheCatalog, readCatalog } from '../lib/localCache'
 import type { Catalog } from '../types/app'
 import { getErrorMessage } from '../lib/utils'
 
+const EMPTY_CATALOG: Catalog = {
+  stores: [],
+  categories: [],
+  products: [],
+  variations: [],
+}
+
+/** Cache em memória: evita refetch do catálogo a cada remontagem da tela. */
+let memoryCatalog: Catalog | null = null
+
 export function useCatalog() {
-  const [catalog, setCatalog] = useState<Catalog>({
-    stores: [],
-    categories: [],
-    products: [],
-    variations: [],
-  })
-  const [loading, setLoading] = useState(true)
+  const [catalog, setCatalog] = useState<Catalog>(memoryCatalog ?? EMPTY_CATALOG)
+  const [loading, setLoading] = useState(!memoryCatalog)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
-  const loadCatalog = useCallback(async () => {
+  const loadCatalog = useCallback(async (): Promise<Catalog> => {
     const [storesResult, categoriesResult, productsResult, variationsResult] = await Promise.all([
       supabase.from('stores').select('*').order('name'),
       supabase.from('categories').select('*').order('display_order'),
@@ -33,8 +38,9 @@ export function useCatalog() {
       products: productsResult.data ?? [],
       variations: variationsResult.data ?? [],
     }
-    setCatalog(next)
+    memoryCatalog = next
     void cacheCatalog(next)
+    return next
   }, [])
 
   useEffect(() => {
@@ -42,6 +48,10 @@ export function useCatalog() {
     setLoading(true)
     setError(null)
     loadCatalog()
+      .then((next) => {
+        if (cancelled) return
+        setCatalog(next)
+      })
       .catch(async (err) => {
         if (cancelled) return
         // Sem rede o catálogo vem do espelho local (o cache do SW cobre o
@@ -62,9 +72,17 @@ export function useCatalog() {
     return () => {
       cancelled = true
     }
-  }, [reloadKey])
+  }, [reloadKey, loadCatalog])
 
   const reload = useCallback(() => setReloadKey((value) => value + 1), [])
 
-  return { catalog, loading, error, reload, refresh: loadCatalog }
+  const refresh = useCallback(async (): Promise<void> => {
+    try {
+      setCatalog(await loadCatalog())
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
+  }, [loadCatalog])
+
+  return { catalog, loading, error, reload, refresh }
 }

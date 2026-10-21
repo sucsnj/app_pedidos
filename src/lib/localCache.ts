@@ -112,12 +112,11 @@ export function updateOrderInStore(order: Order): Promise<void> {
   const storeId = order.store_id ?? ''
   if (!storeId || !order.id) return Promise.resolve()
   return readOrders(storeId).then((list) => {
-    if (!list) return
-    const previous = list.find((entry) => entry.id === order.id)
-    const next = previous
-      ? list.map((entry) => (entry.id === order.id ? { ...entry, ...order } : entry))
-      : [order, ...list].slice(0, 25)
-    return cacheOrders(storeId, next)
+    const previous = list ?? []
+    const updated = previous.find((entry) => entry.id === order.id)
+      ? previous.map((entry) => (entry.id === order.id ? { ...entry, ...order } : entry))
+      : [order, ...previous].slice(0, 25)
+    return cacheOrders(storeId, updated)
   })
 }
 

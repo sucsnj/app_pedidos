@@ -182,6 +182,17 @@ Decisões de design (validadas):
 - [x] Testes: fila (descarte por erro permanente, preservação em erro de rede, `discardPending`) e persistência (RPC + fallback) — `npm test` (67 testes, OK).
 - [ ] **Aplicar a migration `20261003000500_persist_order_draft.sql` no Supabase** (até lá, o app usa o caminho legado automaticamente).
 
+### Fase 5 (branch `ajustes`) — Qualidade e performance (Concluída)
+- [x] Espelho de pedidos: `updateOrderInStore` **mescla** (não sobrescreve) e cria a lista quando a loja ainda não foi espelhada — o `cacheOrders` da loja não é mais substituído por uma lista de 1 item ao criar pedido.
+- [x] `mergeOrderRow` atualiza `updated_at` → rótulo do header e do dropdown com a mesma data.
+- [x] `useCatalog`: guarda de cancelamento no `setCatalog` (respostas fora de ordem) + **cache em memória** (sem refetch a cada remontagem) e `refresh` com tratamento de erro.
+- [x] Relatório: `.limit(2000)` no `.in('order_id', …)` (evita URL gigante / erro 414).
+- [x] `DataEntryBoard`: timer do "Copiado!" limpo no unmount.
+- [x] `supabase.ts`: `combineSignals` com **fallback** para navegadores sem `AbortSignal.any` (iOS antigo).
+- [x] `offlineQueue`: regex de falha de rede restrita a padrões inequívocos (um erro do Postgres/Auth não vira "offline").
+- [x] Aba do `/orders` lembrada em `localStorage` (`pedidos:tab`) — trocar de seção não perde a posição; o catálogo em memória evita o refetch.
+- [x] Testes: `src/lib/localCache.test.ts` (espelho mesclando/atualizando/criando) — `npm test` (70 testes, OK).
+
 ## Checklist manual (PWA)
 
 - [ ] Instalar o app (A2HS) no Android/desktop e abrir standalone.

@@ -100,7 +100,12 @@ export function useStoreReports(activeStoreId: string, catalog: Catalog) {
 
         const fetchItems = async (ids: string[]): Promise<OrderItem[]> => {
           if (ids.length === 0) return []
-          const result = await supabase.from('order_items').select('*').in('order_id', ids)
+          // `limit` evita URLs gigantes (erro 414) em lojas com muito histórico.
+          const result = await supabase
+            .from('order_items')
+            .select('*')
+            .in('order_id', ids)
+            .limit(2000)
           if (result.error) throw result.error
           return result.data
         }

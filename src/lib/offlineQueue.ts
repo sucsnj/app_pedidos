@@ -42,8 +42,10 @@ export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false
 }
 
+// Padrões inequívocos de falha de rede: um erro do Postgres/Auth não deve
+// ser classificado como "offline" (senão o app esconde a falha real).
 const NETWORK_FAILURE_PATTERN =
-  /failed to fetch|fetch failed|load failed|network request failed|network error|econnrefused|enotfound|ehostunreach|enetunreach|net::err/i
+  /failed to fetch|fetch failed|load failed|network request failed|networkerror|net::err|econnrefused|econnreset|enotfound|ehostunreach|enetunreach|err_internet_disconnected/i
 
 export function isOfflineError(err: unknown): boolean {
   if (isOffline()) return true

@@ -124,8 +124,15 @@ export function mergeOrderRow(
   totalItems: number,
   requesterName: string,
   notes: string | null,
+  updatedAt: string = new Date().toISOString(),
 ): Order {
-  return { ...base, total_items: totalItems, requester_name: requesterName, notes }
+  return {
+    ...base,
+    total_items: totalItems,
+    requester_name: requesterName,
+    notes,
+    updated_at: updatedAt,
+  }
 }
 
 /** Linhas de `order_items` compatíveis com o generic do supabase-js (requer index signature). */

@@ -240,7 +240,9 @@ export function useStoreSession({
             if (cancelled || token !== storeEffectToken.current) return
             order = created.data
             setOrders([created.data])
-            void cacheOrders(activeStoreId, [created.data])
+            // Mescla no espelho — sobrescrever a lista da loja perderia os
+            // pedidos já espelhados.
+            void updateOrderInStore(created.data)
           }
         }
 
